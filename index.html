@@ -9,48 +9,30 @@
 <title>The Stack</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap');
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-
 :root{
-  --bg:#141815; --bg-raise:#1c211d; --card:#21271f; --card-edge:#2c332a;
-  --ink:#ece9e2; --ink-mid:#a8a89e; --ink-soft:#6e7268;
-  --moss:#8fa885; --moss-deep:#5d7355;
-  --amber:#d9a05b; --plum:#a08bc0; --danger:#c97b6e;
-  --hairline:rgba(236,233,226,0.08);
-  --glass:rgba(24,28,25,0.6);
-  --glass-hi:rgba(236,233,226,0.09);
-  --glass-edge:rgba(236,233,226,0.14);
+  --bg:#141815;--bg-raise:#1c211d;--card:#21271f;--card-edge:#2c332a;
+  --ink:#ece9e2;--ink-mid:#a8a89e;--ink-soft:#6e7268;
+  --moss:#8fa885;--moss-deep:#5d7355;--amber:#d9a05b;--plum:#a08bc0;--danger:#c97b6e;
+  --hairline:rgba(236,233,226,0.08);--glass:rgba(24,28,25,0.6);
+  --glass-hi:rgba(236,233,226,0.09);--glass-edge:rgba(236,233,226,0.14);
 }
-@media (prefers-color-scheme: light){
-  :root{
-    --bg:#f4f2ec; --bg-raise:#fbfaf6; --card:#ffffff; --card-edge:#e6e2d8;
-    --ink:#20241f; --ink-mid:#5d6157; --ink-soft:#989c91;
-    --moss:#5d7355; --moss-deep:#46593f;
-    --amber:#b97f37; --plum:#7b639e; --danger:#b3604f;
-    --hairline:rgba(32,36,31,0.08);
-    --glass:rgba(251,250,246,0.55);
-    --glass-hi:rgba(255,255,255,0.65);
-    --glass-edge:rgba(32,36,31,0.1);
-  }
-}
-
+@media(prefers-color-scheme:light){:root{
+  --bg:#f4f2ec;--bg-raise:#fbfaf6;--card:#ffffff;--card-edge:#e6e2d8;
+  --ink:#20241f;--ink-mid:#5d6157;--ink-soft:#989c91;
+  --moss:#5d7355;--moss-deep:#46593f;--amber:#b97f37;--plum:#7b639e;--danger:#b3604f;
+  --hairline:rgba(32,36,31,0.08);--glass:rgba(251,250,246,0.55);
+  --glass-hi:rgba(255,255,255,0.65);--glass-edge:rgba(32,36,31,0.1);
+}}
 html,body{height:100%}
-body{
-  background:var(--bg); color:var(--ink);
-  font-family:'Inter',system-ui,sans-serif; font-size:15px;
-  max-width:430px; margin:0 auto;
-  -webkit-font-smoothing:antialiased;
-  overscroll-behavior-y:none;
-}
-#app{padding-bottom:128px; min-height:100vh}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
+#app{padding-bottom:128px;min-height:100vh}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;text-align:left}
 input,textarea,select{font:inherit;color:var(--ink);background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:10px;padding:10px 12px;width:100%;outline:none}
-input:focus,textarea:focus{border-color:var(--moss)}
+input:focus,textarea:focus,select:focus{border-color:var(--moss)}
 textarea{resize:vertical;min-height:70px}
 ::placeholder{color:var(--ink-soft)}
 a{color:inherit}
-
 .top{padding:52px 22px 8px;display:flex;justify-content:space-between;align-items:flex-end}
 .wordmark{font-family:'Fraunces',serif;font-size:24px;font-weight:400}
 .wordmark em{font-style:italic;color:var(--moss)}
@@ -73,29 +55,24 @@ a{color:inherit}
 .c-amber{background:rgba(217,160,91,.14);color:var(--amber)}
 .c-mute{background:var(--bg-raise);color:var(--ink-soft);border:1px solid var(--card-edge)}
 .c-danger{background:rgba(201,123,110,.14);color:var(--danger)}
-
 .strip{display:flex;gap:5px;padding:14px 22px 4px}
 .strip .d{flex:1;text-align:center;padding:7px 0 8px;border-radius:10px;font-size:10px;color:var(--ink-soft);border:1px solid transparent}
-.strip .d span{display:block;font-size:11px;font-weight:600;margin-top:3px}
-.strip .d.a span{color:var(--moss)} .strip .d.b span{color:var(--plum)} .strip .d.c span{color:var(--amber)}
+.strip .d span{display:block;font-size:9px;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .strip .d.today{background:var(--card);border-color:var(--card-edge);color:var(--ink-mid)}
-
 .hero{margin:14px 22px 0;background:linear-gradient(160deg,var(--card) 0%,var(--bg-raise) 100%);border:1px solid var(--card-edge);border-radius:22px;padding:24px 22px 20px;position:relative;overflow:hidden;display:block;width:calc(100% - 44px)}
 .hero::after{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(143,168,133,.13) 0%,transparent 70%);pointer-events:none}
 .hero-eyebrow{font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--moss);margin-bottom:8px}
 .hero h2{font-family:'Fraunces',serif;font-weight:400;font-size:26px;line-height:1.18;margin-bottom:4px;color:var(--ink)}
 .hero .sub{font-size:13px;color:var(--ink-mid);margin-bottom:18px}
-
 .row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--card-edge);border-radius:16px;padding:15px 16px;margin:0 22px 10px;width:calc(100% - 44px)}
 .row-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.ri-skin{background:rgba(160,139,192,.14)} .ri-hair{background:rgba(143,168,133,.14)} .ri-scent{background:rgba(217,160,91,.13)}
+.ri-skin{background:rgba(160,139,192,.14)}.ri-hair{background:rgba(143,168,133,.14)}.ri-scent{background:rgba(217,160,91,.13)}
 .row-body{flex:1;min-width:0}
 .row-title{font-size:14px;font-weight:500;color:var(--ink)}
 .row-sub{font-size:12px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
 .alert{margin:6px 22px 10px;display:flex;gap:11px;align-items:flex-start;background:rgba(217,160,91,.08);border:1px solid rgba(217,160,91,.22);border-radius:14px;padding:12px 14px;font-size:12.5px;color:var(--ink-mid);width:calc(100% - 44px)}
 .alert b{color:var(--amber);font-weight:600}
-
+.warn-banner{margin:0 22px 10px;display:flex;gap:11px;align-items:flex-start;background:rgba(201,123,110,.08);border:1px solid rgba(201,123,110,.25);border-radius:14px;padding:12px 14px;font-size:12px;color:var(--ink-mid);width:calc(100% - 44px)}
 .steps{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
 .step{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%}
 .step:last-child{border-bottom:none}
@@ -108,21 +85,38 @@ a{color:inherit}
 .wait::before,.wait::after{content:'';flex:1;border-top:1px dashed var(--card-edge)}
 .wait span{padding:5px 0}
 .swap-pill{display:inline-flex;align-items:center;gap:4px;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:20px;padding:2px 8px;margin-top:5px;font-size:10.5px;color:var(--amber);font-weight:500}
-
 .seg{display:flex;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:12px;padding:3px;margin:0 22px 14px;width:calc(100% - 44px)}
 .seg button{flex:1;text-align:center;font-size:12px;font-weight:500;padding:9px 4px;border-radius:9px;color:var(--ink-soft)}
 .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.18)}
-
-/* liquid glass tab bar */
-.tabs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:402px;background:var(--glass);backdrop-filter:blur(34px) saturate(190%);-webkit-backdrop-filter:blur(34px) saturate(190%);border:1px solid var(--glass-edge);border-radius:30px;display:flex;padding:7px;box-shadow:0 12px 40px rgba(0,0,0,.32), inset 0 1px 0 var(--glass-hi);z-index:50}
-.tab{flex:1;text-align:center;font-size:10px;color:var(--ink-soft);padding:8px 0 6px;border-radius:23px;position:relative;transition:all .25s cubic-bezier(.3,1.2,.4,1)}
+/* settings menu */
+.menu-item{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--hairline);width:100%}
+.menu-item:last-child{border-bottom:none}
+.menu-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.menu-body{flex:1;min-width:0}
+.menu-title{font-size:14px;font-weight:500}
+.menu-sub{font-size:12px;color:var(--ink-soft);margin-top:1px}
+.menu-arrow{color:var(--ink-soft);font-size:16px}
+/* schedule grid */
+.sched-row{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--hairline);gap:10px}
+.sched-row:last-child{border-bottom:none}
+.sched-day-label{font-size:13px;font-weight:600;min-width:36px}
+.sched-slots{flex:1;display:flex;flex-direction:column;gap:6px}
+.sched-slot{display:flex;align-items:center;gap:8px}
+.sched-slot-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);min-width:32px}
+.sched-slot select{flex:1;font-size:12px;padding:6px 10px}
+/* day pill selector */
+.day-pills{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
+.day-pill{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:var(--bg-raise);border:1.5px solid var(--card-edge);color:var(--ink-soft)}
+.day-pill.on{background:rgba(143,168,133,.18);border-color:var(--moss);color:var(--moss)}
+/* tabs */
+.tabs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:402px;background:var(--glass);backdrop-filter:blur(34px) saturate(190%);-webkit-backdrop-filter:blur(34px) saturate(190%);border:1px solid var(--glass-edge);border-radius:30px;display:flex;padding:7px;box-shadow:0 12px 40px rgba(0,0,0,.32),inset 0 1px 0 var(--glass-hi);z-index:50}
+.tab{flex:1;text-align:center;font-size:10px;color:var(--ink-soft);padding:8px 0 6px;border-radius:23px;transition:all .25s cubic-bezier(.3,1.2,.4,1)}
 .tab .ic{font-size:18px;display:block;margin-bottom:2px;opacity:.7;transition:opacity .2s}
-.tab.active{color:var(--ink);background:var(--glass-hi);border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 2px 8px rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab.active{color:var(--ink);background:var(--glass-hi);border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .tab.active .ic{opacity:1;color:var(--moss)}
-
 .fab{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));min-width:54px;height:54px;border-radius:28px;background:var(--moss-deep);color:#f2f1ea;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:49;padding:0 16px;gap:8px}
 .fab .t{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-
+/* overlay/sheet */
 .overlay{position:fixed;inset:0;background:rgba(10,12,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg-raise);border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:10px 22px calc(28px + env(safe-area-inset-bottom));border:1px solid var(--card-edge);border-bottom:none}
 .sheet-handle{width:38px;height:4px;border-radius:4px;background:var(--card-edge);margin:8px auto 18px}
@@ -136,29 +130,19 @@ a{color:inherit}
 .kv .v{font-size:13px;font-weight:500;text-align:right}
 .desc-block{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px;font-size:13px;line-height:1.6;color:var(--ink-mid);margin-bottom:14px}
 .desc-block b{color:var(--ink);font-weight:600;display:block;margin-bottom:4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-
 .edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
 .edit-step:last-child{border-bottom:none}
 .edit-step .nm{flex:1;font-size:13px;font-weight:500}
 .mini{width:30px;height:30px;border-radius:9px;background:var(--bg-raise);border:1px solid var(--card-edge);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-mid);flex-shrink:0}
-.sched-day{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--hairline)}
-.sched-day:last-child{border-bottom:none}
-.ab-toggle{display:flex;gap:6px}
-.ab-toggle button{width:38px;height:32px;border-radius:9px;font-size:12px;font-weight:600;background:var(--bg-raise);border:1px solid var(--card-edge);color:var(--ink-soft);text-align:center}
-.ab-toggle button.on-a{background:rgba(143,168,133,.18);border-color:var(--moss);color:var(--moss)}
-.ab-toggle button.on-b{background:rgba(160,139,192,.18);border-color:var(--plum);color:var(--plum)}
-.ab-toggle button.on-c{background:rgba(217,160,91,.18);border-color:var(--amber);color:var(--amber)}
-
 .scent-card{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;padding:16px;margin:0 22px 10px;width:calc(100% - 44px);display:block;text-align:left}
 .scent-card .nm{font-family:'Fraunces',serif;font-size:17px}
 .scent-card .br{font-size:11px;color:var(--ink-soft);margin-bottom:6px}
 .scent-card .ds{font-size:12.5px;color:var(--ink-mid);margin-bottom:8px}
 .tags{display:flex;flex-wrap:wrap;gap:5px}
-
 .copybox{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.55;color:var(--ink-mid);white-space:pre-wrap;max-height:300px;overflow-y:auto;margin:0 22px 12px;width:calc(100% - 44px)}
 .note-flag{font-size:10.5px;color:var(--danger);margin-top:4px;font-weight:500}
 .empty{padding:30px 22px;text-align:center;color:var(--ink-soft);font-size:13px}
-.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-mid);padding:52px 22px 0}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-mid);padding:52px 22px 0;cursor:pointer}
 .manage-link{padding:4px 22px 16px}
 .ro-notes{background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:12px;padding:12px;font-size:13px;color:var(--ink-mid);line-height:1.55}
 </style>
@@ -167,313 +151,340 @@ a{color:inherit}
 <div id="app"></div>
 <button class="fab" id="fab" onclick="toggleTimer()">⏱</button>
 <nav class="tabs" id="tabs"></nav>
-
 <script>
-/* ════════════════════ SEED ════════════════════ */
-function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
+/* ══════════════════════════════════════════════
+   SEED DATA
+══════════════════════════════════════════════ */
+function P(cat,name,brand,role,why,opts={}){
+  return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);
+}
+function R(id,cat,type,name,days,steps){
+  return {id,cat,type,name,days,steps};
+}
+
 const SEED={
-  v:3, updatedAt:0,
-  settings:{syncUrl:'',pin:'',schedule:{0:'A',1:'C',2:'B',3:'B',4:'A',5:'B',6:'B'}},
+  v:4, updatedAt:0,
+  settings:{syncUrl:'',pin:''},
   products:{
-    sekkisei:P('skin','Sekkisei Lotion','Kosé','Hydrating toner — preps and rehydrates after cleansing','Herbal extracts and glycerin restore moisture balance and prep skin so everything layered after absorbs better. The foundation step of both AM and PM.',{durationDays:120}),
-    dg:P('skin','Fill+Repair Serum','Dr. Dennis Gross','Hydration + peptide workhorse','Four molecular weights of hyaluronic acid plump at multiple depths; niacinamide and ectoin strengthen the barrier; four peptides support firmness; ceramides NP/AP/EOP repair lipids. The single hardest-working product in the stack.',{durationDays:75}),
-    vitc:P('skin','C-Firma Vitamin C','Drunk Elephant','AM antioxidant — environmental defence','15% L-ascorbic acid with vitamin E and ferulic acid neutralises free radicals from UV and pollution, brightens, and supports collagen. Applied AM so it works alongside SPF all day.',{next:{name:'CE Ferulic',brand:'SkinCeuticals',role:'AM antioxidant — environmental defence',why:'The benchmark vitamin C serum: 15% L-ascorbic acid, 1% vitamin E, 0.5% ferulic acid at optimal pH. Deepest clinical evidence of any vitamin C; protection lasts 72h per application. Note: metallic scent that dissipates quickly.',link:'https://www.skinceuticals.com.au/skincare/facial-serums/c-e-ferulic-vitamin-c-serum/SKC_0001.html'}}),
-    serumveil:P('skin','Serum Veil Deep Repair','One by Kosé','Moisture retention booster','Rice Power No.11 is clinically shown in Japan to improve the skin\u2019s own ability to produce ceramides and store moisture — improving your skin\u2019s baseline hydration capacity, not just today\u2019s surface moisture.'),
-    emulsion:P('skin','Kosé Emulsion','Kosé','Moisture seal — as needed','Light emulsion layer that locks in hydration from previous steps on days when skin feels tighter or drier than usual. Skip when skin feels balanced.',{durationDays:120,flags:['optional']}),
-    spf:P('skin','No.3 SPF 50','Rationale','Daily UV protection — permanent','Zinc oxide plus Tinosorb S — one of the best hybrid broad-spectrum filter combinations available. UV is the single largest driver of visible ageing; this is the most important anti-ageing step in the entire routine. Always last in AM.',{durationDays:60,flags:['permanent'],link:'https://rationale.com'}),
-    oil:P('skin','Cleansing Oil','Kosé','First cleanse — dissolves SPF, sebum and the day','Oil cleansing dissolves sunscreen and oil-based debris that water-based cleansers leave behind. Step one of the double cleanse.'),
-    no4:P('skin','No.4 Cleanser','Rationale','Second cleanse — clean slate','Water-based cleanse removes oil residue and prepares skin for actives. Gentle enough not to strip a dry/sensitive barrier.',{link:'https://rationale.com'}),
-    no5:P('skin','No.5 Milk Concentrate','Rationale','Barrier support milk — phasing out','Ceramide NP, cholesterol and zinc PCA support the barrier. Being phased out — the Dennis Gross serum and incoming Ceramidin cream cover this territory more completely.',{durationDays:60,flags:['removeWhenDone']}),
-    exfoliant:P('skin','6% Mandelic + 2% Lactic','Paula\u2019s Choice','Gentle exfoliant — C nights only, 1–2×/week','The gentlest effective AHA combination. Mandelic\u2019s large molecule penetrates slowly (minimal irritation); time-released lactic acid hydrates while it exfoliates. Applied straight after toner on clean skin — before serums — so it gets direct contact. Never on retinol nights.',{durationDays:180,link:'https://www.paulaschoice.com.au/skin-perfecting-6pct-mandelic-acid-and-2pct-lactic-acid-liquid-exfoliant/1470.html'}),
-    retinol:P('skin','Retinol 0.3%','SkinCeuticals','Cell turnover + collagen — the anti-ageing engine','Pure encapsulated retinol with slow-release delivery and soothing bisabolol. The most evidence-backed anti-ageing ingredient without prescription: drives cell turnover, collagen synthesis, improves fine lines and tone. 4 nights/week.',{link:'https://www.skinceuticals.com.au',next:{name:'Retinol 0.5%',brand:'SkinCeuticals',role:'Cell turnover + collagen — strength upgrade',why:'Same encapsulated delivery system, higher concentration. The official step up once 0.3% is tolerated at 4 nights/week. Start at 2 nights/week and rebuild to 4.',link:'https://www.adorebeauty.com.au/p/skinceuticals/skinceuticals-pure-retinol-0-5.html'}}),
-    night:P('skin','No.6 Night Crème','Rationale','Night moisturiser — seals everything in','Occlusive night layer. Locks in all prior steps and prevents overnight moisture loss.',{durationDays:75,next:{name:'Ceramidin Skin Barrier Moisturising Cream',brand:'Dr. Jart+',role:'Night moisturiser — barrier-first upgrade',why:'Five ceramide types (NP, NG, NS, AS, AP) plus cholesterol — the most complete ceramide profile in the routine. Purpose-built for dry skin barrier repair, and a better partner for retinol nights than No.6.',link:'https://www.mecca.com/en-au/'}}),
-    excellent:P('skin','Crème Excellent','Kosé','Rich night treatment — A nights, when restocked','Rich finishing cream for non-retinol nights when extra overnight nourishment is wanted. Apply after night crème.',{flags:['optional']}),
-    eye:P('skin','Eye Crème','Rationale','Periorbital care — every night','The eye area is the thinnest skin on the face and the first to show ageing. A dedicated eye product delivers actives at a viscosity and concentration the orbital area tolerates.',{next:{name:'Peptides & Omegas Firming Eye Cream',brand:'Allies of Skin',role:'Periorbital care — active-dense upgrade',why:'Four peptide types, 1% bakuchiol (retinoid-like effects safe for the eye area), ceramide NP, squalane, CoQ10 and two forms of hyaluronic acid. Firms, brightens and de-puffs in one product.',link:'https://www.mecca.com/en-au/allies-of-skin/peptides-omegas-firming-eye-cream-I-059513/'}}),
-    olaplex:P('hair','No.6 Bond Smoother','Olaplex','Daily leave-in — bond repair + smoothing','Repairs broken disulphide bonds while smoothing and reducing frizz. Daily leave-in base before styling.'),
-    oribecreme:P('hair','Style Crème','Oribe','Daily styling crème','Light conditioning style layer — control and polish without hold or stiffness. The daily finish.'),
-    kerastase:P('hair','Elixir Ultime L\u2019Huile Légère','Kérastase','Post-wash oil — smooth + protect','Lightweight oil for frizz control, smoothness and heat protection. Spray lightly onto damp hair, mid-lengths to ends, after every wash.',{durationDays:120}),
-    colorwow:P('hair','Cocktail Bionic Tonic','Color Wow','Strengthener — optional, if hair feels dry/damaged','Strengthening treatment for damp hair, applied before oil when hair feels dry or damaged. Optional step.',{durationDays:120,flags:['optional']}),
-    curlsmith:P('hair','Bond Curl Rehab Salve','Curlsmith','Weekly pre-wash treatment','Apply to damp hair 15–30 min before washing; distribute with a wide-tooth comb. Bond repair before the weekly cleanse.',{durationDays:180}),
-    davroe:P('hair','Smooth Senses Anti-Frizz Shampoo','Davroe','Weekly cleanse','Gentle cleanse to remove buildup while smoothing. Once weekly.',{durationDays:150}),
-    oribecond:P('hair','Gold Lust Repair & Restore Conditioner','Oribe','Weekly condition','Work through mid-lengths to ends, comb through and rinse. Repair-focused weekly conditioner.',{durationDays:150}),
-    robin:P('hair','Regenerating Mask','Christophe Robin','Deep nourishment — every 2–3 weeks','Swap in place of conditioner every 2–3 weeks when hair feels dry or unruly. Adds softness and strength.',{durationDays:240,flags:['optional']}),
-    morris:P('hair','Matte Balm','Morris Motley','Weekday finish — clean sculpted look','Pea-sized amount warmed thoroughly between palms, applied back to front on dry hair, shaped with the Kent KFM3 brush. Controlled, professional, soft matte finish.',{durationDays:120}),
-    quicksand:P('hair','Quicksand','Hanz de Fuko','Pre-styler — structured volume','Emulsify and apply to roots and top on damp or dry hair. Matte grip, bold lift, dry texture.',{durationDays:120}),
-    blumaan:P('hair','Cavalier Clay','Blumaan','Weekend finish — strong sculpted hold','Apply to dry hair after Quicksand pre-style. Fingertips for separation, Kent brush for structure. High volume, durable matte hold.',{durationDays:120}),
-    seasalt:P('hair','Sea Salt Spray','—','Pre-styler — casual texture','Mist lightly on damp hair, focusing on top. Soft, airy volume with flexible hold. Pair with Morris Motley or go product-free for beachy days.',{durationDays:150,flags:['optional']}),
-    a13:P('scent','Another 13','Le Labo','Clean ambroxan musk — quiet intensity','Daily office default. Skin-like musk that reads clean and modern without projecting loudly — the weekday signature.',{durationDays:365,tags:['weekday','office','daily']}),
-    e20:P('scent','Eucalyptus 20','Le Labo','Smoky cedar and frankincense','Evening and winter nights. Resinous, smoky depth suited to cooler weather and after-dark wear.',{durationDays:365,tags:['evening','winter']}),
-    b19:P('scent','Baie 19','Le Labo','Petrichor, juniper, patchouli','Warm casual days and weekends. Rain-on-earth freshness grounded in patchouli.',{durationDays:365,tags:['weekend','casual']}),
-    aventus:P('scent','Aventus','Creed','Fruity-smoky chypre','Masculine occasions and going out. Confident projection with smoky birch under the fruit.',{durationDays:365,tags:['occasion','evening']}),
-    s33:P('scent','Santal 33','Le Labo','Signature sandalwood','Home and bedroom signature. The scent of your own space.',{durationDays:365,tags:['home','signature']})
+    sekkisei:P('skin','Sekkisei Lotion','Kosé','Hydrating toner','Herbal extracts and glycerin restore moisture balance and prep skin.',{durationDays:120}),
+    dg:P('skin','Fill+Repair Serum','Dr. Dennis Gross','Hydration + peptide workhorse','Four molecular weights of hyaluronic acid; niacinamide; four peptides; ceramides NP/AP/EOP.',{durationDays:75}),
+    vitc:P('skin','C-Firma Vitamin C','Drunk Elephant','AM antioxidant','15% L-ascorbic acid with vitamin E and ferulic acid.',{next:{name:'CE Ferulic',brand:'SkinCeuticals',role:'AM antioxidant',why:'Deepest clinical evidence of any vitamin C. Note: metallic scent.',link:'https://www.skinceuticals.com.au/skincare/facial-serums/c-e-ferulic-vitamin-c-serum/SKC_0001.html'}}),
+    serumveil:P('skin','Serum Veil Deep Repair','One by Kosé','Moisture retention booster','Rice Power No.11 improves the skin\'s ability to produce ceramides.'),
+    emulsion:P('skin','Kosé Emulsion','Kosé','Moisture seal — as needed','Light emulsion layer on days when skin feels tight.',{durationDays:120,flags:['optional']}),
+    spf:P('skin','No.3 SPF 50','Rationale','Daily UV protection — permanent','Zinc oxide plus Tinosorb S.',{durationDays:60,flags:['permanent'],link:'https://rationale.com'}),
+    oil:P('skin','Cleansing Oil','Kosé','First cleanse','Dissolves sunscreen and oil-based debris.'),
+    no4:P('skin','No.4 Cleanser','Rationale','Second cleanse','Removes oil residue and prepares skin for actives.',{link:'https://rationale.com'}),
+    no5:P('skin','No.5 Milk Concentrate','Rationale','Barrier support — phasing out','Being phased out.',{durationDays:60,flags:['removeWhenDone']}),
+    exfoliant:P('skin','6% Mandelic + 2% Lactic','Paula\'s Choice','Gentle exfoliant — 1–2×/week','Direct contact after toner, before serums. Never on retinol nights.',{durationDays:180,link:'https://www.paulaschoice.com.au/skin-perfecting-6pct-mandelic-acid-and-2pct-lactic-acid-liquid-exfoliant/1470.html'}),
+    retinol:P('skin','Retinol 0.3%','SkinCeuticals','Cell turnover + collagen','Encapsulated retinol. 4 nights/week.',{link:'https://www.skinceuticals.com.au',next:{name:'Retinol 0.5%',brand:'SkinCeuticals',role:'Strength upgrade',why:'Same delivery, higher concentration. Start 2 nights/week.',link:'https://www.adorebeauty.com.au/p/skinceuticals/skinceuticals-pure-retinol-0-5.html'}}),
+    night:P('skin','No.6 Night Crème','Rationale','Night moisturiser','Occlusive night layer.',{durationDays:75,next:{name:'Ceramidin Skin Barrier Moisturising Cream',brand:'Dr. Jart+',role:'Barrier-first upgrade',why:'Five ceramide types. Purpose-built for dry skin.',link:'https://www.mecca.com/en-au/'}}),
+    excellent:P('skin','Crème Excellent','Kosé','Rich night treatment — A nights','Apply after night crème.',{flags:['optional']}),
+    eye:P('skin','Eye Crème','Rationale','Periorbital care','Every night.',{next:{name:'Peptides & Omegas Firming Eye Cream',brand:'Allies of Skin',role:'Active-dense upgrade',why:'Four peptide types, bakuchiol, ceramide NP.',link:'https://www.mecca.com/en-au/allies-of-skin/peptides-omegas-firming-eye-cream-I-059513/'}}),
+    olaplex:P('hair','No.6 Bond Smoother','Olaplex','Bond repair + smoothing','Repairs disulphide bonds, reduces frizz.'),
+    oribecreme:P('hair','Style Crème','Oribe','Daily styling crème','Control and polish.'),
+    kerastase:P('hair','Elixir Ultime L\'Huile Légère','Kérastase','Post-wash oil','Frizz control, heat protection.',{durationDays:120}),
+    colorwow:P('hair','Cocktail Bionic Tonic','Color Wow','Strengthener — optional','Before oil on dry/damaged days.',{durationDays:120,flags:['optional']}),
+    curlsmith:P('hair','Bond Curl Rehab Salve','Curlsmith','Pre-wash treatment','15–30 min before washing.',{durationDays:180}),
+    davroe:P('hair','Smooth Senses Shampoo','Davroe','Weekly cleanse','Gentle cleanse.',{durationDays:150}),
+    oribecond:P('hair','Gold Lust Conditioner','Oribe','Weekly condition','Mid-lengths to ends.',{durationDays:150}),
+    robin:P('hair','Regenerating Mask','Christophe Robin','Deep nourishment — every 2–3 weeks','Swap for conditioner.',{durationDays:240,flags:['optional']}),
+    morris:P('hair','Matte Balm','Morris Motley','Weekday finish','Back to front, Kent KFM3 brush.',{durationDays:120}),
+    quicksand:P('hair','Quicksand','Hanz de Fuko','Pre-styler — structured volume','Roots and top.',{durationDays:120}),
+    blumaan:P('hair','Cavalier Clay','Blumaan','Weekend finish','After Quicksand.',{durationDays:120}),
+    seasalt:P('hair','Sea Salt Spray','—','Casual texture','Mist on damp hair.',{durationDays:150,flags:['optional']}),
+    a13:P('scent','Another 13','Le Labo','Clean ambroxan musk','Weekday signature.',{durationDays:365,tags:['weekday','office','daily']}),
+    e20:P('scent','Eucalyptus 20','Le Labo','Smoky cedar and frankincense','Evening and winter.',{durationDays:365,tags:['evening','winter']}),
+    b19:P('scent','Baie 19','Le Labo','Petrichor, juniper, patchouli','Weekend casual.',{durationDays:365,tags:['weekend','casual']}),
+    aventus:P('scent','Aventus','Creed','Fruity-smoky chypre','Occasions.',{durationDays:365,tags:['occasion','evening']}),
+    s33:P('scent','Santal 33','Le Labo','Signature sandalwood','Home.',{durationDays:365,tags:['home','signature']})
   },
-  skin:{
-    am:{name:'Morning',steps:[{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'vitc',wait:90},{p:'serumveil',wait:60},{p:'emulsion',wait:30},{p:'spf',wait:0}]},
-    a:{name:'Evening A — Recovery',steps:[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'excellent',wait:0},{p:'eye',wait:0}]},
-    b:{name:'Evening B — Retinol',steps:[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'retinol',wait:300},{p:'night',wait:0},{p:'eye',wait:0}]},
-    c:{name:'Evening C — Exfoliation',steps:[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'exfoliant',wait:120},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'eye',wait:0}]},
-    refresh:{name:'Refresh & Go',steps:[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'serumveil',wait:60},{p:'spf',wait:0}]}
-  },
-  hair:{
-    daily:{name:'Daily base',steps:[{p:'olaplex',wait:0},{p:'oribecreme',wait:0}]},
-    postwash:{name:'Post-wash',steps:[{p:'colorwow',wait:0},{p:'kerastase',wait:0}]},
-    weekly:{name:'Weekly ritual — Sunday',steps:[{p:'curlsmith',wait:1800},{p:'davroe',wait:0},{p:'oribecond',wait:0},{p:'robin',wait:0}]},
-    looks:[
-      {id:'weekday',name:'Weekday — Clean & sculpted',desc:'Controlled, professional, soft matte finish',steps:[{p:'morris',wait:0}]},
-      {id:'weekend',name:'Weekend — Bold & textured',desc:'High volume, dry texture, durable matte hold',steps:[{p:'quicksand',wait:0},{p:'blumaan',wait:0}]},
-      {id:'beachy',name:'Casual — Beachy texture',desc:'Soft, airy volume with flexible hold',steps:[{p:'seasalt',wait:0}]}
-    ],
-    washDay:0
-  }
+  routines:[
+    R('skin-am','skin','morning','Morning',[0,1,2,3,4,5,6],[{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'vitc',wait:90},{p:'serumveil',wait:60},{p:'emulsion',wait:30},{p:'spf',wait:0}]),
+    R('skin-a','skin','evening','Evening A — Recovery',[0,4],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'excellent',wait:0},{p:'eye',wait:0}]),
+    R('skin-b','skin','evening','Evening B — Retinol',[2,3,5,6],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'retinol',wait:300},{p:'night',wait:0},{p:'eye',wait:0}]),
+    R('skin-c','skin','evening','Evening C — Exfoliation',[1],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'exfoliant',wait:120},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'eye',wait:0}]),
+    R('skin-refresh','skin','morning','Refresh & Go',[],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'serumveil',wait:60},{p:'spf',wait:0}]),
+    R('hair-morning','hair','morning','Daily base',[1,2,3,4,5,6],[{p:'olaplex',wait:0},{p:'oribecreme',wait:0}]),
+    R('hair-sunday','hair','morning','Sunday ritual',[0],[{p:'curlsmith',wait:1800},{p:'davroe',wait:0},{p:'oribecond',wait:0},{p:'robin',wait:0},{p:'kerastase',wait:0},{p:'olaplex',wait:0},{p:'oribecreme',wait:0}]),
+    R('hair-evening','hair','evening','Evening Hair',[0,1,2,3,4,5,6],[{p:'olaplex',wait:0}]),
+    R('hair-look-weekday','hair','morning','Look — Weekday',[],[{p:'morris',wait:0}]),
+    R('hair-look-weekend','hair','morning','Look — Weekend',[],[{p:'quicksand',wait:0},{p:'blumaan',wait:0}]),
+    R('hair-look-beachy','hair','morning','Look — Beachy',[],[{p:'seasalt',wait:0}])
+  ],
+  hairLooks:[
+    {id:'hair-look-weekday',name:'Weekday — Clean & sculpted',desc:'Controlled, professional, soft matte finish'},
+    {id:'hair-look-weekend',name:'Weekend — Bold & textured',desc:'High volume, dry texture, durable matte hold'},
+    {id:'hair-look-beachy',name:'Casual — Beachy texture',desc:'Soft, airy volume with flexible hold'}
+  ]
 };
 
-/* ════════════════════ STATE + MIGRATION ════════════════════ */
-let DB;
-try{ const s=localStorage.getItem('stack_v1'); DB = s? migrate(JSON.parse(s)) : structuredClone(SEED);}catch(e){ DB = structuredClone(SEED); }
+/* ══════════════════════════════════════════════
+   MIGRATION
+══════════════════════════════════════════════ */
 function migrate(d){
-  if(!d.v||d.v<2){
-    Object.values(d.products||{}).forEach(p=>{if(!p.cat)p.cat=guessCat(p);if(p.active===undefined)p.active=true;if(!p.tags)p.tags=[];});
-    (d.scents||[]).forEach(s=>{d.products[s.id]=P('scent',s.name,s.brand,s.desc||'',s.notes||'',{tags:s.tags||[],link:s.link||'',durationDays:365});});
-    delete d.scents; d.v=2;
-  }
-  if(d.v<3){
-    if(!d.skin.c){
-      d.skin.c=structuredClone(SEED.skin.c);
-      if(d.skin.a){
-        d.skin.a.steps=d.skin.a.steps.filter(s=>s.p!=='exfoliant');
-        if((d.skin.a.name||'').includes('No retinol'))d.skin.a.name='Evening A — Recovery';
-      }
-      if(d.settings.schedule[1]==='A')d.settings.schedule[1]='C';
+  // v1/v2/v3 → v4
+  if(!d.v||d.v<4){
+    // Rebuild routines array from old skin/hair objects
+    d.routines=structuredClone(SEED.routines);
+    // Try to preserve old routine names
+    if(d.skin){
+      if(d.skin.am)d.routines.find(r=>r.id==='skin-am').name=d.skin.am.name||'Morning';
+      if(d.skin.a)d.routines.find(r=>r.id==='skin-a').name=d.skin.a.name||'Evening A — Recovery';
+      if(d.skin.b)d.routines.find(r=>r.id==='skin-b').name=d.skin.b.name||'Evening B — Retinol';
+      if(d.skin.c)d.routines.find(r=>r.id==='skin-c').name=d.skin.c.name||'Evening C — Exfoliation';
     }
-    if(d.products.exfoliant){d.products.exfoliant.role='Gentle exfoliant — C nights only, 1–2×/week';}
-    d.v=3;
+    delete d.skin; delete d.hair;
+    d.hairLooks=structuredClone(SEED.hairLooks);
+    d.settings={syncUrl:d.settings?.syncUrl||'',pin:d.settings?.pin||''};
+    Object.values(d.products||{}).forEach(p=>{
+      if(!p.cat)p.cat='skin';if(p.active===undefined)p.active=true;if(!p.tags)p.tags=[];
+    });
+    d.v=4;
   }
-  if(d.settings&&d.settings.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
+  if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
-function guessCat(p){const hairBrands=['Olaplex','Oribe','Kérastase','Color Wow','Curlsmith','Davroe','Christophe Robin','Morris Motley','Hanz de Fuko','Blumaan'];return hairBrands.includes(p.brand)?'hair':'skin';}
+function guessCat(p){const h=['Olaplex','Oribe','Kérastase','Color Wow','Curlsmith','Davroe','Christophe Robin','Morris Motley','Hanz de Fuko','Blumaan'];return h.includes(p.brand)?'hair':'skin';}
 
-let UI={tab:'today',page:null,skinView:null,hairLook:null,modal:null,invCat:'skin'};
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let DB;
+try{const s=localStorage.getItem('stack_v1');DB=s?migrate(JSON.parse(s)):structuredClone(SEED);}catch(e){DB=structuredClone(SEED);}
+
+let UI={
+  tab:'today',
+  setupPage:null, // null=menu, or 'evening-schedule','morning-schedule','routines','routine-edit','looks','inventory','sync','prompt','backup'
+  editRoutineId:null,
+  invCat:'skin',
+  hairLook:null,
+  page:null, // 'fullday'
+  modal:null
+};
 let timerStart=null,timerInt=null;
 
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
 function save(){DB.updatedAt=Date.now();localStorage.setItem('stack_v1',JSON.stringify(DB));schedSync();}
-function autoSkinView(){const h=new Date().getHours();if(h<12)return 'am';return todayPM();}
-function todayPM(){if(!DB)return 'a';const v=DB.settings.schedule[new Date().getDay()];return v==='A'?'a':v==='B'?'b':'c';}
-function dayName(i){return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i]}
-function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function fmtWait(s){if(!s)return null;if(s>=60)return (s/60)+' min';return s+' sec';}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function dayName(i){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i];}
+function dayShort(i){return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];}
+function fmtWait(s){if(!s)return null;return s>=60?(s/60)+' min':s+' sec';}
 function daysLeft(p){if(!p.durationDays)return null;return Math.round(p.durationDays-(Date.now()-p.restockedAt)/86400000);}
 function lowStock(){return Object.entries(DB.products).filter(([id,p])=>{if(!p.active)return false;const d=daysLeft(p);return d!==null&&d<=14;});}
 function pName(id){const p=DB.products[id];return p?p.name:'?';}
-function activeSteps(steps){return steps.filter(s=>{const p=DB.products[s.p];return p&&p.active;});}
+function activeSteps(steps){return(steps||[]).filter(s=>{const p=DB.products[s.p];return p&&p.active;});}
 function scents(){return Object.entries(DB.products).filter(([id,p])=>p.cat==='scent'&&p.active).map(([id,p])=>({id,...p}));}
-function pmTitle(k){return k==='a'?'Recovery night':k==='b'?'Retinol night':'Exfoliation night';}
-function pmChip(k){return k==='b'?'c-plum':k==='c'?'c-amber':'c-moss';}
-UI.skinView=autoSkinView();
+function routineById(id){return DB.routines.find(r=>r.id===id);}
 
-/* ════════════════════ SYNC ════════════════════ */
+// Get the routine assigned to a given day/type/cat (first match wins)
+function routineForDay(day,type,cat){
+  return DB.routines.find(r=>r.cat===cat&&r.type===type&&r.days.includes(day))||null;
+}
+function routinesOf(cat,type){return DB.routines.filter(r=>r.cat===cat&&r.type===type);}
+
+function manageBtn(){return`<div class="manage-link"><button class="btn ghost sm" onclick="UI.tab='setup';UI.setupPage=null;render()">Manage in Setup →</button></div>`;}
+
+/* ══════════════════════════════════════════════
+   SYNC
+══════════════════════════════════════════════ */
 function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
 let syncTimer=null;
-function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,2500);}
+function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPushSilent,2500);}
+async function syncPushSilent(){if(!DB.settings.syncUrl)return;try{await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});}catch(e){}}
 async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
 async function syncPull(force=false){
   if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}
   let r;
   try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});}
-  catch(e){alert('Pull failed — network/CORS error: '+(e.message||e));return;}
-  if(!r.ok){alert('Pull failed — server returned HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
+  catch(e){alert('Pull failed — network error: '+(e.message||e));return;}
+  if(!r.ok){alert('Pull failed — HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
   let remote;
-  try{remote=await r.json();}
-  catch(e){alert('Pull failed — server response was not valid JSON: '+(e.message||e));return;}
-  try{
-    if(!remote){alert('Nothing stored on server yet.');return;}
-    if(force){
-      const localT=new Date(DB.updatedAt||0).toISOString();
-      const remoteT=new Date(remote.updatedAt||0).toISOString();
-      const sampleKey=Object.keys(remote.products||{})[0];
-      const sampleName=sampleKey?remote.products[sampleKey].name:'?';
-      DB=migrate(remote);
-      localStorage.setItem('stack_v1',JSON.stringify(DB));
-      render();
-      alert('Pulled.\nLocal was: '+localT+'\nServer was: '+remoteT+'\nFirst product on server: '+sampleName);
-    }else if(remote.updatedAt>(DB.updatedAt||0)){
-      DB=migrate(remote);
-      localStorage.setItem('stack_v1',JSON.stringify(DB));
-      render();
-    }
-  }catch(e){alert('Pull fetched OK but applying data failed: '+(e.message||e));}
+  try{remote=await r.json();}catch(e){alert('Pull failed — bad JSON');return;}
+  if(!remote){alert('Nothing on server yet.');return;}
+  if(force||remote.updatedAt>(DB.updatedAt||0)){
+    DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
+  }
 }
+async function autoPull(){
+  if(!DB.settings.syncUrl)return;
+  try{
+    const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});
+    if(!r.ok)return;
+    const remote=await r.json();
+    if(remote&&remote.updatedAt>(DB.updatedAt||0)&&!UI.modal){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){autoPull();}
+  else{
+    clearTimeout(syncTimer);syncTimer=null;
+    if(DB.settings.syncUrl){try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}}
+  }
+});
 
-/* ════════════════════ TIMER ════════════════════ */
-function toggleTimer(){const f=document.getElementById('fab');
+/* ══════════════════════════════════════════════
+   TIMER
+══════════════════════════════════════════════ */
+function toggleTimer(){
+  const f=document.getElementById('fab');
   if(timerStart){clearInterval(timerInt);timerStart=null;f.innerHTML='⏱';}
   else{timerStart=Date.now();f.innerHTML='⏱ <span class="t">0:00</span>';
-    timerInt=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);const m=Math.floor(s/60);f.querySelector('.t').textContent=m+':'+String(s%60).padStart(2,'0');},1000);}}
+    timerInt=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);const m=Math.floor(s/60);f.querySelector('.t').textContent=m+':'+String(s%60).padStart(2,'0');},1000);}
+}
 
-/* ════════════════════ RENDER ════════════════════ */
+/* ══════════════════════════════════════════════
+   RENDER
+══════════════════════════════════════════════ */
 function render(){
   const app=document.getElementById('app');
-  if(UI.page==='fullday') app.innerHTML=vFullDay();
-  else if(UI.tab==='today') app.innerHTML=vToday();
-  else if(UI.tab==='skin') app.innerHTML=vSkin();
-  else if(UI.tab==='hair') app.innerHTML=vHair();
-  else if(UI.tab==='scent') app.innerHTML=vScent();
-  else app.innerHTML=vSetup();
+  if(UI.page==='fullday')app.innerHTML=vFullDay();
+  else if(UI.tab==='today')app.innerHTML=vToday();
+  else if(UI.tab==='skin')app.innerHTML=vSkin();
+  else if(UI.tab==='hair')app.innerHTML=vHair();
+  else if(UI.tab==='scent')app.innerHTML=vScent();
+  else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
   renderTabs();renderModal();window.scrollTo(0,0);
 }
 function renderTabs(){
   const t=[['today','⌂','Today'],['skin','✦','Skin'],['hair','〰','Hair'],['scent','◈','Scent'],['setup','⚙','Setup']];
-  document.getElementById('tabs').innerHTML=t.map(([k,ic,l])=>`<button class="tab ${UI.tab===k&&!UI.page?'active':''}" onclick="UI.page=null;UI.tab='${k}';UI.skinView=autoSkinView();render()"><span class="ic">${ic}</span>${l}</button>`).join('');
+  document.getElementById('tabs').innerHTML=t.map(([k,ic,l])=>`<button class="tab ${UI.tab===k&&!UI.page?'active':''}" onclick="navTab('${k}')"><span class="ic">${ic}</span>${l}</button>`).join('');
 }
-function manageBtn(){return `<div class="manage-link"><button class="btn ghost sm" onclick="UI.tab='setup';render()">Manage in Setup →</button></div>`;}
+function navTab(k){UI.page=null;UI.tab=k;UI.setupPage=null;render();}
 
-/* ── TODAY ── */
+/* ══════════════════════════════════════════════
+   TODAY
+══════════════════════════════════════════════ */
 function vToday(){
   const now=new Date(),h=now.getHours(),day=now.getDay();
-  const isAM=h<12,pm=todayPM();
-  const sched=DB.settings.schedule;
-  const strip=[1,2,3,4,5,6,0].map(d=>`<div class="d ${sched[d].toLowerCase()} ${d===day?'today':''}">${'SMTWTFS'[d]}<span>${sched[d]}</span></div>`).join('');
-  const heroKey=isAM?'am':pm;
-  const heroR=DB.skin[heroKey];
-  const heroTitle=isAM?'Morning routine':pmTitle(pm);
-  const st=activeSteps(heroR.steps);
-  const mins=Math.max(3,Math.round(st.reduce((a,s)=>a+(s.wait||0),0)/60)+st.length);
-  const isWash=day===DB.hair.washDay;
-  const lookRec=day===0||day===6?'weekend':'weekday';
-  const look=DB.hair.looks.find(l=>l.id===(UI.hairLook||lookRec))||DB.hair.looks[0];
+  const isAM=h<12;
+  const skinR=routineForDay(day,isAM?'morning':'evening','skin');
+  const hairR=routineForDay(day,isAM?'morning':'evening','hair');
   const scent=suggestScent();
   const low=lowStock();
-  return `
+  const skinSteps=skinR?activeSteps(skinR.steps):[];
+  const mins=Math.max(3,Math.round(skinSteps.reduce((a,s)=>a+(s.wait||0),0)/60)+skinSteps.length);
+
+  // day strip — show skin evening routine name per day
+  const strip=[1,2,3,4,5,6,0].map(d=>{
+    const r=routineForDay(d,'evening','skin');
+    const label=r?r.name.replace('Evening ','').replace('— ','').slice(0,3):'-';
+    return`<div class="d ${d===day?'today':''}">${'SMTWTFS'[d]}<span>${label}</span></div>`;
+  }).join('');
+
+  return`
   <div class="top"><div class="wordmark">The <em>Stack</em></div>
   <div class="date"><strong>${dayName(day)} ${isAM?'morning':'evening'}</strong>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}</div></div>
   <div class="strip">${strip}</div>
   <button class="hero" onclick="UI.page='fullday';render()">
-    <p class="hero-eyebrow">Up next · ${isAM?'AM':'Routine '+pm.toUpperCase()}</p>
-    <h2>${heroTitle}</h2>
-    <p class="sub">${st.length} skin steps + hair & scent · ~${mins} min</p>
+    <p class="hero-eyebrow">Up next · ${isAM?'Morning':'Evening'}</p>
+    <h2>${skinR?esc(skinR.name):'No routine set'}</h2>
+    <p class="sub">${skinSteps.length} skin steps + hair & scent · ~${mins} min</p>
     <span class="btn">Open routine →</span>
   </button>
-  ${low.length?`<div class="sec-label">Running low</div>`+low.map(([id,p])=>`<button class="alert" onclick="openProduct('${id}')"><span>⏳</span><div><b>${esc(p.name)}</b> — est. ${Math.max(0,daysLeft(p))} days left${p.next?` · ${esc(p.next.name)} queued`:p.flags.includes('removeWhenDone')?' · removing from routine':''}</div></button>`).join(''):''}
+  ${low.length?`<div class="sec-label">Running low</div>`+low.map(([id,p])=>`<button class="alert" onclick="openProduct('${id}')"><span>⏳</span><div><b>${esc(p.name)}</b> — ~${Math.max(0,daysLeft(p))} days left${p.next?` · ${esc(p.next.name)} queued`:''}</div></button>`).join(''):''}
   <div class="sec-label">Today</div>
-  <button class="row" onclick="UI.tab='skin';UI.skinView='${heroKey}';render()">
+  <button class="row" onclick="UI.tab='skin';render()">
     <div class="row-icon ri-skin">${isAM?'☀️':'🌙'}</div>
-    <div class="row-body"><div class="row-title">Skin — ${isAM?esc(DB.skin.am.name):esc(DB.skin[pm].name)}</div>
-    <div class="row-sub">${st.slice(0,3).map(s=>pName(s.p)).join(' · ')}…</div></div>
-    <span class="chip ${isAM?'c-moss':pmChip(pm)}">Open</span>
+    <div class="row-body"><div class="row-title">Skin — ${skinR?esc(skinR.name):'None set'}</div>
+    <div class="row-sub">${skinSteps.slice(0,3).map(s=>pName(s.p)).join(' · ')}${skinSteps.length>3?'…':''}</div></div>
+    <span class="chip c-moss">Open</span>
   </button>
   <button class="row" onclick="UI.tab='hair';render()">
     <div class="row-icon ri-hair">〰️</div>
-    <div class="row-body"><div class="row-title">Hair — ${isWash?'Wash day':'Normal day'}</div>
-    <div class="row-sub">${isWash?'Ritual + post-wash + ':''}${activeSteps(DB.hair.daily.steps).map(s=>pName(s.p)).join(' · ')} · ${esc(look.name.split(' — ')[0])}</div></div>
+    <div class="row-body"><div class="row-title">Hair — ${hairR?esc(hairR.name):'None set'}</div>
+    <div class="row-sub">${hairR?activeSteps(hairR.steps).slice(0,3).map(s=>pName(s.p)).join(' · '):'—'}</div></div>
     <span class="chip c-moss">Open</span>
   </button>
   <button class="row" onclick="UI.tab='scent';render()">
     <div class="row-icon ri-scent">◈</div>
     <div class="row-body"><div class="row-title">Scent — ${scent?esc(scent.name):'Pick one'}</div>
-    <div class="row-sub">${scent?esc(scent.brand)+' · suggested for '+(isAM?'today':'tonight'):''}</div></div>
+    <div class="row-sub">${scent?esc(scent.brand)+' · suggested':'—'}</div></div>
     <span class="chip c-amber">Change</span>
   </button>
   <div class="sec-label">Quick start</div>
-  <button class="row" onclick="UI.tab='skin';UI.skinView='refresh';render()">
+  <button class="row" onclick="openRefresh()">
     <div class="row-icon ri-skin">✨</div>
     <div class="row-body"><div class="row-title">Refresh & Go</div>
-    <div class="row-sub">Post-shower reset before going out — skin, hair & scent</div></div>
+    <div class="row-sub">Post-shower reset before going out</div></div>
     <span class="chip c-mute">Open</span>
   </button>`;
 }
+function openRefresh(){
+  const r=routineById('skin-refresh');
+  if(r){UI.modal={type:'routine-view',id:'skin-refresh'};render();}
+}
 
-/* ── FULL DAY VIEW ── */
+/* ══════════════════════════════════════════════
+   FULL DAY
+══════════════════════════════════════════════ */
 function vFullDay(){
   const now=new Date(),h=now.getHours(),day=now.getDay();
-  const isAM=h<12,pm=todayPM();
-  const heroKey=isAM?'am':pm;
-  const isWash=day===DB.hair.washDay;
-  const lookRec=day===0||day===6?'weekend':'weekday';
-  const look=DB.hair.looks.find(l=>l.id===(UI.hairLook||lookRec))||DB.hair.looks[0];
+  const isAM=h<12;
+  const type=isAM?'morning':'evening';
+  const skinR=routineForDay(day,type,'skin');
+  const hairR=routineForDay(day,type,'hair');
   const scent=suggestScent();
-  let n=2;
-  let hairBlock='';
-  if(isAM&&isWash){hairBlock=`<div class="sec-label">2 · Hair — weekly ritual (in shower)</div>${stepsHTML(DB.hair.weekly.steps)}
-  <div class="sec-label">3 · Hair — post-wash</div>${stepsHTML(DB.hair.postwash.steps)}
-  <div class="sec-label">4 · Hair — daily base + look</div>${stepsHTML(DB.hair.daily.steps.concat(look.steps))}`;n=5;}
-  else if(isAM){hairBlock=`<div class="sec-label">2 · Hair — daily base + ${esc(look.name.split(' — ')[0])}</div>${stepsHTML(DB.hair.daily.steps.concat(look.steps))}`;n=3;}
-  return `<button class="back" onclick="UI.page=null;render()">‹ Back</button>
+  let n=1;
+  return`<button class="back" onclick="UI.page=null;render()">‹ Back</button>
   <h1 class="page-title">${dayName(day)} ${isAM?'morning':'evening'}</h1>
   <p class="page-sub">Everything for right now, in order</p>
-  <div class="sec-label">1 · Skin — ${esc(DB.skin[heroKey].name)}</div>
-  ${stepsHTML(DB.skin[heroKey].steps)}
-  ${hairBlock}
+  ${skinR?`<div class="sec-label">${n++} · Skin — ${esc(skinR.name)}</div>${stepsHTML(skinR.steps)}`:''}
+  ${hairR?`<div class="sec-label">${n++} · Hair — ${esc(hairR.name)}</div>${stepsHTML(hairR.steps)}`:''}
   ${scent?`<div class="sec-label">${n} · Scent</div>
   <button class="scent-card" onclick="openProduct('${scent.id}')">
     <div class="nm">${esc(scent.name)}</div><div class="br">${esc(scent.brand)}</div>
     <div class="ds">${esc(scent.role)}</div>
-  </button>`:''}
-  <div style="padding:8px 22px"><button class="btn ghost sm" onclick="UI.tab='scent';UI.page=null;render()">Change scent →</button></div>`;
+  </button>
+  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="UI.tab='scent';UI.page=null;render()">Change scent →</button></div>`:''}`;
 }
 
-/* ── SKIN ── */
+/* ══════════════════════════════════════════════
+   SKIN TAB
+══════════════════════════════════════════════ */
 function vSkin(){
-  const v=UI.skinView||'am';
-  const r=DB.skin[v];
-  const segs=[['am','AM'],['a','Eve A'],['b','Eve B'],['c','Eve C'],['refresh','Refresh']];
-  let extra='';
-  if(v==='refresh'){
-    const sc=suggestScent(true);
-    extra=`<div class="sec-label">Finish with</div>
-    <button class="row" onclick="openLookPicker()"><div class="row-icon ri-hair">〰️</div><div class="row-body"><div class="row-title">Hair look</div><div class="row-sub">${esc((DB.hair.looks.find(l=>l.id===UI.hairLook)||DB.hair.looks[0]).name)}</div></div><span class="chip c-mute">Pick</span></button>
-    <button class="row" onclick="UI.tab='scent';render()"><div class="row-icon ri-scent">◈</div><div class="row-body"><div class="row-title">Scent</div><div class="row-sub">${sc?esc(sc.brand)+' '+esc(sc.name):'Pick one'}</div></div><span class="chip c-amber">Pick</span></button>`;
-  }
-  return `<h1 class="page-title">Skin</h1><p class="page-sub">Tap any step for details, notes & swaps</p>
-  <div class="seg">${segs.map(([k,l])=>`<button class="${v===k?'on':''}" onclick="UI.skinView='${k}';render()">${l}</button>`).join('')}</div>
-  ${['a','b','c'].includes(v)?`<p class="page-sub" style="padding-top:0">${schedDaysFor(v.toUpperCase())||'No nights assigned'} · configure in Setup</p>`:''}
-  ${stepsHTML(r.steps)}
-  ${extra}
+  const day=new Date().getDay(),h=new Date().getHours(),isAM=h<12;
+  const skinRoutines=DB.routines.filter(r=>r.cat==='skin');
+  // default to today's routine
+  const todayR=routineForDay(day,isAM?'morning':'evening','skin');
+  const selId=UI.skinSelId||(todayR?todayR.id:skinRoutines[0]?.id);
+  UI.skinSelId=selId;
+  const r=routineById(selId);
+  return`<h1 class="page-title">Skin</h1><p class="page-sub">Tap any step for details, notes & swaps</p>
+  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${skinRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap" onclick="UI.skinSelId='${rt.id}';render()">${esc(rt.name.replace('Evening ','').replace('Morning','AM'))}</button>`).join('')}</div>
+  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned to any day'}</p>${stepsHTML(r.steps)}`:
+  '<div class="empty">Select a routine above</div>'}
   ${manageBtn()}`;
 }
-function schedDaysFor(ab){const s=DB.settings.schedule;return [1,2,3,4,5,6,0].filter(d=>s[d]===ab).map(d=>dayName(d).slice(0,3)).join(' · ');}
-function stepsHTML(steps){
-  const act=activeSteps(steps);
-  let h='<div class="steps">';
-  act.forEach((s,i)=>{
-    const p=DB.products[s.p];
-    const dl=daysLeft(p);
-    h+=`<button class="step" onclick="openProduct('${s.p}')">
-      <span class="step-num">${i+1}</span>
-      <div class="step-body">
-        <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
-        <div class="step-note">${esc(p.role)}</div>
-        ${p.next?`<span class="swap-pill">→ ${esc(p.next.brand)} ${esc(p.next.name)} next</span>`:''}
-        ${p.flags.includes('removeWhenDone')?`<div class="note-flag">Remove when finished — no replacement</div>`:''}
-        ${dl!==null&&dl<=14?`<div class="note-flag" style="color:var(--amber)">~${Math.max(0,dl)} days left</div>`:''}
-      </div><span class="step-arrow">›</span></button>`;
-    if(s.wait&&i<act.length-1) h+=`<div class="wait"><span>wait ${fmtWait(s.wait)}</span></div>`;
-  });
-  if(!act.length) h+='<div class="empty">No active steps</div>';
-  return h+'</div>';
-}
 
-/* ── HAIR ── */
+/* ══════════════════════════════════════════════
+   HAIR TAB
+══════════════════════════════════════════════ */
 function vHair(){
-  const day=new Date().getDay();
-  const isWash=day===DB.hair.washDay;
-  const lookRec=day===0||day===6?'weekend':'weekday';
+  const day=new Date().getDay(),h=new Date().getHours(),isAM=h<12;
+  const hairRoutines=DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look'));
+  const todayR=routineForDay(day,isAM?'morning':'evening','hair');
+  const selId=UI.hairSelId||(todayR?todayR.id:hairRoutines[0]?.id);
+  UI.hairSelId=selId;
+  const r=routineById(selId);
+  const looks=DB.hairLooks||[];
+  const lookRec=day===0||day===6?'hair-look-weekend':'hair-look-weekday';
   const selLook=UI.hairLook||lookRec;
-  const look=DB.hair.looks.find(l=>l.id===selLook)||DB.hair.looks[0];
-  return `<h1 class="page-title">Hair</h1>
-  <p class="page-sub">${isWash?'Wash day — full ritual below':'Normal day · wash day is '+dayName(DB.hair.washDay)}</p>
-  ${isWash?`<div class="sec-label">1 · Weekly ritual (in shower)</div>${stepsHTML(DB.hair.weekly.steps)}
-  <div class="sec-label">2 · Post-wash (damp hair)</div>${stepsHTML(DB.hair.postwash.steps)}`:''}
-  <div class="sec-label">${isWash?'3 · ':''}Daily base</div>
-  ${stepsHTML(DB.hair.daily.steps)}
+  const lookR=routineById(selLook);
+  return`<h1 class="page-title">Hair</h1><p class="page-sub">Tap any step for details</p>
+  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${hairRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap" onclick="UI.hairSelId='${rt.id}';render()">${esc(rt.name)}</button>`).join('')}</div>
+  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned to any day'}</p>${stepsHTML(r.steps)}`:
+  '<div class="empty">Select a routine above</div>'}
   <div class="sec-label">Finish — pick your look</div>
-  <div class="seg">${DB.hair.looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.hairLook='${l.id}';render()">${esc(l.name.split(' — ')[0])}</button>`).join('')}</div>
-  <p class="page-sub" style="padding-top:0">${esc(look.desc)}${selLook===lookRec?' · recommended today':''}</p>
-  ${stepsHTML(look.steps)}
+  <div class="seg">${looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.hairLook='${l.id}';render()">${esc(l.name.split(' — ')[0])}</button>`).join('')}</div>
+  ${lookR?`<p class="page-sub" style="padding-top:0">${esc((looks.find(l=>l.id===selLook)||{}).desc||'')}${selLook===lookRec?' · recommended today':''}</p>${stepsHTML(lookR.steps)}`:''}
   ${manageBtn()}`;
 }
-function openLookPicker(){UI.modal={type:'lookpick'};render();}
 
-/* ── SCENT ── */
+/* ══════════════════════════════════════════════
+   SCENT TAB
+══════════════════════════════════════════════ */
 function suggestScent(goingOut){
   const day=new Date().getDay(),h=new Date().getHours();
   const sc=scents();
@@ -484,76 +495,365 @@ function suggestScent(goingOut){
 function vScent(){
   const sug=suggestScent();
   const sc=scents();
-  return `<h1 class="page-title">Scent</h1>
+  return`<h1 class="page-title">Scent</h1>
   <p class="page-sub">${sug?'Suggested now: '+esc(sug.brand)+' '+esc(sug.name):'Add scents below'}</p>
   ${sc.map(s=>`<button class="scent-card" onclick="openProduct('${s.id}')" style="${sug&&sug.id===s.id?'border-color:var(--amber)':''}">
     <div class="nm">${esc(s.name)} ${sug&&sug.id===s.id?'<span class="chip c-amber" style="float:right">Today</span>':''}</div>
-    <div class="br">${esc(s.brand)}</div>
-    <div class="ds">${esc(s.role)}</div>
+    <div class="br">${esc(s.brand)}</div><div class="ds">${esc(s.role)}</div>
     <div class="tags">${s.tags.map(t=>`<span class="chip c-mute">${esc(t)}</span>`).join('')}</div>
   </button>`).join('')||'<div class="empty">No active scents</div>'}
   <div style="padding:8px 22px"><button class="btn ghost full" onclick="newProduct('scent')">+ Add scent</button></div>
   ${manageBtn()}`;
 }
 
-/* ── SETUP ── */
-function vSetup(){
-  const cat=UI.invCat;
-  const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
-  return `<h1 class="page-title">Setup</h1><p class="page-sub">Routines, schedule, inventory & sync</p>
-  <div class="sec-label">Evening schedule</div>
+/* ══════════════════════════════════════════════
+   STEPS HTML (shared)
+══════════════════════════════════════════════ */
+function stepsHTML(steps){
+  const act=activeSteps(steps);
+  if(!act.length)return'<div class="steps"><div class="empty">No active steps</div></div>';
+  let h='<div class="steps">';
+  act.forEach((s,i)=>{
+    const p=DB.products[s.p],dl=daysLeft(p);
+    h+=`<button class="step" onclick="openProduct('${s.p}')">
+      <span class="step-num">${i+1}</span>
+      <div class="step-body">
+        <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
+        <div class="step-note">${esc(p.role)}</div>
+        ${p.next?`<span class="swap-pill">→ ${esc(p.next.brand)} ${esc(p.next.name)} next</span>`:''}
+        ${p.flags.includes('removeWhenDone')?`<div class="note-flag">Remove when finished</div>`:''}
+        ${dl!==null&&dl<=14?`<div class="note-flag" style="color:var(--amber)">~${Math.max(0,dl)} days left</div>`:''}
+      </div><span class="step-arrow">›</span></button>`;
+    if(s.wait&&i<act.length-1)h+=`<div class="wait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+  });
+  return h+'</div>';
+}
+
+/* ══════════════════════════════════════════════
+   SETUP ROUTER
+══════════════════════════════════════════════ */
+function vSetupRouter(){
+  const p=UI.setupPage;
+  if(!p)return vSetupMenu();
+  if(p==='evening-schedule')return vSchedulePage('evening');
+  if(p==='morning-schedule')return vSchedulePage('morning');
+  if(p==='routines')return vRoutinesPage();
+  if(p==='routine-edit')return vRoutineEditPage();
+  if(p==='looks')return vLooksPage();
+  if(p==='inventory')return vInventoryPage();
+  if(p==='sync')return vSyncPage();
+  if(p==='prompt')return vPromptPage();
+  if(p==='backup')return vBackupPage();
+  return vSetupMenu();
+}
+function setupBack(page){UI.setupPage=page||null;render();}
+
+function vSetupMenu(){
+  const low=lowStock().length;
+  const allRoutines=DB.routines.filter(r=>r.cat!=='skin'||!r.id.startsWith('skin-refresh'));
+  return`<h1 class="page-title">Setup</h1><p class="page-sub">Tap to configure</p>
+  <div class="card">
+    <button class="menu-item" onclick="UI.setupPage='evening-schedule';render()">
+      <div class="menu-icon" style="background:rgba(160,139,192,.14)">🌙</div>
+      <div class="menu-body"><div class="menu-title">Evening Schedule</div>
+      <div class="menu-sub">Skin & hair routine per day</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='morning-schedule';render()">
+      <div class="menu-icon" style="background:rgba(143,168,133,.14)">☀️</div>
+      <div class="menu-body"><div class="menu-title">Morning Schedule</div>
+      <div class="menu-sub">Skin & hair routine per day</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='routines';render()">
+      <div class="menu-icon" style="background:rgba(217,160,91,.13)">📋</div>
+      <div class="menu-body"><div class="menu-title">Edit Routines</div>
+      <div class="menu-sub">${allRoutines.length} routines · add, copy, remove</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='looks';render()">
+      <div class="menu-icon" style="background:rgba(143,168,133,.14)">〰️</div>
+      <div class="menu-body"><div class="menu-title">Hair Looks</div>
+      <div class="menu-sub">${(DB.hairLooks||[]).length} looks configured</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+  </div>
+  <div class="card">
+    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='skin';render()">
+      <div class="menu-icon" style="background:rgba(160,139,192,.14)">✦</div>
+      <div class="menu-body"><div class="menu-title">Skin Inventory</div>
+      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length} active products${low?` · ${low} low stock`:''}</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='hair';render()">
+      <div class="menu-icon" style="background:rgba(143,168,133,.14)">〰️</div>
+      <div class="menu-body"><div class="menu-title">Hair Inventory</div>
+      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).length} active products</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='scent';render()">
+      <div class="menu-icon" style="background:rgba(217,160,91,.13)">◈</div>
+      <div class="menu-body"><div class="menu-title">Scent Inventory</div>
+      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='scent'&&p.active).length} active scents</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='inactive';render()">
+      <div class="menu-icon" style="background:var(--bg-raise)">◻</div>
+      <div class="menu-body"><div class="menu-title">Inactive Products</div>
+      <div class="menu-sub">${Object.values(DB.products).filter(p=>!p.active).length} deactivated</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+  </div>
+  <div class="card">
+    <button class="menu-item" onclick="UI.setupPage='sync';render()">
+      <div class="menu-icon" style="background:rgba(143,168,133,.14)">⇅</div>
+      <div class="menu-body"><div class="menu-title">Sync</div>
+      <div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+    <button class="menu-item" onclick="UI.setupPage='prompt';render()">
+      <div class="menu-icon" style="background:rgba(160,139,192,.14)">✦</div>
+      <div class="menu-body"><div class="menu-title">Claude Prompt</div>
+      <div class="menu-sub">Copy full routine context</div></div>
+      <span class="menu-arrow">›</span>
+    </button>
+  </div>
+  <div class="sec-label">Data</div>
+  <div class="card">
+    <button class="menu-item" onclick="exportData()">
+      <div class="menu-body"><div class="menu-title">Export backup</div></div>
+    </button>
+    <button class="menu-item" onclick="document.getElementById('imp').click()">
+      <div class="menu-body"><div class="menu-title">Import backup</div></div>
+    </button>
+    <button class="menu-item" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}">
+      <div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div></div>
+    </button>
+  </div>
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">`;
+}
+
+/* ══════════════════════════════════════════════
+   SCHEDULE PAGE
+══════════════════════════════════════════════ */
+function vSchedulePage(type){
+  const icon=type==='morning'?'☀️':'🌙';
+  const title=type==='morning'?'Morning Schedule':'Evening Schedule';
+  const skinOpts=routinesOf('skin',type);
+  const hairOpts=routinesOf('hair',type);
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">${title}</h1>
+  <p class="page-sub">Skin and hair routine assigned per day · tap a routine name to change</p>
   <div class="card">${[1,2,3,4,5,6,0].map(d=>{
-    const v=DB.settings.schedule[d];
-    return `<div class="sched-day"><span style="font-size:13px;font-weight:500">${dayName(d)}</span>
-    <div class="ab-toggle">
-      <button class="${v==='A'?'on-a':''}" onclick="DB.settings.schedule[${d}]='A';save();render()">A</button>
-      <button class="${v==='B'?'on-b':''}" onclick="DB.settings.schedule[${d}]='B';save();render()">B</button>
-      <button class="${v==='C'?'on-c':''}" onclick="DB.settings.schedule[${d}]='C';save();render()">C</button>
-    </div></div>`;}).join('')}</div>
-  <p class="page-sub">A = recovery · B = retinol (keep at 4 nights max) · C = exfoliation (1–2 nights max, ideally after a recovery night)</p>
+    const skinR=routineForDay(d,type,'skin');
+    const hairR=routineForDay(d,type,'hair');
+    return`<div class="sched-row">
+      <span class="sched-day-label">${dayShort(d)}</span>
+      <div class="sched-slots">
+        <div class="sched-slot">
+          <span class="sched-slot-label">Skin</span>
+          <select onchange="assignDay(${d},'${type}','skin',this.value)">
+            <option value="">— none —</option>
+            ${skinOpts.map(r=>`<option value="${r.id}" ${skinR&&skinR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="sched-slot">
+          <span class="sched-slot-label">Hair</span>
+          <select onchange="assignDay(${d},'${type}','hair',this.value)">
+            <option value="">— none —</option>
+            ${hairOpts.map(r=>`<option value="${r.id}" ${hairR&&hairR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
 
-  <div class="sec-label">Edit routines</div>
-  <div class="card">
-    ${[['skin.am'],['skin.a'],['skin.b'],['skin.c'],['skin.refresh'],['hair.daily'],['hair.postwash'],['hair.weekly']].map(([k])=>{
-      const r=getRoutine(k);
-      return `<button class="step" onclick="openRoutineEditor('${k}')"><div class="step-body"><div class="step-name">${k.startsWith('skin')?'Skin':'Hair'} — ${esc(r.name)}</div></div><span class="step-arrow">›</span></button>`;}).join('')}
+function assignDay(day,type,cat,newId){
+  const warnings=[];
+  // Remove this day from any other routine of same cat+type
+  DB.routines.forEach(r=>{
+    if(r.cat===cat&&r.type===type&&r.id!==newId&&r.days.includes(day)){
+      warnings.push(r.name);
+      r.days=r.days.filter(d=>d!==day);
+    }
+  });
+  if(newId){
+    const r=routineById(newId);
+    if(r&&!r.days.includes(day))r.days.push(day);
+  }
+  save();
+  if(warnings.length){
+    // show warning banner briefly
+    UI._schedWarning=`${dayName(day)} removed from: ${warnings.join(', ')}`;
+    render();
+    setTimeout(()=>{UI._schedWarning=null;render();},4000);
+  }else render();
+}
+
+/* ══════════════════════════════════════════════
+   ROUTINES PAGE
+══════════════════════════════════════════════ */
+function vRoutinesPage(){
+  const cats=[['skin','Skin','ri-skin'],['hair','Hair','ri-hair']];
+  const types=['morning','evening'];
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">Edit Routines</h1>
+  <p class="page-sub">Tap to edit · hold days to reassign</p>
+  ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
+  ${cats.map(([cat,catLabel])=>types.map(type=>{
+    const rs=routinesOf(cat,type);
+    if(!rs.length)return'';
+    return`<div class="sec-label">${catLabel} — ${type==='morning'?'Morning':'Evening'}</div>
+    <div class="card">${rs.map(r=>`<button class="step" onclick="UI.setupPage='routine-edit';UI.editRoutineId='${r.id}';render()">
+      <div class="step-body">
+        <div class="step-name">${esc(r.name)}</div>
+        <div class="step-note">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'No days assigned'} · ${activeSteps(r.steps).length} steps</div>
+      </div><span class="step-arrow">›</span></button>`).join('')}</div>`;
+  }).join('')).join('')}
+  <div style="padding:8px 22px 0"><button class="btn ghost full" onclick="openNewRoutine()">+ New routine</button></div>`;
+}
+
+function openNewRoutine(){UI.modal={type:'new-routine'};render();}
+
+/* ══════════════════════════════════════════════
+   ROUTINE EDIT PAGE
+══════════════════════════════════════════════ */
+function vRoutineEditPage(){
+  const r=routineById(UI.editRoutineId);
+  if(!r)return`<button class="back" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Routine not found</div>`;
+  const days=[0,1,2,3,4,5,6];
+  return`<button class="back" onclick="setupBack('routines')">‹ Routines</button>
+  <h1 class="page-title">Edit Routine</h1>
+  ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
+  <div class="sec-label">Name</div>
+  <div style="padding:0 22px 14px"><input value="${esc(r.name)}" onchange="routineById('${r.id}').name=this.value;save()"></div>
+  <div class="sec-label">Type & category</div>
+  <div class="card pad" style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px">TIME</label>
+    <select onchange="routineById('${r.id}').type=this.value;save();render()">
+      <option value="morning" ${r.type==='morning'?'selected':''}>Morning</option>
+      <option value="evening" ${r.type==='evening'?'selected':''}>Evening</option>
+    </select></div>
+    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px">CATEGORY</label>
+    <select onchange="routineById('${r.id}').cat=this.value;save();render()">
+      <option value="skin" ${r.cat==='skin'?'selected':''}>Skin</option>
+      <option value="hair" ${r.cat==='hair'?'selected':''}>Hair</option>
+    </select></div>
   </div>
-  <div class="sec-label">Hair looks</div>
-  <div class="card">
-    ${DB.hair.looks.map((l,i)=>`<button class="step" onclick="openLookEditor(${i})"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${l.steps.map(s=>pName(s.p)).join(' · ')}</div></div><span class="step-arrow">›</span></button>`).join('')}
+  <div class="sec-label">Days</div>
+  <div style="padding:0 22px 14px">
+    <div class="day-pills">${days.map(d=>`<button class="day-pill ${r.days.includes(d)?'on':''}" onclick="toggleRoutineDay('${r.id}',${d})">${'SMTWTFS'[d]}</button>`).join('')}</div>
+    <p style="font-size:11px;color:var(--ink-soft);margin-top:8px">Assigning a day already claimed by another ${r.cat} ${r.type} routine will remove it from that routine.</p>
   </div>
-  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newLook()">+ Add look</button></div>
-
-  <div class="sec-label">Inventory</div>
-  <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
-  <div class="card">${items.map(([id,p])=>{
-    const dl=daysLeft(p);
-    return `<button class="step" onclick="openEdit('${id}')"><div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
-    <div class="step-note">${p.active?(dl!==null?(dl<=0?'Likely empty':'~'+dl+' days left'):'No estimate'):p.cat+' · inactive'}</div></div>
-    ${p.active&&dl!==null&&dl<=14?'<span class="chip c-amber">Low</span>':''}<span class="step-arrow">›</span></button>`;}).join('')||'<div class="empty">Nothing here</div>'}</div>
-  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newProduct(UI.invCat==='inactive'?'skin':UI.invCat)">+ Add product</button></div>
-
-  <div class="sec-label">Sync (Cloudflare)</div>
-  <div class="card pad">
-    <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
-    <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
-    <div style="display:flex;gap:8px"><button class="btn sm" onclick="syncPush().then(r=>alert(r===true?'Pushed.':'Push failed: '+r))">Push now</button><button class="btn ghost sm" onclick="syncPull(true)">Pull latest</button></div>
-  </div>
-
-  <div class="sec-label">Claude prompt</div>
-  <div class="copybox">${esc(claudePrompt())}</div>
-  <div style="padding:0 22px 8px"><button class="btn full" onclick="navigator.clipboard.writeText(claudePrompt()).then(()=>alert('Copied — paste into any Claude chat.'))">Copy Claude prompt</button></div>
-
-  <div class="sec-label">Backup</div>
-  <div style="padding:0 22px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn ghost sm" onclick="exportData()">Export data</button>
-    <button class="btn ghost sm" onclick="document.getElementById('imp').click()">Import data</button>
-    <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
-    <button class="btn danger sm" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}">Reset all</button>
+  <div class="sec-label">Steps</div>
+  <div class="card">${r.steps.map((s,i)=>{
+    const p=DB.products[s.p];
+    return`<div class="edit-step" style="${p&&!p.active?'opacity:.45':''}">
+      <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
+      <input type="number" value="${s.wait||0}" title="wait sec" style="width:58px;padding:5px 8px;text-align:right" onchange="routineById('${r.id}').steps[${i}].wait=parseInt(this.value)||0;save()">
+      <button class="mini" onclick="moveRStep('${r.id}',${i},-1)">↑</button>
+      <button class="mini" onclick="moveRStep('${r.id}',${i},1)">↓</button>
+      <button class="mini" style="color:var(--danger)" onclick="routineById('${r.id}').steps.splice(${i},1);save();render()">✕</button>
+    </div>`;}).join('')||'<div class="empty">No steps yet</div>'}</div>
+  <div style="padding:0 22px 8px;display:flex;gap:8px">
+    <button class="btn sm" onclick="UI.modal={type:'addstep',routineId:'${r.id}'};render()">+ Add step</button>
+    ${!r.id.startsWith('skin-am')&&!r.id.startsWith('skin-b')&&!r.id.startsWith('skin-a')&&!r.id.startsWith('skin-c')?`<button class="btn danger sm" onclick="deleteRoutine('${r.id}')">Delete routine</button>`:''}
   </div>`;
 }
 
-/* ── MODALS ── */
+function toggleRoutineDay(id,day){
+  const r=routineById(id);if(!r)return;
+  if(r.days.includes(day)){
+    r.days=r.days.filter(d=>d!==day);save();render();
+  }else{
+    // check for clash
+    const clash=DB.routines.find(rt=>rt.id!==id&&rt.cat===r.cat&&rt.type===r.type&&rt.days.includes(day));
+    if(clash){
+      UI._schedWarning=`${dayName(day)} removed from "${clash.name}"`;
+      clash.days=clash.days.filter(d=>d!==day);
+    }
+    r.days.push(day);
+    save();render();
+    if(clash)setTimeout(()=>{UI._schedWarning=null;render();},4000);
+  }
+}
+function moveRStep(id,i,d){const st=routineById(id).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
+function deleteRoutine(id){
+  if(!confirm('Delete this routine? It will be removed from all days.'))return;
+  DB.routines=DB.routines.filter(r=>r.id!==id);
+  save();UI.setupPage='routines';render();
+}
+
+/* ══════════════════════════════════════════════
+   HAIR LOOKS PAGE
+══════════════════════════════════════════════ */
+function vLooksPage(){
+  const looks=DB.hairLooks||[];
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">Hair Looks</h1>
+  <div class="card">${looks.map((l,i)=>`<button class="step" onclick="UI.modal={type:'look',idx:${i}};render()">
+    <div class="step-body"><div class="step-name">${esc(l.name)}</div>
+    <div class="step-note">${(routineById(l.id)?.steps||[]).map(s=>pName(s.p)).join(' · ')||'No steps'}</div></div>
+    <span class="step-arrow">›</span></button>`).join('')||'<div class="empty">No looks</div>'}</div>
+  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newLook()">+ Add look</button></div>`;
+}
+
+/* ══════════════════════════════════════════════
+   INVENTORY PAGE
+══════════════════════════════════════════════ */
+function vInventoryPage(){
+  const cat=UI.invCat;
+  const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
+  const titles={skin:'Skin Inventory',hair:'Hair Inventory',scent:'Scent Inventory',inactive:'Inactive Products'};
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">${titles[cat]||'Inventory'}</h1>
+  <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="card">${items.map(([id,p])=>{
+    const dl=daysLeft(p);
+    return`<button class="step" onclick="openEdit('${id}')"><div class="step-body">
+      <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
+      <div class="step-note">${p.active?(dl!==null?(dl<=0?'Likely empty':'~'+dl+' days left'):'No estimate'):p.cat+' · inactive'}</div></div>
+      ${p.active&&dl!==null&&dl<=14?'<span class="chip c-amber">Low</span>':''}<span class="step-arrow">›</span></button>`;}).join('')||'<div class="empty">Nothing here</div>'}</div>
+  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newProduct(cat==='inactive'?'skin':cat)">+ Add product</button></div>`;
+}
+
+/* ══════════════════════════════════════════════
+   SYNC PAGE
+══════════════════════════════════════════════ */
+function vSyncPage(){
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">Sync</h1><p class="page-sub">Cloudflare Worker + KV</p>
+  <div class="card pad">
+    <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
+    <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn sm" onclick="syncPush().then(r=>alert(r===true?'Pushed.':'Push failed: '+r))">Push now</button>
+      <button class="btn ghost sm" onclick="syncPull(true)">Pull latest</button>
+    </div>
+  </div>
+  <p class="page-sub">Auto-pushes 2.5s after any change. Auto-pulls on open and foreground.</p>`;
+}
+
+/* ══════════════════════════════════════════════
+   CLAUDE PROMPT PAGE
+══════════════════════════════════════════════ */
+function vPromptPage(){
+  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  <h1 class="page-title">Claude Prompt</h1><p class="page-sub">Copy and paste into any Claude chat</p>
+  <div class="copybox">${esc(claudePrompt())}</div>
+  <div style="padding:0 22px 8px"><button class="btn full" onclick="navigator.clipboard.writeText(claudePrompt()).then(()=>alert('Copied!'))">Copy to clipboard</button></div>`;
+}
+
+/* ══════════════════════════════════════════════
+   BACKUP PAGE (accessed via menu bottom)
+══════════════════════════════════════════════ */
+function exportData(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='thestack-backup.json';a.click();}
+function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{DB=migrate(JSON.parse(r.result));save();render();alert('Imported.');}catch(e){alert('Invalid file.');}};r.readAsText(f);}
+
+/* ══════════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════════ */
 function renderModal(){
   let ex=document.getElementById('ov');if(ex)ex.remove();
   if(!UI.modal)return;
@@ -563,26 +863,36 @@ function renderModal(){
   let inner='';
   if(m.type==='product')inner=productView(m.id);
   else if(m.type==='edit')inner=productEdit(m.id);
-  else if(m.type==='routine')inner=routineSheet(m.key);
+  else if(m.type==='routine-view')inner=routineViewSheet(m.id);
+  else if(m.type==='addstep')inner=addStepSheet(m.routineId);
   else if(m.type==='look')inner=lookSheet(m.idx);
-  else if(m.type==='lookpick')inner=`<div class="sheet-handle"></div><h3>Pick a look</h3><div class="brand">For Refresh & Go</div>
-    ${DB.hair.looks.map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" onclick="UI.hairLook='${l.id}';UI.modal=null;render()"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;
-  else if(m.type==='addstep')inner=addStepSheet(m.key);
+  else if(m.type==='lookpick')inner=lookPickSheet();
+  else if(m.type==='new-routine')inner=newRoutineSheet();
   ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${inner}</div>`;
   document.body.appendChild(ov);
 }
 
+/* routine view sheet (for refresh & go etc) */
+function routineViewSheet(id){
+  const r=routineById(id);if(!r)return'';
+  return`<div class="sheet-handle"></div>
+  <h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type}</div>
+  ${stepsHTML(r.steps)}
+  <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>`;
+}
+
+/* product read-only */
 function openProduct(id){UI.modal={type:'product',id};render();}
 function openEdit(id){UI.modal={type:'edit',id};render();}
 function productView(id){
   const p=DB.products[id];const dl=daysLeft(p);
-  return `<div class="sheet-handle"></div>
+  return`<div class="sheet-handle"></div>
   <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute" style="text-transform:capitalize">${p.cat}</span>${!p.active?' <span class="chip c-danger">Inactive</span>':''}</div>
   <div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>
   ${p.cat==='scent'&&p.tags.length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-amber">${esc(t)}</span>`).join('')}</div></div>`:''}
   ${p.next?`<div class="desc-block" style="border-color:rgba(217,160,91,.35)"><b style="color:var(--amber)">Next up · ${esc(p.next.brand)} ${esc(p.next.name)}</b>${esc(p.next.why||'')}
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="swapProduct('${id}')">I've run out — swap now</button>${p.next.link?`<a class="btn ghost sm" href="${esc(p.next.link)}" target="_blank" style="text-decoration:none">Order next</a>`:''}</div></div>`:''}
-  ${p.flags.includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.4)"><b style="color:var(--danger)">Phasing out</b>Use until finished, then remove. <div style="margin-top:10px"><button class="btn danger sm" onclick="deactivate('${id}')">Finished — deactivate now</button></div></div>`:''}
+  ${p.flags.includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.4)"><b style="color:var(--danger)">Phasing out</b>Use until finished, then remove.<div style="margin-top:10px"><button class="btn danger sm" onclick="deactivate('${id}')">Finished — deactivate now</button></div></div>`:''}
   <div class="card pad" style="margin:0 0 14px">
     <div class="kv"><span class="k">Stock estimate</span><span class="v">${dl!==null?(dl<=0?'Likely empty':'~'+Math.max(0,dl)+' days left'):'—'}</span></div>
     <div class="kv"><span class="k">Lasts about</span><span class="v">${p.durationDays||'—'} days</span></div>
@@ -596,35 +906,32 @@ function productView(id){
   </div>`;
 }
 
+/* product edit */
 function productEdit(id){
   const p=DB.products[id];
   const allTags=['weekday','weekend','daily','office','casual','evening','occasion','winter','summer','home','signature'];
-  return `<div class="sheet-handle"></div>
+  return`<div class="sheet-handle"></div>
   <h3>Edit — ${esc(p.name)||'New product'}</h3><div class="brand">${esc(p.brand)}</div>
   <div class="field"><label>Name</label><input value="${esc(p.name)}" onchange="upd('${id}','name',this.value)"></div>
   <div class="field"><label>Brand</label><input value="${esc(p.brand)}" onchange="upd('${id}','brand',this.value)"></div>
   <div class="field"><label>Category</label><select onchange="upd('${id}','cat',this.value)">
     ${['skin','hair','scent'].map(c=>`<option value="${c}" ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
-  <div class="field"><label>${p.cat==='scent'?'Short description':'Step role (short)'}</label><input value="${esc(p.role)}" onchange="upd('${id}','role',this.value)"></div>
-  <div class="field"><label>${p.cat==='scent'?'About / character':'Why it matters (long)'}</label><textarea onchange="upd('${id}','why',this.value)">${esc(p.why)}</textarea></div>
-  <div class="field"><label>Notes (clears on swap)</label><textarea onchange="upd('${id}','notes',this.value)">${esc(p.notes)}</textarea></div>
+  <div class="field"><label>Role (short)</label><input value="${esc(p.role)}" onchange="upd('${id}','role',this.value)"></div>
+  <div class="field"><label>Why it matters</label><textarea onchange="upd('${id}','why',this.value)">${esc(p.why)}</textarea></div>
+  <div class="field"><label>Notes</label><textarea onchange="upd('${id}','notes',this.value)">${esc(p.notes)}</textarea></div>
   <div class="field"><label>Reorder link</label><input value="${esc(p.link)}" placeholder="https://…" onchange="upd('${id}','link',this.value)"></div>
-  <div class="field"><label>Lasts about (days) — reorder frequency</label><input type="number" value="${p.durationDays||''}" onchange="upd('${id}','durationDays',parseInt(this.value)||0)"></div>
-  ${p.cat==='scent'?`<div class="field"><label>Tags — when to wear</label><div class="tags">${allTags.map(t=>`<button class="chip ${p.tags.includes(t)?'c-amber':'c-mute'}" onclick="toggleTag('${id}','${t}')">${t}</button>`).join('')}</div></div>`:''}
-
-  <div class="sec-label" style="margin-left:0">Replacement (next product)</div>
-  ${p.next?`
-    <div class="field"><label>Next name</label><input value="${esc(p.next.name)}" onchange="updNext('${id}','name',this.value)"></div>
+  <div class="field"><label>Lasts about (days)</label><input type="number" value="${p.durationDays||''}" onchange="upd('${id}','durationDays',parseInt(this.value)||0)"></div>
+  ${p.cat==='scent'?`<div class="field"><label>Tags</label><div class="tags">${allTags.map(t=>`<button class="chip ${p.tags.includes(t)?'c-amber':'c-mute'}" onclick="toggleTag('${id}','${t}')">${t}</button>`).join('')}</div></div>`:''}
+  <div class="sec-label" style="margin-left:0">Replacement</div>
+  ${p.next?`<div class="field"><label>Next name</label><input value="${esc(p.next.name)}" onchange="updNext('${id}','name',this.value)"></div>
     <div class="field"><label>Next brand</label><input value="${esc(p.next.brand)}" onchange="updNext('${id}','brand',this.value)"></div>
     <div class="field"><label>Why the swap</label><textarea onchange="updNext('${id}','why',this.value)">${esc(p.next.why||'')}</textarea></div>
-    <div class="field"><label>Order link for next</label><input value="${esc(p.next.link||'')}" onchange="updNext('${id}','link',this.value)"></div>
+    <div class="field"><label>Order link</label><input value="${esc(p.next.link||'')}" onchange="updNext('${id}','link',this.value)"></div>
     <div style="margin-bottom:14px"><button class="btn warn sm" onclick="upd('${id}','next',null);render()">Remove replacement</button></div>`
   :`<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="upd('${id}','next',{name:'',brand:'',role:'',why:'',link:''});render()">+ Queue a replacement</button></div>`}
-
   <div class="sec-label" style="margin-left:0">Status</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-    ${p.active?`<button class="btn warn sm" onclick="deactivate('${id}')">Deactivate — keep in inventory</button>`
-    :`<button class="btn sm" onclick="upd('${id}','active',true);render()">Reactivate</button>`}
+    ${p.active?`<button class="btn warn sm" onclick="deactivate('${id}')">Deactivate</button>`:`<button class="btn sm" onclick="upd('${id}','active',true);render()">Reactivate</button>`}
     <button class="btn danger sm" onclick="deleteProduct('${id}')">Delete permanently</button>
   </div>
   <div style="display:flex;gap:8px">
@@ -637,12 +944,9 @@ function updNext(id,k,v){if(!DB.products[id].next)DB.products[id].next={};DB.pro
 function toggleTag(id,t){const p=DB.products[id];const i=p.tags.indexOf(t);if(i>=0)p.tags.splice(i,1);else p.tags.push(t);save();render();}
 function deactivate(id){DB.products[id].active=false;UI.modal=null;save();render();}
 function deleteProduct(id){
-  if(!confirm('Delete permanently? This removes it from all routines too.'))return;
-  ['am','a','b','c','refresh'].forEach(k=>{if(DB.skin[k])DB.skin[k].steps=DB.skin[k].steps.filter(s=>s.p!==id);});
-  ['daily','postwash','weekly'].forEach(k=>DB.hair[k].steps=DB.hair[k].steps.filter(s=>s.p!==id));
-  DB.hair.looks.forEach(l=>l.steps=l.steps.filter(s=>s.p!==id));
-  delete DB.products[id];
-  UI.modal=null;save();render();
+  if(!confirm('Delete permanently?'))return;
+  DB.routines.forEach(r=>{r.steps=r.steps.filter(s=>s.p!==id);});
+  delete DB.products[id];UI.modal=null;save();render();
 }
 function swapProduct(id){
   const p=DB.products[id];if(!p.next)return;
@@ -650,147 +954,135 @@ function swapProduct(id){
   Object.assign(p,{name:p.next.name,brand:p.next.brand,role:p.next.role||p.role,why:p.next.why||p.why,link:p.next.link||'',notes:'',restockedAt:Date.now(),next:null});
   save();render();
 }
-function newProduct(cat){
-  const id='p'+Date.now();
-  DB.products[id]=P(cat||'skin','','','','');
-  save();openEdit(id);
+function newProduct(cat){const id='p'+Date.now();DB.products[id]=P(cat||'skin','','','','');save();openEdit(id);}
+
+/* add step sheet */
+function addStepSheet(routineId){
+  return`<div class="sheet-handle"></div><h3>Add step</h3><div class="brand">Pick a product</div>
+  <div class="card" style="margin:0 0 12px;max-height:320px;overflow-y:auto">
+    ${Object.entries(DB.products).filter(([id,p])=>p.active).map(([id,p])=>`<button class="step" onclick="routineById('${routineId}').steps.push({p:'${id}',wait:0});save();UI.modal={type:'addstep',routineId:'${routineId}'};render()">
+      <div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div></button>`).join('')}
+  </div>
+  <button class="btn ghost full" onclick="UI.modal=null;render()">Done</button>`;
 }
 
-/* routine editor */
-function getRoutine(key){const [a,b]=key.split('.');return a==='skin'?DB.skin[b]:DB.hair[b];}
-function openRoutineEditor(key){UI.modal={type:'routine',key};render();}
-function routineSheet(key){
-  const r=getRoutine(key);
-  return `<div class="sheet-handle"></div><h3>Edit routine</h3><div class="brand">Rename, reorder, remove, wait times</div>
-  <div class="field"><label>Routine name</label><input value="${esc(r.name)}" onchange="getRoutine('${key}').name=this.value;save()"></div>
-  <div class="card" style="margin:0 0 12px">${r.steps.map((s,i)=>{
-    const p=DB.products[s.p];
-    return `<div class="edit-step" style="${p&&!p.active?'opacity:.45':''}">
-    <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
-    <input type="number" value="${s.wait||0}" title="wait (sec)" style="width:62px;padding:6px 8px;text-align:right" onchange="getRoutine('${key}').steps[${i}].wait=parseInt(this.value)||0;save()">
-    <button class="mini" onclick="moveStep('${key}',${i},-1)">↑</button>
-    <button class="mini" onclick="moveStep('${key}',${i},1)">↓</button>
-    <button class="mini" style="color:var(--danger)" onclick="getRoutine('${key}').steps.splice(${i},1);save();render()">✕</button>
-  </div>`;}).join('')||'<div class="empty">No steps yet</div>'}</div>
-  <p class="page-sub" style="padding:0 0 10px">Wait = seconds before the next step · inactive products are hidden from routine views</p>
-  <div style="display:flex;gap:8px"><button class="btn sm" onclick="UI.modal={type:'addstep',key:'${key}'};render()">+ Add step</button>
-  <button class="btn ghost sm" onclick="UI.modal=null;render()">Done</button></div>`;
+/* new routine sheet */
+function newRoutineSheet(){
+  const m=UI._newR||{cat:'skin',type:'evening',name:'',copyFrom:''};
+  UI._newR=m;
+  const copyOpts=DB.routines.filter(r=>r.cat===m.cat&&r.type===m.type);
+  return`<div class="sheet-handle"></div><h3>New Routine</h3>
+  <div class="field"><label>Name</label><input value="${esc(m.name)}" placeholder="e.g. Evening A — Recovery" oninput="UI._newR.name=this.value"></div>
+  <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()">
+    <option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option>
+    <option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option>
+  </select></div>
+  <div class="field"><label>Type</label><select onchange="UI._newR.type=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()">
+    <option value="morning" ${m.type==='morning'?'selected':''}>Morning</option>
+    <option value="evening" ${m.type==='evening'?'selected':''}>Evening</option>
+  </select></div>
+  <div class="field"><label>Copy steps from (optional)</label><select onchange="UI._newR.copyFrom=this.value">
+    <option value="">— start empty —</option>
+    ${copyOpts.map(r=>`<option value="${r.id}" ${m.copyFrom===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+  </select></div>
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn full" onclick="createRoutine()">Create</button>
+    <button class="btn ghost full" onclick="UI.modal=null;UI._newR=null;render()">Cancel</button>
+  </div>`;
 }
-function moveStep(key,i,d){const st=getRoutine(key).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
-function addStepSheet(key){
-  return `<div class="sheet-handle"></div><h3>Add step</h3><div class="brand">Pick an existing product or create new</div>
-  <div class="card" style="margin:0 0 12px;max-height:320px;overflow-y:auto">${Object.entries(DB.products).filter(([id,p])=>p.active).map(([id,p])=>`<button class="step" onclick="getRoutine('${key}').steps.push({p:'${id}',wait:0});save();UI.modal={type:'routine',key:'${key}'};render()"><div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div></button>`).join('')}</div>
-  <button class="btn ghost full" onclick="newProductInto('${key}')">+ Create new product</button>
-  <div style="height:8px"></div>
-  <button class="btn ghost full" onclick="UI.modal={type:'routine',key:'${key}'};render()">Back</button>`;
-}
-function newProductInto(key){
-  const nm=prompt('Product name?');if(!nm)return;
-  const br=prompt('Brand?')||'';
-  const id='p'+Date.now();
-  const cat=key.startsWith('hair')?'hair':'skin';
-  DB.products[id]=P(cat,nm,br,'','');
-  getRoutine(key).steps.push({p:id,wait:0});
-  save();UI.modal={type:'routine',key};render();
+function createRoutine(){
+  const m=UI._newR||{};
+  const name=(m.name||'').trim();
+  if(!name){alert('Enter a routine name.');return;}
+  const id='r'+Date.now();
+  const src=m.copyFrom?routineById(m.copyFrom):null;
+  const steps=src?JSON.parse(JSON.stringify(src.steps)):[];
+  DB.routines.push(R(id,m.cat||'skin',m.type||'evening',name,[],steps));
+  save();UI.modal=null;UI._newR=null;
+  UI.setupPage='routine-edit';UI.editRoutineId=id;render();
 }
 
-/* look editor */
-function openLookEditor(idx){UI.modal={type:'look',idx};render();}
+/* look sheet */
 function lookSheet(idx){
-  const l=DB.hair.looks[idx];if(!l)return '';
-  return `<div class="sheet-handle"></div><h3>Edit look</h3>
-  <div class="field"><label>Name</label><input value="${esc(l.name)}" onchange="DB.hair.looks[${idx}].name=this.value;save()"></div>
-  <div class="field"><label>Description</label><input value="${esc(l.desc)}" onchange="DB.hair.looks[${idx}].desc=this.value;save()"></div>
+  const l=(DB.hairLooks||[])[idx];if(!l)return'';
+  const r=routineById(l.id)||{steps:[]};
+  return`<div class="sheet-handle"></div><h3>Edit look</h3>
+  <div class="field"><label>Name</label><input value="${esc(l.name)}" onchange="DB.hairLooks[${idx}].name=this.value;save()"></div>
+  <div class="field"><label>Description</label><input value="${esc(l.desc)}" onchange="DB.hairLooks[${idx}].desc=this.value;save()"></div>
   <div class="sec-label" style="margin-left:0">Steps</div>
-  <div class="card" style="margin:0 0 12px">${l.steps.map((s,i)=>`<div class="edit-step"><span class="nm">${i+1}. ${esc(pName(s.p))}</span>
-  <button class="mini" onclick="lkMove(${idx},${i},-1)">↑</button><button class="mini" onclick="lkMove(${idx},${i},1)">↓</button>
-  <button class="mini" style="color:var(--danger)" onclick="DB.hair.looks[${idx}].steps.splice(${i},1);save();render()">✕</button></div>`).join('')||'<div class="empty">No steps</div>'}</div>
+  <div class="card" style="margin:0 0 12px">${r.steps.map((s,i)=>`<div class="edit-step"><span class="nm">${i+1}. ${esc(pName(s.p))}</span>
+    <button class="mini" onclick="lkMove(${idx},${i},-1)">↑</button>
+    <button class="mini" onclick="lkMove(${idx},${i},1)">↓</button>
+    <button class="mini" style="color:var(--danger)" onclick="routineById(DB.hairLooks[${idx}].id).steps.splice(${i},1);save();render()">✕</button>
+  </div>`).join('')||'<div class="empty">No steps</div>'}</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-  <button class="btn sm" onclick="lkAdd(${idx})">+ Add product</button>
-  <button class="btn danger sm" onclick="if(confirm('Delete this look?')){DB.hair.looks.splice(${idx},1);UI.modal=null;save();render();}">Delete look</button>
-  <button class="btn ghost sm" onclick="UI.modal=null;render()">Done</button></div>`;
+    <button class="btn sm" onclick="lkAdd(${idx})">+ Add product</button>
+    <button class="btn danger sm" onclick="deleteLook(${idx})">Delete look</button>
+    <button class="btn ghost sm" onclick="UI.modal=null;render()">Done</button>
+  </div>`;
 }
-function lkMove(idx,i,d){const st=DB.hair.looks[idx].steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
+function lkMove(idx,i,d){const r=routineById((DB.hairLooks||[])[idx]?.id);if(!r)return;const st=r.steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
 function lkAdd(idx){
+  const l=(DB.hairLooks||[])[idx];if(!l)return;
   const hairP=Object.entries(DB.products).filter(([id,p])=>p.cat==='hair'&&p.active);
   const opts=hairP.map(([id,p],n)=>`${n+1}: ${p.brand} ${p.name}`).join('\n');
-  const pick=prompt('Add which product? Enter number:\n'+opts);
+  const pick=prompt('Add which product?\n'+opts);
   const n=parseInt(pick)-1;
-  if(n>=0&&n<hairP.length){DB.hair.looks[idx].steps.push({p:hairP[n][0],wait:0});save();render();}
-}
-function newLook(){DB.hair.looks.push({id:'l'+Date.now(),name:'New look',desc:'',steps:[]});save();openLookEditor(DB.hair.looks.length-1);}
-
-/* ── CLAUDE PROMPT ── */
-function claudePrompt(){
-  const lines=[];
-  lines.push('MY PERSONAL CARE CONTEXT — generated by The Stack app, '+new Date().toLocaleDateString('en-AU'));
-  lines.push('');
-  lines.push('SKIN PROFILE: Dry/sensitive, on antihistamines, anti-ageing goal, no chemical smells. Melbourne, Australia. Shops at MECCA and brand sites. Prefers efficacy over price.');
-  lines.push('');
-  const rname={am:DB.skin.am.name+' (daily)',a:DB.skin.a.name+' ('+(schedDaysFor('A')||'unassigned')+')',b:DB.skin.b.name+' ('+(schedDaysFor('B')||'unassigned')+')',c:DB.skin.c.name+' ('+(schedDaysFor('C')||'unassigned')+')',refresh:DB.skin.refresh.name+' (post-shower, going out)'};
-  for(const k of ['am','a','b','c','refresh']){
-    lines.push('SKIN — '+rname[k]+':');
-    activeSteps(DB.skin[k].steps).forEach((s,i)=>{const p=DB.products[s.p];
-      let l=(i+1)+'. '+p.brand+' '+p.name;
-      if(p.next)l+=' [next: '+p.next.brand+' '+p.next.name+']';
-      if(p.flags.includes('removeWhenDone'))l+=' [phasing out]';
-      if(p.notes)l+=' — NOTE: '+p.notes;
-      lines.push(l);});
-    lines.push('');
+  if(n>=0&&n<hairP.length){
+    let r=routineById(l.id);
+    if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);}
+    r.steps.push({p:hairP[n][0],wait:0});save();render();
   }
-  lines.push('HAIR — daily: '+activeSteps(DB.hair.daily.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name}).join(', '));
-  lines.push('HAIR — post-wash ('+dayName(DB.hair.washDay)+'s): '+activeSteps(DB.hair.postwash.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name}).join(', '));
-  lines.push('HAIR — weekly ritual: '+activeSteps(DB.hair.weekly.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name}).join(', '));
-  DB.hair.looks.forEach(l=>lines.push('HAIR LOOK — '+l.name+': '+activeSteps(l.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name}).join(' + ')));
+}
+function deleteLook(idx){
+  if(!confirm('Delete this look?'))return;
+  const l=DB.hairLooks[idx];
+  DB.routines=DB.routines.filter(r=>r.id!==l.id);
+  DB.hairLooks.splice(idx,1);
+  UI.modal=null;save();render();
+}
+function newLook(){
+  const id='look-'+Date.now();
+  DB.hairLooks.push({id,name:'New look',desc:''});
+  DB.routines.push(R(id,'hair','morning','New look',[],[]));
+  save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();
+}
+function lookPickSheet(){
+  return`<div class="sheet-handle"></div><h3>Pick a look</h3>
+  ${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" onclick="UI.hairLook='${l.id}';UI.modal=null;render()">
+    <div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;
+}
+
+/* ══════════════════════════════════════════════
+   CLAUDE PROMPT
+══════════════════════════════════════════════ */
+function claudePrompt(){
+  const lines=['MY PERSONAL CARE CONTEXT — generated by The Stack, '+new Date().toLocaleDateString('en-AU'),''];
+  lines.push('SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU. MECCA/brand sites.');
+  lines.push('');
+  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{
+    lines.push('SKIN — '+r.name+' ('+( r.days.length?r.days.map(d=>dayShort(d)).join('/'):('no days assigned'))+'):');
+    activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;if(p.next)l+=' [next: '+p.next.brand+' '+p.next.name+']';if(p.flags.includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});
+    lines.push('');
+  });
+  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{
+    lines.push('HAIR — '+r.name+' ('+( r.days.length?r.days.map(d=>dayShort(d)).join('/'):('no days'))+'):');
+    activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});
+    lines.push('');
+  });
+  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' + '):''));});
   lines.push('');
   lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
   const inactive=Object.values(DB.products).filter(p=>!p.active);
-  if(inactive.length){lines.push('');lines.push('RETIRED PRODUCTS: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
+  if(inactive.length){lines.push('');lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
   const low=lowStock();
-  if(low.length){lines.push('');lines.push('RUNNING LOW: '+low.map(([id,p])=>p.name+' (~'+Math.max(0,daysLeft(p))+'d)').join(', '));}
-  const notes=Object.values(DB.products).filter(p=>p.active&&p.notes).map(p=>p.name+': '+p.notes);
-  if(notes.length){lines.push('');lines.push('PRODUCT NOTES: '+notes.join(' | '));}
+  if(low.length){lines.push('');lines.push('LOW STOCK: '+low.map(([id,p])=>p.name+' (~'+Math.max(0,daysLeft(p))+'d)').join(', '));}
   return lines.join('\n');
 }
 
-/* ── BACKUP ── */
-function exportData(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='thestack-backup.json';a.click();
-}
-function importData(inp){
-  const f=inp.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=()=>{try{DB=migrate(JSON.parse(r.result));save();render();alert('Imported.');}catch(e){alert('Invalid file.');}};
-  r.readAsText(f);
-}
-
-/* ── AUTO SYNC LIFECYCLE ── */
-async function autoPull(){
-  if(!DB.settings.syncUrl)return;
-  try{
-    const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});
-    if(!r.ok)return;
-    const remote=await r.json();
-    if(remote&&remote.updatedAt>(DB.updatedAt||0)&&!UI.modal){
-      DB=migrate(remote);
-      localStorage.setItem('stack_v1',JSON.stringify(DB));
-      render();
-    }
-  }catch(e){}
-}
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'){
-    autoPull();
-  }else{
-    // flush any pending debounced push before the app suspends
-    if(syncTimer){clearTimeout(syncTimer);syncTimer=null;}
-    if(DB.settings.syncUrl){
-      try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}
-    }
-  }
-});
-
+/* ══════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════ */
 render();
 autoPull();
 </script>
