@@ -313,7 +313,9 @@ async function autoPull(){
     const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});
     if(!r.ok)return;
     const remote=await r.json();
-    if(remote&&remote.updatedAt>(DB.updatedAt||0)&&!UI.modal){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}
+    if(remote&&remote.updatedAt>=(DB.updatedAt||0)&&!UI.modal){
+      DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
+    }
   }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{
