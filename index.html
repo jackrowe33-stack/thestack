@@ -737,7 +737,34 @@ function importData(inp){
   r.readAsText(f);
 }
 
+/* ── AUTO SYNC LIFECYCLE ── */
+async function autoPull(){
+  if(!DB.settings.syncUrl)return;
+  try{
+    const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});
+    if(!r.ok)return;
+    const remote=await r.json();
+    if(remote&&remote.updatedAt>(DB.updatedAt||0)&&!UI.modal){
+      DB=migrate(remote);
+      localStorage.setItem('stack_v1',JSON.stringify(DB));
+      render();
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    autoPull();
+  }else{
+    // flush any pending debounced push before the app suspends
+    if(syncTimer){clearTimeout(syncTimer);syncTimer=null;}
+    if(DB.settings.syncUrl){
+      try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}
+    }
+  }
+});
+
 render();
+autoPull();
 </script>
 </body>
 </html>
