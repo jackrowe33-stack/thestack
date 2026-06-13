@@ -5,146 +5,173 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#141815">
+<meta name="theme-color" content="#17171a">
 <title>The Stack</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#141815;--bg-raise:#1c211d;--card:#21271f;--card-edge:#2c332a;
-  --ink:#ece9e2;--ink-mid:#a8a89e;--ink-soft:#6e7268;
-  --moss:#8fa885;--moss-deep:#5d7355;--amber:#d9a05b;--plum:#a08bc0;--danger:#c97b6e;
-  --hairline:rgba(236,233,226,0.08);--glass:rgba(24,28,25,0.6);
-  --glass-hi:rgba(236,233,226,0.09);--glass-edge:rgba(236,233,226,0.14);
+  --bg:#17171a;--bg-raise:#1e1e22;--card:#232328;--card-edge:#303038;
+  --ink:#f0ede8;--ink-mid:#8a8a96;--ink-soft:#52525e;
+  --gold:#d4a843;--gold-deep:#b8922e;--danger:#c97b6e;--danger-soft:rgba(201,123,110,.14);
+  --hairline:#28282e;--glass:rgba(17,17,20,0.72);--glass-hi:rgba(240,237,232,0.07);--glass-edge:rgba(240,237,232,0.12);
+  --check-done:#b8922e;--streak-glow:rgba(212,168,67,.45);
 }
-@media(prefers-color-scheme:light){:root{
-  --bg:#f4f2ec;--bg-raise:#fbfaf6;--card:#ffffff;--card-edge:#e6e2d8;
-  --ink:#20241f;--ink-mid:#5d6157;--ink-soft:#989c91;
-  --moss:#5d7355;--moss-deep:#46593f;--amber:#b97f37;--plum:#7b639e;--danger:#b3604f;
-  --hairline:rgba(32,36,31,0.08);--glass:rgba(251,250,246,0.55);
-  --glass-hi:rgba(255,255,255,0.65);--glass-edge:rgba(32,36,31,0.1);
-}}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
-#app{padding-bottom:128px;min-height:100vh}
+#app{padding-bottom:132px;min-height:100vh}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;text-align:left}
 input,textarea,select{font:inherit;color:var(--ink);background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:10px;padding:10px 12px;width:100%;outline:none}
-input:focus,textarea:focus,select:focus{border-color:var(--moss)}
+input:focus,textarea:focus,select:focus{border-color:var(--gold)}
 textarea{resize:vertical;min-height:70px}
 ::placeholder{color:var(--ink-soft)}
 a{color:inherit}
 .top{padding:52px 22px 8px;display:flex;justify-content:space-between;align-items:flex-end}
-.wordmark{font-family:'Fraunces',serif;font-size:24px;font-weight:400}
-.wordmark em{font-style:italic;color:var(--moss)}
-.page-title{font-family:'Fraunces',serif;font-size:26px;font-weight:400;padding:52px 22px 4px}
-.page-sub{font-size:13px;color:var(--ink-soft);padding:0 22px 14px}
+.wordmark{font-family:'Fraunces',serif;font-size:24px;font-weight:400;color:var(--ink)}
+.wordmark em{font-style:italic;color:var(--gold)}
+.page-title{font-family:'Fraunces',serif;font-size:26px;font-weight:400;padding:52px 22px 4px;color:var(--ink)}
+.page-sub{font-size:13px;color:var(--ink-mid);padding:0 22px 14px}
 .date{font-size:11px;color:var(--ink-soft);text-align:right;line-height:1.5}
 .date strong{display:block;color:var(--ink-mid);font-weight:500;font-size:12px}
-.sec-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:24px 22px 12px}
+.sec-label{font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin:22px 22px 10px}
 .card{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 10px;overflow:hidden}
 .pad{padding:16px}
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--moss-deep);color:#f2f1ea;font-size:13px;font-weight:500;padding:11px 18px;border-radius:100px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--gold-deep);color:#f5f0e0;font-size:13px;font-weight:500;padding:11px 18px;border-radius:100px}
 .btn.ghost{background:var(--bg-raise);color:var(--ink-mid);border:1px solid var(--card-edge)}
 .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
-.btn.warn{background:transparent;color:var(--amber);border:1px solid var(--amber)}
+.btn.warn{background:transparent;color:var(--gold);border:1px solid var(--gold)}
 .btn.sm{padding:7px 13px;font-size:12px}
 .btn.full{width:100%;justify-content:center}
 .chip{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:4px 10px;border-radius:100px;white-space:nowrap}
-.c-moss{background:rgba(143,168,133,.14);color:var(--moss)}
-.c-plum{background:rgba(160,139,192,.16);color:var(--plum)}
-.c-amber{background:rgba(217,160,91,.14);color:var(--amber)}
+.c-gold{background:rgba(212,168,67,.12);color:var(--gold)}
+.c-plum{background:rgba(160,139,192,.14);color:#a08bc0}
 .c-mute{background:var(--bg-raise);color:var(--ink-soft);border:1px solid var(--card-edge)}
 .c-danger{background:rgba(201,123,110,.14);color:var(--danger)}
-.strip{display:flex;gap:5px;padding:14px 22px 4px}
-.strip .d{flex:1;text-align:center;padding:7px 0 8px;border-radius:10px;font-size:10px;color:var(--ink-soft);border:1px solid transparent}
-.strip .d span{display:block;font-size:9px;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.strip .d.today{background:var(--card);border-color:var(--card-edge);color:var(--ink-mid)}
-.hero{margin:14px 22px 0;background:linear-gradient(160deg,var(--card) 0%,var(--bg-raise) 100%);border:1px solid var(--card-edge);border-radius:22px;padding:24px 22px 20px;position:relative;overflow:hidden;display:block;width:calc(100% - 44px)}
-.hero::after{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(143,168,133,.13) 0%,transparent 70%);pointer-events:none}
-.hero-eyebrow{font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--moss);margin-bottom:8px}
-.hero h2{font-family:'Fraunces',serif;font-weight:400;font-size:26px;line-height:1.18;margin-bottom:4px;color:var(--ink)}
-.hero .sub{font-size:13px;color:var(--ink-mid);margin-bottom:18px}
-.row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--card-edge);border-radius:16px;padding:15px 16px;margin:0 22px 10px;width:calc(100% - 44px)}
-.row-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.ri-skin{background:rgba(160,139,192,.14)}.ri-hair{background:rgba(143,168,133,.14)}.ri-scent{background:rgba(217,160,91,.13)}
+/* streak */
+.streak-card{margin:10px 22px;background:var(--card);border:1px solid var(--card-edge);border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden}
+.streak-card::after{content:'';position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 70%);pointer-events:none}
+.streak-num{font-family:'Fraunces',serif;font-size:44px;font-weight:400;color:var(--gold);line-height:1}
+.streak-body{flex:1}
+.streak-eyebrow{font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px}
+.streak-sub{font-size:11px;color:var(--ink-mid);margin-top:3px}
+.streak-dots{display:flex;gap:5px;margin-top:8px}
+.sdot{width:9px;height:9px;border-radius:50%;transition:all .2s}
+.sdot.on{background:var(--gold)}
+.sdot.today{background:var(--gold);box-shadow:0 0 8px var(--streak-glow)}
+.sdot.off{background:var(--hairline)}
+.prog-row{display:flex;gap:6px;margin:6px 22px 0}
+.prog-item{flex:1;background:var(--card);border:1px solid var(--card-edge);border-radius:10px;padding:10px 10px 8px}
+.prog-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px}
+.prog-val{font-size:13px;font-weight:500;color:var(--ink)}
+.prog-bar{height:3px;background:var(--hairline);border-radius:2px;margin-top:7px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:var(--gold);transition:width .4s ease}
+/* hero */
+.hero{margin:10px 22px 0;background:linear-gradient(145deg,var(--card) 0%,var(--bg-raise) 100%);border:1px solid var(--card-edge);border-radius:20px;padding:20px 20px 18px;position:relative;overflow:hidden;display:block;width:calc(100% - 44px)}
+.hero::after{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(212,168,67,.08) 0%,transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.hero h2{font-family:'Fraunces',serif;font-weight:400;font-size:24px;line-height:1.18;margin-bottom:3px;color:var(--ink)}
+.hero .sub{font-size:12px;color:var(--ink-mid);margin-bottom:16px}
+/* rows */
+.row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px 15px;margin:0 22px 8px;width:calc(100% - 44px)}
+.row-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ri-skin{background:rgba(160,139,192,.12)}.ri-hair{background:rgba(212,168,67,.1)}.ri-scent{background:rgba(45,200,180,.07)}
 .row-body{flex:1;min-width:0}
 .row-title{font-size:14px;font-weight:500;color:var(--ink)}
-.row-sub{font-size:12px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.alert{margin:6px 22px 10px;display:flex;gap:11px;align-items:flex-start;background:rgba(217,160,91,.08);border:1px solid rgba(217,160,91,.22);border-radius:14px;padding:12px 14px;font-size:12.5px;color:var(--ink-mid);width:calc(100% - 44px)}
-.alert b{color:var(--amber);font-weight:600}
-.warn-banner{margin:0 22px 10px;display:flex;gap:11px;align-items:flex-start;background:rgba(201,123,110,.08);border:1px solid rgba(201,123,110,.25);border-radius:14px;padding:12px 14px;font-size:12px;color:var(--ink-mid);width:calc(100% - 44px)}
+.row-sub{font-size:12px;color:var(--ink-mid);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alert{margin:6px 22px 8px;display:flex;gap:11px;align-items:flex-start;background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.2);border-radius:14px;padding:12px 14px;font-size:12.5px;color:var(--ink-mid);width:calc(100% - 44px)}
+.alert b{color:var(--gold);font-weight:600}
+.warn-banner{margin:0 22px 10px;display:flex;gap:11px;align-items:flex-start;background:rgba(201,123,110,.07);border:1px solid rgba(201,123,110,.22);border-radius:14px;padding:12px 14px;font-size:12px;color:var(--ink-mid);width:calc(100% - 44px)}
+/* checklist */
+.checklist{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
+.citem{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%;background:none;text-align:left;transition:background .15s}
+.citem:last-child{border-bottom:none}
+.citem:active{background:rgba(212,168,67,.04)}
+.ccheck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--card-edge);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink);transition:all .2s cubic-bezier(.3,1.2,.4,1)}
+.ccheck.done{background:var(--check-done);border-color:var(--check-done);color:#fff}
+.cbody{flex:1;min-width:0}
+.cname{font-size:14px;font-weight:500;color:var(--ink);transition:all .2s}
+.cname.done{color:var(--card-edge);text-decoration:line-through;text-decoration-color:var(--card-edge)}
+.cnote{font-size:11px;color:var(--ink-mid);margin-top:1px;transition:color .2s}
+.cnote.done{color:var(--hairline)}
+.cwait{display:flex;align-items:center;gap:8px;padding:0 16px;font-size:10px;color:var(--ink-soft);background:var(--bg-raise)}
+.cwait::before,.cwait::after{content:'';flex:1;border-top:1px dashed var(--card-edge)}
+.cwait span{padding:5px 0}
+.complete-btn{margin:0 22px 14px;display:flex;gap:8px}
+/* steps (read-only) */
 .steps{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
 .step{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%}
 .step:last-child{border-bottom:none}
 .step-num{font-size:10px;font-weight:600;color:var(--ink-soft);min-width:16px;padding-top:3px}
 .step-body{flex:1;min-width:0}
 .step-name{font-size:14px;font-weight:500;color:var(--ink);line-height:1.3}
-.step-note{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.step-note{font-size:11.5px;color:var(--ink-mid);margin-top:2px}
 .step-arrow{color:var(--ink-soft);font-size:13px;padding-top:3px}
 .wait{display:flex;align-items:center;gap:8px;padding:0 16px;font-size:10.5px;color:var(--ink-soft);background:var(--bg-raise)}
 .wait::before,.wait::after{content:'';flex:1;border-top:1px dashed var(--card-edge)}
 .wait span{padding:5px 0}
-.swap-pill{display:inline-flex;align-items:center;gap:4px;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:20px;padding:2px 8px;margin-top:5px;font-size:10.5px;color:var(--amber);font-weight:500}
+.swap-pill{display:inline-flex;align-items:center;gap:4px;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:20px;padding:2px 8px;margin-top:5px;font-size:10.5px;color:var(--gold);font-weight:500}
 .seg{display:flex;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:12px;padding:3px;margin:0 22px 14px;width:calc(100% - 44px)}
-.seg button{flex:1;text-align:center;font-size:12px;font-weight:500;padding:9px 4px;border-radius:9px;color:var(--ink-soft)}
-.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.seg button{flex:1;text-align:center;font-size:12px;font-weight:500;padding:9px 4px;border-radius:9px;color:var(--ink-mid)}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 /* settings menu */
-.menu-item{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--hairline);width:100%}
+.menu-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%}
 .menu-item:last-child{border-bottom:none}
 .menu-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .menu-body{flex:1;min-width:0}
-.menu-title{font-size:14px;font-weight:500}
-.menu-sub{font-size:12px;color:var(--ink-soft);margin-top:1px}
+.menu-title{font-size:14px;font-weight:500;color:var(--ink)}
+.menu-sub{font-size:12px;color:var(--ink-mid);margin-top:1px}
 .menu-arrow{color:var(--ink-soft);font-size:16px}
-/* schedule grid */
 .sched-row{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--hairline);gap:10px}
 .sched-row:last-child{border-bottom:none}
-.sched-day-label{font-size:13px;font-weight:600;min-width:36px}
+.sched-day-label{font-size:13px;font-weight:600;min-width:36px;color:var(--ink)}
 .sched-slots{flex:1;display:flex;flex-direction:column;gap:6px}
 .sched-slot{display:flex;align-items:center;gap:8px}
 .sched-slot-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);min-width:32px}
 .sched-slot select{flex:1;font-size:12px;padding:6px 10px}
-/* day pill selector */
 .day-pills{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
 .day-pill{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:var(--bg-raise);border:1.5px solid var(--card-edge);color:var(--ink-soft)}
-.day-pill.on{background:rgba(143,168,133,.18);border-color:var(--moss);color:var(--moss)}
+.day-pill.on{background:rgba(212,168,67,.15);border-color:var(--gold);color:var(--gold)}
+.edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
+.edit-step:last-child{border-bottom:none}
+.edit-step .nm{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
+.mini{width:30px;height:30px;border-radius:9px;background:var(--bg-raise);border:1px solid var(--card-edge);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-mid);flex-shrink:0}
 /* tabs */
-.tabs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:402px;background:var(--glass);backdrop-filter:blur(34px) saturate(190%);-webkit-backdrop-filter:blur(34px) saturate(190%);border:1px solid var(--glass-edge);border-radius:30px;display:flex;padding:7px;box-shadow:0 12px 40px rgba(0,0,0,.32),inset 0 1px 0 var(--glass-hi);z-index:50}
-.tab{flex:1;text-align:center;font-size:10px;color:var(--ink-soft);padding:8px 0 6px;border-radius:23px;transition:all .25s cubic-bezier(.3,1.2,.4,1)}
-.tab .ic{font-size:18px;display:block;margin-bottom:2px;opacity:.7;transition:opacity .2s}
-.tab.active{color:var(--ink);background:var(--glass-hi);border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.tab.active .ic{opacity:1;color:var(--moss)}
-.fab{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));min-width:54px;height:54px;border-radius:28px;background:var(--moss-deep);color:#f2f1ea;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:49;padding:0 16px;gap:8px}
+.tabs{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:402px;background:var(--glass);backdrop-filter:blur(34px) saturate(190%);-webkit-backdrop-filter:blur(34px) saturate(190%);border:1px solid var(--glass-edge);border-radius:30px;display:flex;padding:7px;box-shadow:0 12px 40px rgba(0,0,0,.5),inset 0 1px 0 var(--glass-hi);z-index:50}
+.tab{flex:1;text-align:center;font-size:10px;color:#6a6a76;padding:8px 0 6px;border-radius:23px;transition:all .25s cubic-bezier(.3,1.2,.4,1)}
+.tab .ic{font-size:22px;display:block;margin-bottom:2px;opacity:.65;transition:all .2s}
+.tab.active{color:var(--ink);background:var(--glass-hi);border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 8px rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab.active .ic{opacity:1;color:var(--gold)}
+.fab{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));min-width:54px;height:54px;border-radius:28px;background:var(--gold-deep);color:#f5f0e0;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:49;padding:0 16px;gap:8px}
 .fab .t{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
 /* overlay/sheet */
-.overlay{position:fixed;inset:0;background:rgba(10,12,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:60;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg-raise);border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:10px 22px calc(28px + env(safe-area-inset-bottom));border:1px solid var(--card-edge);border-bottom:none}
+.overlay{position:fixed;inset:0;background:rgba(8,8,10,.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg-raise);border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:10px 22px calc(32px + env(safe-area-inset-bottom));border:1px solid var(--card-edge);border-bottom:none}
 .sheet-handle{width:38px;height:4px;border-radius:4px;background:var(--card-edge);margin:8px auto 18px}
-.sheet h3{font-family:'Fraunces',serif;font-size:21px;font-weight:400;margin-bottom:2px}
-.sheet .brand{font-size:12px;color:var(--ink-soft);margin-bottom:16px}
+.sheet h3{font-family:'Fraunces',serif;font-size:21px;font-weight:400;margin-bottom:2px;color:var(--ink)}
+.sheet .brand{font-size:12px;color:var(--ink-mid);margin-bottom:16px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
 .kv{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--hairline);gap:12px}
 .kv:last-child{border-bottom:none}
 .kv .k{font-size:13px;color:var(--ink-mid)}
-.kv .v{font-size:13px;font-weight:500;text-align:right}
+.kv .v{font-size:13px;font-weight:500;text-align:right;color:var(--ink)}
 .desc-block{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px;font-size:13px;line-height:1.6;color:var(--ink-mid);margin-bottom:14px}
-.desc-block b{color:var(--ink);font-weight:600;display:block;margin-bottom:4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-.edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
-.edit-step:last-child{border-bottom:none}
-.edit-step .nm{flex:1;font-size:13px;font-weight:500}
-.mini{width:30px;height:30px;border-radius:9px;background:var(--bg-raise);border:1px solid var(--card-edge);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-mid);flex-shrink:0}
-.scent-card{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;padding:16px;margin:0 22px 10px;width:calc(100% - 44px);display:block;text-align:left}
-.scent-card .nm{font-family:'Fraunces',serif;font-size:17px}
-.scent-card .br{font-size:11px;color:var(--ink-soft);margin-bottom:6px}
-.scent-card .ds{font-size:12.5px;color:var(--ink-mid);margin-bottom:8px}
+.desc-block b{color:var(--ink);font-weight:600;display:block;margin-bottom:4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.scent-card{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:16px;margin:0 22px 8px;width:calc(100% - 44px);display:block;text-align:left}
+.scent-card .nm{font-family:'Fraunces',serif;font-size:17px;color:var(--ink)}
+.scent-card .br{font-size:11px;color:var(--ink-mid);margin-bottom:5px}
+.scent-card .ds{font-size:12.5px;color:var(--ink-mid);margin-bottom:7px}
 .tags{display:flex;flex-wrap:wrap;gap:5px}
-.copybox{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.55;color:var(--ink-mid);white-space:pre-wrap;max-height:300px;overflow-y:auto;margin:0 22px 12px;width:calc(100% - 44px)}
+.copybox{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.55;color:var(--ink-mid);white-space:pre-wrap;max-height:280px;overflow-y:auto;margin:0 22px 12px;width:calc(100% - 44px)}
 .note-flag{font-size:10.5px;color:var(--danger);margin-top:4px;font-weight:500}
 .empty{padding:30px 22px;text-align:center;color:var(--ink-soft);font-size:13px}
 .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-mid);padding:52px 22px 0;cursor:pointer}
 .manage-link{padding:4px 22px 16px}
 .ro-notes{background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:12px;padding:12px;font-size:13px;color:var(--ink-mid);line-height:1.55}
+/* fullday section labels */
+.day-section{margin:16px 22px 10px;display:flex;align-items:center;gap:10px}
+.day-section-line{flex:1;height:1px;background:var(--card-edge)}
+.day-section-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
 </style>
 </head>
 <body>
@@ -152,30 +179,24 @@ a{color:inherit}
 <button class="fab" id="fab" onclick="toggleTimer()">⏱</button>
 <nav class="tabs" id="tabs"></nav>
 <script>
-/* ══════════════════════════════════════════════
-   SEED DATA
-══════════════════════════════════════════════ */
-function P(cat,name,brand,role,why,opts={}){
-  return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);
-}
-function R(id,cat,type,name,days,steps){
-  return {id,cat,type,name,days,steps};
-}
-
+/* ══ SEED ══ */
+function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
+function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
 const SEED={
-  v:4, updatedAt:0,
+  v:5,updatedAt:0,
   settings:{syncUrl:'',pin:''},
+  completions:{}, /* {routineId_YYYY-MM-DD: {completedAt, steps:[{p,done}]}} */
   products:{
-    sekkisei:P('skin','Sekkisei Lotion','Kosé','Hydrating toner','Herbal extracts and glycerin restore moisture balance and prep skin.',{durationDays:120}),
+    sekkisei:P('skin','Sekkisei Lotion','Kosé','Hydrating toner','Herbal extracts and glycerin restore moisture balance and prep skin so everything layered after absorbs better.',{durationDays:120}),
     dg:P('skin','Fill+Repair Serum','Dr. Dennis Gross','Hydration + peptide workhorse','Four molecular weights of hyaluronic acid; niacinamide; four peptides; ceramides NP/AP/EOP.',{durationDays:75}),
-    vitc:P('skin','C-Firma Vitamin C','Drunk Elephant','AM antioxidant','15% L-ascorbic acid with vitamin E and ferulic acid.',{next:{name:'CE Ferulic',brand:'SkinCeuticals',role:'AM antioxidant',why:'Deepest clinical evidence of any vitamin C. Note: metallic scent.',link:'https://www.skinceuticals.com.au/skincare/facial-serums/c-e-ferulic-vitamin-c-serum/SKC_0001.html'}}),
+    vitc:P('skin','C-Firma Vitamin C','Drunk Elephant','AM antioxidant','15% L-ascorbic acid with vitamin E and ferulic acid.',{next:{name:'CE Ferulic',brand:'SkinCeuticals',role:'AM antioxidant',why:'Deepest clinical evidence. Note: metallic scent.',link:'https://www.skinceuticals.com.au/skincare/facial-serums/c-e-ferulic-vitamin-c-serum/SKC_0001.html'}}),
     serumveil:P('skin','Serum Veil Deep Repair','One by Kosé','Moisture retention booster','Rice Power No.11 improves the skin\'s ability to produce ceramides.'),
-    emulsion:P('skin','Kosé Emulsion','Kosé','Moisture seal — as needed','Light emulsion layer on days when skin feels tight.',{durationDays:120,flags:['optional']}),
-    spf:P('skin','No.3 SPF 50','Rationale','Daily UV protection — permanent','Zinc oxide plus Tinosorb S.',{durationDays:60,flags:['permanent'],link:'https://rationale.com'}),
+    emulsion:P('skin','Kosé Emulsion','Kosé','Moisture seal — as needed','Skip when skin feels balanced.',{durationDays:120,flags:['optional']}),
+    spf:P('skin','No.3 SPF 50','Rationale','Daily UV protection','Always last in AM.',{durationDays:60,flags:['permanent'],link:'https://rationale.com'}),
     oil:P('skin','Cleansing Oil','Kosé','First cleanse','Dissolves sunscreen and oil-based debris.'),
-    no4:P('skin','No.4 Cleanser','Rationale','Second cleanse','Removes oil residue and prepares skin for actives.',{link:'https://rationale.com'}),
-    no5:P('skin','No.5 Milk Concentrate','Rationale','Barrier support — phasing out','Being phased out.',{durationDays:60,flags:['removeWhenDone']}),
-    exfoliant:P('skin','6% Mandelic + 2% Lactic','Paula\'s Choice','Gentle exfoliant — 1–2×/week','Direct contact after toner, before serums. Never on retinol nights.',{durationDays:180,link:'https://www.paulaschoice.com.au/skin-perfecting-6pct-mandelic-acid-and-2pct-lactic-acid-liquid-exfoliant/1470.html'}),
+    no4:P('skin','No.4 Cleanser','Rationale','Second cleanse','Water-based cleanse removes residue.',{link:'https://rationale.com'}),
+    no5:P('skin','No.5 Milk Concentrate','Rationale','Barrier support — phasing out','Phasing out.',{durationDays:60,flags:['removeWhenDone']}),
+    exfoliant:P('skin','6% Mandelic + 2% Lactic','Paula\'s Choice','Gentle exfoliant — 1-2x/week','After toner, before serums. Never on retinol nights.',{durationDays:180,link:'https://www.paulaschoice.com.au/skin-perfecting-6pct-mandelic-acid-and-2pct-lactic-acid-liquid-exfoliant/1470.html'}),
     retinol:P('skin','Retinol 0.3%','SkinCeuticals','Cell turnover + collagen','Encapsulated retinol. 4 nights/week.',{link:'https://www.skinceuticals.com.au',next:{name:'Retinol 0.5%',brand:'SkinCeuticals',role:'Strength upgrade',why:'Same delivery, higher concentration. Start 2 nights/week.',link:'https://www.adorebeauty.com.au/p/skinceuticals/skinceuticals-pure-retinol-0-5.html'}}),
     night:P('skin','No.6 Night Crème','Rationale','Night moisturiser','Occlusive night layer.',{durationDays:75,next:{name:'Ceramidin Skin Barrier Moisturising Cream',brand:'Dr. Jart+',role:'Barrier-first upgrade',why:'Five ceramide types. Purpose-built for dry skin.',link:'https://www.mecca.com/en-au/'}}),
     excellent:P('skin','Crème Excellent','Kosé','Rich night treatment — A nights','Apply after night crème.',{flags:['optional']}),
@@ -184,10 +205,10 @@ const SEED={
     oribecreme:P('hair','Style Crème','Oribe','Daily styling crème','Control and polish.'),
     kerastase:P('hair','Elixir Ultime L\'Huile Légère','Kérastase','Post-wash oil','Frizz control, heat protection.',{durationDays:120}),
     colorwow:P('hair','Cocktail Bionic Tonic','Color Wow','Strengthener — optional','Before oil on dry/damaged days.',{durationDays:120,flags:['optional']}),
-    curlsmith:P('hair','Bond Curl Rehab Salve','Curlsmith','Pre-wash treatment','15–30 min before washing.',{durationDays:180}),
-    davroe:P('hair','Smooth Senses Shampoo','Davroe','Weekly cleanse','Gentle cleanse.',{durationDays:150}),
+    curlsmith:P('hair','Bond Curl Rehab Salve','Curlsmith','Pre-wash treatment','15-30 min before washing.',{durationDays:180}),
+    davroe:P('hair','Smooth Senses Shampoo','Davroe','Weekly cleanse','Once weekly.',{durationDays:150}),
     oribecond:P('hair','Gold Lust Conditioner','Oribe','Weekly condition','Mid-lengths to ends.',{durationDays:150}),
-    robin:P('hair','Regenerating Mask','Christophe Robin','Deep nourishment — every 2–3 weeks','Swap for conditioner.',{durationDays:240,flags:['optional']}),
+    robin:P('hair','Regenerating Mask','Christophe Robin','Deep nourishment — every 2-3 weeks','Swap for conditioner.',{durationDays:240,flags:['optional']}),
     morris:P('hair','Matte Balm','Morris Motley','Weekday finish','Back to front, Kent KFM3 brush.',{durationDays:120}),
     quicksand:P('hair','Quicksand','Hanz de Fuko','Pre-styler — structured volume','Roots and top.',{durationDays:120}),
     blumaan:P('hair','Cavalier Clay','Blumaan','Weekend finish','After Quicksand.',{durationDays:120}),
@@ -218,54 +239,30 @@ const SEED={
   ]
 };
 
-/* ══════════════════════════════════════════════
-   MIGRATION
-══════════════════════════════════════════════ */
+/* ══ MIGRATION ══ */
+function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
 function migrate(d){
-  // v1/v2/v3 → v4
   if(!d.v||d.v<4){
-    // Rebuild routines array from old skin/hair objects
     d.routines=structuredClone(SEED.routines);
-    // Try to preserve old routine names
-    if(d.skin){
-      if(d.skin.am)d.routines.find(r=>r.id==='skin-am').name=d.skin.am.name||'Morning';
-      if(d.skin.a)d.routines.find(r=>r.id==='skin-a').name=d.skin.a.name||'Evening A — Recovery';
-      if(d.skin.b)d.routines.find(r=>r.id==='skin-b').name=d.skin.b.name||'Evening B — Retinol';
-      if(d.skin.c)d.routines.find(r=>r.id==='skin-c').name=d.skin.c.name||'Evening C — Exfoliation';
-    }
-    delete d.skin; delete d.hair;
+    if(d.skin){if(d.skin.am)d.routines.find(r=>r.id==='skin-am').name=d.skin.am.name||'Morning';if(d.skin.a)d.routines.find(r=>r.id==='skin-a').name=d.skin.a.name||'Evening A — Recovery';if(d.skin.b)d.routines.find(r=>r.id==='skin-b').name=d.skin.b.name||'Evening B — Retinol';if(d.skin.c)d.routines.find(r=>r.id==='skin-c').name=d.skin.c.name||'Evening C — Exfoliation';}
+    delete d.skin;delete d.hair;
     d.hairLooks=structuredClone(SEED.hairLooks);
     d.settings={syncUrl:d.settings?.syncUrl||'',pin:d.settings?.pin||''};
-    Object.values(d.products||{}).forEach(p=>{
-      if(!p.cat)p.cat='skin';if(p.active===undefined)p.active=true;if(!p.tags)p.tags=[];
-    });
+    Object.values(d.products||{}).forEach(p=>{if(!p.cat)p.cat='skin';if(p.active===undefined)p.active=true;if(!p.tags)p.tags=[];});
     d.v=4;
   }
+  if(d.v<5){if(!d.completions)d.completions={};d.v=5;}
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
-function guessCat(p){const h=['Olaplex','Oribe','Kérastase','Color Wow','Curlsmith','Davroe','Christophe Robin','Morris Motley','Hanz de Fuko','Blumaan'];return h.includes(p.brand)?'hair':'skin';}
 
-/* ══════════════════════════════════════════════
-   STATE
-══════════════════════════════════════════════ */
+/* ══ STATE ══ */
 let DB;
 try{const s=localStorage.getItem('stack_v1');DB=s?migrate(JSON.parse(s)):structuredClone(SEED);}catch(e){DB=structuredClone(SEED);}
-
-let UI={
-  tab:'today',
-  setupPage:null, // null=menu, or 'evening-schedule','morning-schedule','routines','routine-edit','looks','inventory','sync','prompt','backup'
-  editRoutineId:null,
-  invCat:'skin',
-  hairLook:null,
-  page:null, // 'fullday'
-  modal:null
-};
+let UI={tab:'today',setupPage:null,editRoutineId:null,invCat:'skin',hairLook:null,page:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
 let timerStart=null,timerInt=null;
 
-/* ══════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════ */
+/* ══ HELPERS ══ */
 function save(){DB.updatedAt=Date.now();localStorage.setItem('stack_v1',JSON.stringify(DB));schedSync();}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function dayName(i){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i];}
@@ -274,71 +271,139 @@ function fmtWait(s){if(!s)return null;return s>=60?(s/60)+' min':s+' sec';}
 function daysLeft(p){if(!p.durationDays)return null;return Math.round(p.durationDays-(Date.now()-p.restockedAt)/86400000);}
 function lowStock(){return Object.entries(DB.products).filter(([id,p])=>{if(!p.active)return false;const d=daysLeft(p);return d!==null&&d<=14;});}
 function pName(id){const p=DB.products[id];return p?p.name:'?';}
-function activeSteps(steps){return(steps||[]).filter(s=>{const p=DB.products[s.p];return p&&p.active;});}
-function scents(){return Object.entries(DB.products).filter(([id,p])=>p.cat==='scent'&&p.active).map(([id,p])=>({id,...p}));}
 function routineById(id){return DB.routines.find(r=>r.id===id);}
-
-// Get the routine assigned to a given day/type/cat (first match wins)
-function routineForDay(day,type,cat){
-  return DB.routines.find(r=>r.cat===cat&&r.type===type&&r.days.includes(day))||null;
-}
+function routineForDay(day,type,cat){return DB.routines.find(r=>r.cat===cat&&r.type===type&&r.days.includes(day))||null;}
 function routinesOf(cat,type){return DB.routines.filter(r=>r.cat===cat&&r.type===type);}
-
+function queuedIds(){return new Set(Object.values(DB.products).filter(p=>p.next&&p.next.productId).map(p=>p.next.productId));}
+function activeSteps(steps){const q=queuedIds();return(steps||[]).filter(s=>{const p=DB.products[s.p];return p&&p.active&&!q.has(s.p);});}
+function scents(){return Object.entries(DB.products).filter(([id,p])=>p.cat==='scent'&&p.active).map(([id,p])=>({id,...p}));}
 function manageBtn(){return`<div class="manage-link"><button class="btn ghost sm" onclick="UI.tab='setup';UI.setupPage=null;render()">Manage in Setup →</button></div>`;}
+function today(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 
-/* ══════════════════════════════════════════════
-   SYNC
-══════════════════════════════════════════════ */
-function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
+/* ══ GAMIFICATION ══ */
+/* A completion key = routineId + '_' + YYYY-MM-DD */
+function compKey(rid,date){return rid+'_'+(date||today());}
+function getComp(rid,date){return DB.completions[compKey(rid,date)]||null;}
+function setComp(rid,date,data){DB.completions[compKey(rid,date)]=data;save();}
+function isRoutineComplete(rid,date){const c=getComp(rid,date);return c&&c.completedAt;}
+function scheduledRoutinesForDay(day){
+  const type_cats=[['morning','skin'],['morning','hair'],['evening','skin'],['evening','hair']];
+  return type_cats.map(([type,cat])=>routineForDay(day,type,cat)).filter(Boolean);
+}
+function dayComplete(day,dateStr){
+  const rs=scheduledRoutinesForDay(day);
+  if(!rs.length)return false;
+  return rs.every(r=>isRoutineComplete(r.id,dateStr));
+}
+function calcStreak(){
+  let streak=0;
+  const now=new Date();
+  for(let i=1;i<=365;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const dow=d.getDay();
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(dayComplete(dow,ds))streak++;
+    else break;
+  }
+  return streak;
+}
+function todayDoneCount(){
+  const rs=scheduledRoutinesForDay(new Date().getDay());
+  return rs.filter(r=>isRoutineComplete(r.id,today())).length;
+}
+function todayTotalCount(){return scheduledRoutinesForDay(new Date().getDay()).length;}
+function weekStats(){
+  const now=new Date();let done=0,total=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const dow=d.getDay();
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const rs=scheduledRoutinesForDay(dow);
+    total+=rs.length;
+    rs.forEach(r=>{if(isRoutineComplete(r.id,ds))done++;});
+  }
+  return{done,total};
+}
+function bestStreak(){
+  let best=0,cur=0;
+  const now=new Date();
+  for(let i=0;i<90;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const dow=d.getDay();
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(dayComplete(dow,ds)){cur++;best=Math.max(best,cur);}
+    else cur=0;
+  }
+  return best;
+}
+/* checklist state for a routine on a given day */
+function checklistState(rid,date){
+  const r=routineById(rid);if(!r)return[];
+  const steps=activeSteps(r.steps);
+  const c=getComp(rid,date);
+  const doneSet=new Set((c&&c.steps?c.steps.filter(s=>s.done).map(s=>s.p):[]));
+  return steps.map(s=>({...s,done:doneSet.has(s.p)}));
+}
+function tickStep(rid,productId){
+  const date=today();
+  const c=getComp(rid,date)||{completedAt:null,steps:[]};
+  const r=routineById(rid);if(!r)return;
+  const steps=activeSteps(r.steps);
+  // rebuild steps array
+  const stepMap={};(c.steps||[]).forEach(s=>stepMap[s.p]=s.done);
+  stepMap[productId]=!stepMap[productId];
+  c.steps=steps.map(s=>({p:s.p,done:!!stepMap[s.p]}));
+  // auto-complete if all done
+  const allDone=steps.every(s=>stepMap[s.p]);
+  if(allDone&&!c.completedAt)c.completedAt=Date.now();
+  if(!allDone)c.completedAt=null;
+  setComp(rid,date,c);
+  render();
+}
+function completeAll(rid){
+  const date=today();
+  const r=routineById(rid);if(!r)return;
+  const steps=activeSteps(r.steps);
+  const c={completedAt:Date.now(),steps:steps.map(s=>({p:s.p,done:true}))};
+  setComp(rid,date,c);
+  render();
+}
+function uncompleteRoutine(rid){
+  const date=today();
+  delete DB.completions[compKey(rid,date)];
+  save();render();
+}
+
+/* ══ SYNC ══ */
 let syncTimer=null;
 function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPushSilent,2500);}
 async function syncPushSilent(){if(!DB.settings.syncUrl)return;try{await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});}catch(e){}}
 async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
 async function syncPull(force=false){
   if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}
-  let r;
-  try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});}
-  catch(e){alert('Pull failed — network error: '+(e.message||e));return;}
+  let r;try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});}catch(e){alert('Pull failed — network error: '+(e.message||e));return;}
   if(!r.ok){alert('Pull failed — HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
-  let remote;
-  try{remote=await r.json();}catch(e){alert('Pull failed — bad JSON');return;}
+  let remote;try{remote=await r.json();}catch(e){alert('Pull failed — bad JSON');return;}
   if(!remote){alert('Nothing on server yet.');return;}
-  if(force||remote.updatedAt>(DB.updatedAt||0)){
-    DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
-  }
+  if(force||remote.updatedAt>=(DB.updatedAt||0)){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}
 }
 async function autoPull(){
   if(!DB.settings.syncUrl)return;
-  try{
-    const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});
-    if(!r.ok)return;
-    const remote=await r.json();
-    if(remote&&remote.updatedAt>=(DB.updatedAt||0)&&!UI.modal){
-      DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
-    }
-  }catch(e){}
+  try{const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote&&remote.updatedAt>=(DB.updatedAt||0)&&!UI.modal){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}}catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){autoPull();}
-  else{
-    clearTimeout(syncTimer);syncTimer=null;
-    if(DB.settings.syncUrl){try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}}
-  }
+  else{clearTimeout(syncTimer);syncTimer=null;if(DB.settings.syncUrl){try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}}}
 });
 
-/* ══════════════════════════════════════════════
-   TIMER
-══════════════════════════════════════════════ */
-function toggleTimer(){
-  const f=document.getElementById('fab');
+/* ══ TIMER ══ */
+function toggleTimer(){const f=document.getElementById('fab');
   if(timerStart){clearInterval(timerInt);timerStart=null;f.innerHTML='⏱';}
   else{timerStart=Date.now();f.innerHTML='⏱ <span class="t">0:00</span>';
     timerInt=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);const m=Math.floor(s/60);f.querySelector('.t').textContent=m+':'+String(s%60).padStart(2,'0');},1000);}
 }
 
-/* ══════════════════════════════════════════════
-   RENDER
-══════════════════════════════════════════════ */
+/* ══ RENDER ══ */
 function render(){
   const app=document.getElementById('app');
   if(UI.page==='fullday')app.innerHTML=vFullDay();
@@ -355,114 +420,150 @@ function renderTabs(){
 }
 function navTab(k){UI.page=null;UI.tab=k;UI.setupPage=null;render();}
 
-/* ══════════════════════════════════════════════
-   TODAY
-══════════════════════════════════════════════ */
+/* ══ TODAY ══ */
 function vToday(){
-  const now=new Date(),h=now.getHours(),day=now.getDay();
-  const isAM=h<12;
+  const now=new Date(),day=now.getDay(),h=now.getHours(),isAM=h<12;
   const skinR=routineForDay(day,isAM?'morning':'evening','skin');
   const hairR=routineForDay(day,isAM?'morning':'evening','hair');
   const scent=suggestScent();
   const low=lowStock();
+  const streak=calcStreak();
+  const done=todayDoneCount(),total=todayTotalCount();
+  const wk=weekStats(),bs=bestStreak();
+  const wkPct=wk.total?Math.round(wk.done/wk.total*100):0;
+  const bsPct=bs?Math.min(100,Math.round(streak/bs*100)):0;
+  const dots=[0,1,2,3,4,5,6].map(i=>{
+    const d=new Date(now);d.setDate(d.getDate()-(6-i));
+    const dow=d.getDay();
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const isToday=i===6;
+    const complete=dayComplete(dow,ds);
+    return`<div class="sdot ${isToday?'today':complete?'on':'off'}"></div>`;
+  }).join('');
+  const streakMsg=streak===0?'Start your streak today':streak===1?'1 day — keep going':streak+' days — on a roll';
   const skinSteps=skinR?activeSteps(skinR.steps):[];
   const mins=Math.max(3,Math.round(skinSteps.reduce((a,s)=>a+(s.wait||0),0)/60)+skinSteps.length);
-
-  // day strip — show skin evening routine name per day
-  const strip=[1,2,3,4,5,6,0].map(d=>{
-    const r=routineForDay(d,'evening','skin');
-    const label=r?r.name.replace('Evening ','').replace('— ','').slice(0,3):'-';
-    return`<div class="d ${d===day?'today':''}">${'SMTWTFS'[d]}<span>${label}</span></div>`;
-  }).join('');
-
+  const todayDone=skinR&&isRoutineComplete(skinR.id,today());
   return`
   <div class="top"><div class="wordmark">The <em>Stack</em></div>
   <div class="date"><strong>${dayName(day)} ${isAM?'morning':'evening'}</strong>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}</div></div>
-  <div class="strip">${strip}</div>
+  <div class="streak-card">
+    <div class="streak-num">${streak}</div>
+    <div class="streak-body">
+      <div class="streak-eyebrow">Day streak</div>
+      <div class="streak-sub">${esc(streakMsg)}</div>
+      <div class="streak-dots">${dots}</div>
+    </div>
+  </div>
+  <div class="prog-row">
+    <div class="prog-item"><div class="prog-label">Today</div><div class="prog-val">${done} / ${total}</div><div class="prog-bar"><div class="prog-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div></div>
+    <div class="prog-item"><div class="prog-label">This week</div><div class="prog-val">${wk.done} / ${wk.total}</div><div class="prog-bar"><div class="prog-fill" style="width:${wkPct}%"></div></div></div>
+    <div class="prog-item"><div class="prog-label">Best streak</div><div class="prog-val">${bs} days</div><div class="prog-bar"><div class="prog-fill" style="width:${bsPct}%"></div></div></div>
+  </div>
   <button class="hero" onclick="UI.page='fullday';render()">
-    <p class="hero-eyebrow">Up next · ${isAM?'Morning':'Evening'}</p>
+    <p class="hero-eyebrow">Up next · ${isAM?'Morning':'Evening'}${todayDone?' · ✓ Done':''}</p>
     <h2>${skinR?esc(skinR.name):'No routine set'}</h2>
-    <p class="sub">${skinSteps.length} skin steps + hair & scent · ~${mins} min</p>
-    <span class="btn">Open routine →</span>
+    <p class="sub">${skinSteps.length} skin steps · hair & scent · ~${mins} min</p>
+    <span class="btn">${todayDone?'Review routine →':'Open routine →'}</span>
   </button>
-  ${low.length?`<div class="sec-label">Running low</div>`+low.map(([id,p])=>`<button class="alert" onclick="openProduct('${id}')"><span>⏳</span><div><b>${esc(p.name)}</b> — ~${Math.max(0,daysLeft(p))} days left${p.next?` · ${esc(p.next.name)} queued`:''}</div></button>`).join(''):''}
+  ${low.length?`<div class="sec-label">Running low</div>`+low.map(([id,p])=>{const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;const nName=np?np.brand+' '+np.name:(p.next?p.next.name:'');return`<button class="alert" onclick="openProduct('${id}')"><span>⏳</span><div><b>${esc(p.name)}</b> — ~${Math.max(0,daysLeft(p))} days left${nName?` · ${esc(nName)} queued`:''}</div></button>`;}).join(''):''}
   <div class="sec-label">Today</div>
-  <button class="row" onclick="UI.tab='skin';render()">
+  <button class="row" onclick="UI.tab='skin';UI.skinSelId='${skinR?skinR.id:''}';render()">
     <div class="row-icon ri-skin">${isAM?'☀️':'🌙'}</div>
     <div class="row-body"><div class="row-title">Skin — ${skinR?esc(skinR.name):'None set'}</div>
     <div class="row-sub">${skinSteps.slice(0,3).map(s=>pName(s.p)).join(' · ')}${skinSteps.length>3?'…':''}</div></div>
-    <span class="chip c-moss">Open</span>
+    <span class="chip ${skinR&&isRoutineComplete(skinR.id,today())?'c-gold':'c-mute'}">${skinR&&isRoutineComplete(skinR.id,today())?'Done':'Open'}</span>
   </button>
   <button class="row" onclick="UI.tab='hair';render()">
     <div class="row-icon ri-hair">〰️</div>
     <div class="row-body"><div class="row-title">Hair — ${hairR?esc(hairR.name):'None set'}</div>
     <div class="row-sub">${hairR?activeSteps(hairR.steps).slice(0,3).map(s=>pName(s.p)).join(' · '):'—'}</div></div>
-    <span class="chip c-moss">Open</span>
+    <span class="chip ${hairR&&isRoutineComplete(hairR.id,today())?'c-gold':'c-mute'}">${hairR&&isRoutineComplete(hairR.id,today())?'Done':'Open'}</span>
   </button>
   <button class="row" onclick="UI.tab='scent';render()">
     <div class="row-icon ri-scent">◈</div>
     <div class="row-body"><div class="row-title">Scent — ${scent?esc(scent.name):'Pick one'}</div>
     <div class="row-sub">${scent?esc(scent.brand)+' · suggested':'—'}</div></div>
-    <span class="chip c-amber">Change</span>
-  </button>
-  <div class="sec-label">Quick start</div>
-  <button class="row" onclick="openRefresh()">
-    <div class="row-icon ri-skin">✨</div>
-    <div class="row-body"><div class="row-title">Refresh & Go</div>
-    <div class="row-sub">Post-shower reset before going out</div></div>
-    <span class="chip c-mute">Open</span>
+    <span class="chip c-gold">Change</span>
   </button>`;
 }
-function openRefresh(){
-  const r=routineById('skin-refresh');
-  if(r){UI.modal={type:'routine-view',id:'skin-refresh'};render();}
-}
 
-/* ══════════════════════════════════════════════
-   FULL DAY
-══════════════════════════════════════════════ */
+/* ══ FULL DAY / CHECKLIST ══ */
 function vFullDay(){
-  const now=new Date(),h=now.getHours(),day=now.getDay();
-  const isAM=h<12;
+  const now=new Date(),h=now.getHours(),day=now.getDay(),isAM=h<12;
   const type=isAM?'morning':'evening';
   const skinR=routineForDay(day,type,'skin');
   const hairR=routineForDay(day,type,'hair');
   const scent=suggestScent();
-  let n=1;
+  let n=1,out='';
+  if(skinR){
+    out+=`<div class="day-section"><span class="day-section-label">Skin — ${esc(skinR.name)}</span><div class="day-section-line"></div></div>`;
+    out+=checklistHTML(skinR.id);
+    out+=`<div class="complete-btn">`;
+    if(!isRoutineComplete(skinR.id,today())){
+      out+=`<button class="btn full sm" onclick="completeAll('${skinR.id}')">Mark all complete</button>`;
+    }else{
+      out+=`<button class="btn ghost full sm" onclick="uncompleteRoutine('${skinR.id}')">✓ Completed — undo</button>`;
+    }
+    out+=`</div>`;n++;
+  }
+  if(hairR){
+    out+=`<div class="day-section"><span class="day-section-label">Hair — ${esc(hairR.name)}</span><div class="day-section-line"></div></div>`;
+    out+=checklistHTML(hairR.id);
+    out+=`<div class="complete-btn">`;
+    if(!isRoutineComplete(hairR.id,today())){
+      out+=`<button class="btn full sm" onclick="completeAll('${hairR.id}')">Mark all complete</button>`;
+    }else{
+      out+=`<button class="btn ghost full sm" onclick="uncompleteRoutine('${hairR.id}')">✓ Completed — undo</button>`;
+    }
+    out+=`</div>`;n++;
+  }
+  if(scent){
+    out+=`<div class="day-section"><span class="day-section-label">Scent</span><div class="day-section-line"></div></div>`;
+    out+=`<button class="scent-card" onclick="openProduct('${scent.id}')"><div class="nm">${esc(scent.name)}</div><div class="br">${esc(scent.brand)}</div><div class="ds">${esc(scent.role)}</div></button>`;
+    out+=`<div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="UI.tab='scent';UI.page=null;render()">Change scent →</button></div>`;
+  }
   return`<button class="back" onclick="UI.page=null;render()">‹ Back</button>
   <h1 class="page-title">${dayName(day)} ${isAM?'morning':'evening'}</h1>
-  <p class="page-sub">Everything for right now, in order</p>
-  ${skinR?`<div class="sec-label">${n++} · Skin — ${esc(skinR.name)}</div>${stepsHTML(skinR.steps)}`:''}
-  ${hairR?`<div class="sec-label">${n++} · Hair — ${esc(hairR.name)}</div>${stepsHTML(hairR.steps)}`:''}
-  ${scent?`<div class="sec-label">${n} · Scent</div>
-  <button class="scent-card" onclick="openProduct('${scent.id}')">
-    <div class="nm">${esc(scent.name)}</div><div class="br">${esc(scent.brand)}</div>
-    <div class="ds">${esc(scent.role)}</div>
-  </button>
-  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="UI.tab='scent';UI.page=null;render()">Change scent →</button></div>`:''}`;
+  <p class="page-sub">Tap each step as you go · or mark all complete</p>${out}`;
+}
+function checklistHTML(rid){
+  const items=checklistState(rid,today());
+  if(!items.length)return'<div class="checklist"><div class="empty">No active steps</div></div>';
+  let h='<div class="checklist">';
+  items.forEach((s,i)=>{
+    const p=DB.products[s.p];if(!p)return;
+    h+=`<button class="citem" onclick="tickStep('${rid}','${s.p}')">
+      <div class="ccheck ${s.done?'done':''}">${s.done?'✓':''}</div>
+      <div class="cbody">
+        <div class="cname ${s.done?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
+        <div class="cnote ${s.done?'done':''}">${esc(p.role)}${s.wait&&!s.done?' · wait '+fmtWait(s.wait)+' after':''}</div>
+      </div></button>`;
+    if(s.wait&&i<items.length-1&&!s.done)h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+  });
+  return h+'</div>';
 }
 
-/* ══════════════════════════════════════════════
-   SKIN TAB
-══════════════════════════════════════════════ */
+/* ══ SKIN TAB ══ */
 function vSkin(){
   const day=new Date().getDay(),h=new Date().getHours(),isAM=h<12;
   const skinRoutines=DB.routines.filter(r=>r.cat==='skin');
-  // default to today's routine
   const todayR=routineForDay(day,isAM?'morning':'evening','skin');
   const selId=UI.skinSelId||(todayR?todayR.id:skinRoutines[0]?.id);
   UI.skinSelId=selId;
   const r=routineById(selId);
-  return`<h1 class="page-title">Skin</h1><p class="page-sub">Tap any step for details, notes & swaps</p>
-  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${skinRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap" onclick="UI.skinSelId='${rt.id}';render()">${esc(rt.name.replace('Evening ','').replace('Morning','AM'))}</button>`).join('')}</div>
-  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned to any day'}</p>${stepsHTML(r.steps)}`:
+  const done=r&&isRoutineComplete(r.id,today());
+  return`<h1 class="page-title">Skin</h1><p class="page-sub">Tap any step for details · tick steps as you go</p>
+  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${skinRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap;flex-shrink:0" onclick="UI.skinSelId='${rt.id}';render()">${esc(rt.name.replace('Evening ','').replace('Morning','AM'))}</button>`).join('')}</div>
+  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned'}</p>
+  ${r.id!=='skin-refresh'?checklistHTML(r.id):''}
+  ${r.id==='skin-refresh'?stepsHTML(r.steps):''}
+  ${r.id!=='skin-refresh'?`<div class="complete-btn">${!done?`<button class="btn full sm" onclick="completeAll('${r.id}')">Mark all complete</button>`:`<button class="btn ghost full sm" onclick="uncompleteRoutine('${r.id}')">✓ Completed — undo</button>`}</div>`:''}`:
   '<div class="empty">Select a routine above</div>'}
   ${manageBtn()}`;
 }
 
-/* ══════════════════════════════════════════════
-   HAIR TAB
-══════════════════════════════════════════════ */
+/* ══ HAIR TAB ══ */
 function vHair(){
   const day=new Date().getDay(),h=new Date().getHours(),isAM=h<12;
   const hairRoutines=DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look'));
@@ -470,23 +571,23 @@ function vHair(){
   const selId=UI.hairSelId||(todayR?todayR.id:hairRoutines[0]?.id);
   UI.hairSelId=selId;
   const r=routineById(selId);
+  const done=r&&isRoutineComplete(r.id,today());
   const looks=DB.hairLooks||[];
   const lookRec=day===0||day===6?'hair-look-weekend':'hair-look-weekday';
   const selLook=UI.hairLook||lookRec;
   const lookR=routineById(selLook);
   return`<h1 class="page-title">Hair</h1><p class="page-sub">Tap any step for details</p>
-  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${hairRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap" onclick="UI.hairSelId='${rt.id}';render()">${esc(rt.name)}</button>`).join('')}</div>
-  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned to any day'}</p>${stepsHTML(r.steps)}`:
-  '<div class="empty">Select a routine above</div>'}
+  <div class="seg" style="overflow-x:auto;flex-wrap:nowrap">${hairRoutines.map(rt=>`<button class="${selId===rt.id?'on':''}" style="white-space:nowrap;flex-shrink:0" onclick="UI.hairSelId='${rt.id}';render()">${esc(rt.name)}</button>`).join('')}</div>
+  ${r?`<p class="page-sub" style="padding-top:0">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not assigned'}</p>
+  ${checklistHTML(r.id)}
+  <div class="complete-btn">${!done?`<button class="btn full sm" onclick="completeAll('${r.id}')">Mark all complete</button>`:`<button class="btn ghost full sm" onclick="uncompleteRoutine('${r.id}')">✓ Completed — undo</button>`}</div>`:'<div class="empty">Select a routine above</div>'}
   <div class="sec-label">Finish — pick your look</div>
   <div class="seg">${looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.hairLook='${l.id}';render()">${esc(l.name.split(' — ')[0])}</button>`).join('')}</div>
-  ${lookR?`<p class="page-sub" style="padding-top:0">${esc((looks.find(l=>l.id===selLook)||{}).desc||'')}${selLook===lookRec?' · recommended today':''}</p>${stepsHTML(lookR.steps)}`:''}
+  ${lookR?stepsHTML(lookR.steps):''}
   ${manageBtn()}`;
 }
 
-/* ══════════════════════════════════════════════
-   SCENT TAB
-══════════════════════════════════════════════ */
+/* ══ SCENT TAB ══ */
 function suggestScent(goingOut){
   const day=new Date().getDay(),h=new Date().getHours();
   const sc=scents();
@@ -495,12 +596,11 @@ function suggestScent(goingOut){
   return sc[0]||null;
 }
 function vScent(){
-  const sug=suggestScent();
-  const sc=scents();
+  const sug=suggestScent();const sc=scents();
   return`<h1 class="page-title">Scent</h1>
-  <p class="page-sub">${sug?'Suggested now: '+esc(sug.brand)+' '+esc(sug.name):'Add scents below'}</p>
-  ${sc.map(s=>`<button class="scent-card" onclick="openProduct('${s.id}')" style="${sug&&sug.id===s.id?'border-color:var(--amber)':''}">
-    <div class="nm">${esc(s.name)} ${sug&&sug.id===s.id?'<span class="chip c-amber" style="float:right">Today</span>':''}</div>
+  <p class="page-sub">${sug?'Suggested: '+esc(sug.brand)+' '+esc(sug.name):'Add scents below'}</p>
+  ${sc.map(s=>`<button class="scent-card" onclick="openProduct('${s.id}')" style="${sug&&sug.id===s.id?'border-color:var(--gold)':''}">
+    <div class="nm">${esc(s.name)} ${sug&&sug.id===s.id?'<span class="chip c-gold" style="float:right">Today</span>':''}</div>
     <div class="br">${esc(s.brand)}</div><div class="ds">${esc(s.role)}</div>
     <div class="tags">${s.tags.map(t=>`<span class="chip c-mute">${esc(t)}</span>`).join('')}</div>
   </button>`).join('')||'<div class="empty">No active scents</div>'}
@@ -508,32 +608,30 @@ function vScent(){
   ${manageBtn()}`;
 }
 
-/* ══════════════════════════════════════════════
-   STEPS HTML (shared)
-══════════════════════════════════════════════ */
+/* ══ STEPS HTML (read-only, for looks / refresh) ══ */
 function stepsHTML(steps){
   const act=activeSteps(steps);
   if(!act.length)return'<div class="steps"><div class="empty">No active steps</div></div>';
   let h='<div class="steps">';
   act.forEach((s,i)=>{
     const p=DB.products[s.p],dl=daysLeft(p);
+    const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;
+    const nName=np?np.brand+' '+np.name:(p.next?p.next.name:'');
     h+=`<button class="step" onclick="openProduct('${s.p}')">
       <span class="step-num">${i+1}</span>
       <div class="step-body">
         <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
         <div class="step-note">${esc(p.role)}</div>
-        ${p.next?`<span class="swap-pill">→ ${esc(p.next.brand)} ${esc(p.next.name)} next</span>`:''}
+        ${nName?`<span class="swap-pill">→ ${esc(nName)} queued</span>`:''}
         ${p.flags.includes('removeWhenDone')?`<div class="note-flag">Remove when finished</div>`:''}
-        ${dl!==null&&dl<=14?`<div class="note-flag" style="color:var(--amber)">~${Math.max(0,dl)} days left</div>`:''}
+        ${dl!==null&&dl<=14?`<div class="note-flag" style="color:var(--gold)">~${Math.max(0,dl)} days left</div>`:''}
       </div><span class="step-arrow">›</span></button>`;
     if(s.wait&&i<act.length-1)h+=`<div class="wait"><span>wait ${fmtWait(s.wait)}</span></div>`;
   });
   return h+'</div>';
 }
 
-/* ══════════════════════════════════════════════
-   SETUP ROUTER
-══════════════════════════════════════════════ */
+/* ══ SETUP ══ */
 function vSetupRouter(){
   const p=UI.setupPage;
   if(!p)return vSetupMenu();
@@ -545,251 +643,153 @@ function vSetupRouter(){
   if(p==='inventory')return vInventoryPage();
   if(p==='sync')return vSyncPage();
   if(p==='prompt')return vPromptPage();
-  if(p==='backup')return vBackupPage();
   return vSetupMenu();
 }
 function setupBack(page){UI.setupPage=page||null;render();}
-
 function vSetupMenu(){
   const low=lowStock().length;
-  const allRoutines=DB.routines.filter(r=>r.cat!=='skin'||!r.id.startsWith('skin-refresh'));
   return`<h1 class="page-title">Setup</h1><p class="page-sub">Tap to configure</p>
   <div class="card">
     <button class="menu-item" onclick="UI.setupPage='evening-schedule';render()">
-      <div class="menu-icon" style="background:rgba(160,139,192,.14)">🌙</div>
-      <div class="menu-body"><div class="menu-title">Evening Schedule</div>
-      <div class="menu-sub">Skin & hair routine per day</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(160,139,192,.12)">🌙</div>
+      <div class="menu-body"><div class="menu-title">Evening Schedule</div><div class="menu-sub">Skin & hair routine per day</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='morning-schedule';render()">
-      <div class="menu-icon" style="background:rgba(143,168,133,.14)">☀️</div>
-      <div class="menu-body"><div class="menu-title">Morning Schedule</div>
-      <div class="menu-sub">Skin & hair routine per day</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(212,168,67,.1)">☀️</div>
+      <div class="menu-body"><div class="menu-title">Morning Schedule</div><div class="menu-sub">Skin & hair routine per day</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='routines';render()">
-      <div class="menu-icon" style="background:rgba(217,160,91,.13)">📋</div>
-      <div class="menu-body"><div class="menu-title">Edit Routines</div>
-      <div class="menu-sub">${allRoutines.length} routines · add, copy, remove</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(45,200,180,.07)">📋</div>
+      <div class="menu-body"><div class="menu-title">Edit Routines</div><div class="menu-sub">${DB.routines.length} routines · add, copy, remove</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='looks';render()">
-      <div class="menu-icon" style="background:rgba(143,168,133,.14)">〰️</div>
-      <div class="menu-body"><div class="menu-title">Hair Looks</div>
-      <div class="menu-sub">${(DB.hairLooks||[]).length} looks configured</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(212,168,67,.1)">〰️</div>
+      <div class="menu-body"><div class="menu-title">Hair Looks</div><div class="menu-sub">${(DB.hairLooks||[]).length} looks configured</div></div><span class="menu-arrow">›</span>
     </button>
   </div>
   <div class="card">
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='skin';render()">
-      <div class="menu-icon" style="background:rgba(160,139,192,.14)">✦</div>
-      <div class="menu-body"><div class="menu-title">Skin Inventory</div>
-      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length} active products${low?` · ${low} low stock`:''}</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(160,139,192,.12)">✦</div>
+      <div class="menu-body"><div class="menu-title">Skin Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length} active${low?' · '+low+' low stock':''}</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='hair';render()">
-      <div class="menu-icon" style="background:rgba(143,168,133,.14)">〰️</div>
-      <div class="menu-body"><div class="menu-title">Hair Inventory</div>
-      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).length} active products</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(212,168,67,.1)">〰️</div>
+      <div class="menu-body"><div class="menu-title">Hair Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).length} active products</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='scent';render()">
-      <div class="menu-icon" style="background:rgba(217,160,91,.13)">◈</div>
-      <div class="menu-body"><div class="menu-title">Scent Inventory</div>
-      <div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='scent'&&p.active).length} active scents</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(45,200,180,.07)">◈</div>
+      <div class="menu-body"><div class="menu-title">Scent Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='scent'&&p.active).length} active scents</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='inactive';render()">
       <div class="menu-icon" style="background:var(--bg-raise)">◻</div>
-      <div class="menu-body"><div class="menu-title">Inactive Products</div>
-      <div class="menu-sub">${Object.values(DB.products).filter(p=>!p.active).length} deactivated</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-body"><div class="menu-title">Inactive Products</div><div class="menu-sub">${Object.values(DB.products).filter(p=>!p.active).length} deactivated</div></div><span class="menu-arrow">›</span>
     </button>
   </div>
   <div class="card">
     <button class="menu-item" onclick="UI.setupPage='sync';render()">
-      <div class="menu-icon" style="background:rgba(143,168,133,.14)">⇅</div>
-      <div class="menu-body"><div class="menu-title">Sync</div>
-      <div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(212,168,67,.1)">⇅</div>
+      <div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span>
     </button>
     <button class="menu-item" onclick="UI.setupPage='prompt';render()">
-      <div class="menu-icon" style="background:rgba(160,139,192,.14)">✦</div>
-      <div class="menu-body"><div class="menu-title">Claude Prompt</div>
-      <div class="menu-sub">Copy full routine context</div></div>
-      <span class="menu-arrow">›</span>
+      <div class="menu-icon" style="background:rgba(160,139,192,.12)">✦</div>
+      <div class="menu-body"><div class="menu-title">Claude Prompt</div><div class="menu-sub">Copy full routine context</div></div><span class="menu-arrow">›</span>
     </button>
   </div>
   <div class="sec-label">Data</div>
   <div class="card">
-    <button class="menu-item" onclick="exportData()">
-      <div class="menu-body"><div class="menu-title">Export backup</div></div>
-    </button>
-    <button class="menu-item" onclick="document.getElementById('imp').click()">
-      <div class="menu-body"><div class="menu-title">Import backup</div></div>
-    </button>
-    <button class="menu-item" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}">
-      <div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div></div>
-    </button>
+    <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div></div></button>
+    <button class="menu-item" onclick="document.getElementById('imp').click()"><div class="menu-body"><div class="menu-title">Import backup</div></div></button>
+    <button class="menu-item" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div></div></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">`;
 }
-
-/* ══════════════════════════════════════════════
-   SCHEDULE PAGE
-══════════════════════════════════════════════ */
 function vSchedulePage(type){
-  const icon=type==='morning'?'☀️':'🌙';
-  const title=type==='morning'?'Morning Schedule':'Evening Schedule';
-  const skinOpts=routinesOf('skin',type);
-  const hairOpts=routinesOf('hair',type);
+  const skinOpts=routinesOf('skin',type),hairOpts=routinesOf('hair',type);
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
-  <h1 class="page-title">${title}</h1>
-  <p class="page-sub">Skin and hair routine assigned per day · tap a routine name to change</p>
+  <h1 class="page-title">${type==='morning'?'Morning':'Evening'} Schedule</h1>
+  <p class="page-sub">Skin and hair routine assigned per day</p>
+  ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
   <div class="card">${[1,2,3,4,5,6,0].map(d=>{
-    const skinR=routineForDay(d,type,'skin');
-    const hairR=routineForDay(d,type,'hair');
-    return`<div class="sched-row">
-      <span class="sched-day-label">${dayShort(d)}</span>
-      <div class="sched-slots">
-        <div class="sched-slot">
-          <span class="sched-slot-label">Skin</span>
-          <select onchange="assignDay(${d},'${type}','skin',this.value)">
-            <option value="">— none —</option>
-            ${skinOpts.map(r=>`<option value="${r.id}" ${skinR&&skinR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="sched-slot">
-          <span class="sched-slot-label">Hair</span>
-          <select onchange="assignDay(${d},'${type}','hair',this.value)">
-            <option value="">— none —</option>
-            ${hairOpts.map(r=>`<option value="${r.id}" ${hairR&&hairR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
+    const skinR=routineForDay(d,type,'skin'),hairR=routineForDay(d,type,'hair');
+    return`<div class="sched-row"><span class="sched-day-label">${dayShort(d)}</span>
+    <div class="sched-slots">
+      <div class="sched-slot"><span class="sched-slot-label">Skin</span>
+      <select onchange="assignDay(${d},'${type}','skin',this.value)">
+        <option value="">— none —</option>
+        ${skinOpts.map(r=>`<option value="${r.id}" ${skinR&&skinR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+      </select></div>
+      <div class="sched-slot"><span class="sched-slot-label">Hair</span>
+      <select onchange="assignDay(${d},'${type}','hair',this.value)">
+        <option value="">— none —</option>
+        ${hairOpts.map(r=>`<option value="${r.id}" ${hairR&&hairR.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
+      </select></div>
+    </div></div>`;}).join('')}</div>`;
 }
-
 function assignDay(day,type,cat,newId){
   const warnings=[];
-  // Remove this day from any other routine of same cat+type
-  DB.routines.forEach(r=>{
-    if(r.cat===cat&&r.type===type&&r.id!==newId&&r.days.includes(day)){
-      warnings.push(r.name);
-      r.days=r.days.filter(d=>d!==day);
-    }
-  });
-  if(newId){
-    const r=routineById(newId);
-    if(r&&!r.days.includes(day))r.days.push(day);
-  }
+  DB.routines.forEach(r=>{if(r.cat===cat&&r.type===type&&r.id!==newId&&r.days.includes(day)){warnings.push(r.name);r.days=r.days.filter(d=>d!==day);}});
+  if(newId){const r=routineById(newId);if(r&&!r.days.includes(day))r.days.push(day);}
   save();
-  if(warnings.length){
-    // show warning banner briefly
-    UI._schedWarning=`${dayName(day)} removed from: ${warnings.join(', ')}`;
-    render();
-    setTimeout(()=>{UI._schedWarning=null;render();},4000);
-  }else render();
+  if(warnings.length){UI._schedWarning=`${dayName(day)} removed from: ${warnings.join(', ')}`;render();setTimeout(()=>{UI._schedWarning=null;render();},4000);}else render();
 }
-
-/* ══════════════════════════════════════════════
-   ROUTINES PAGE
-══════════════════════════════════════════════ */
 function vRoutinesPage(){
-  const cats=[['skin','Skin','ri-skin'],['hair','Hair','ri-hair']];
-  const types=['morning','evening'];
+  const cats=[['skin','Skin'],['hair','Hair']];const types=['morning','evening'];
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Edit Routines</h1>
-  <p class="page-sub">Tap to edit · hold days to reassign</p>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
-  ${cats.map(([cat,catLabel])=>types.map(type=>{
-    const rs=routinesOf(cat,type);
-    if(!rs.length)return'';
-    return`<div class="sec-label">${catLabel} — ${type==='morning'?'Morning':'Evening'}</div>
+  ${cats.map(([cat,cl])=>types.map(type=>{const rs=routinesOf(cat,type);if(!rs.length)return'';
+    return`<div class="sec-label">${cl} — ${type==='morning'?'Morning':'Evening'}</div>
     <div class="card">${rs.map(r=>`<button class="step" onclick="UI.setupPage='routine-edit';UI.editRoutineId='${r.id}';render()">
-      <div class="step-body">
-        <div class="step-name">${esc(r.name)}</div>
-        <div class="step-note">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'No days assigned'} · ${activeSteps(r.steps).length} steps</div>
-      </div><span class="step-arrow">›</span></button>`).join('')}</div>`;
-  }).join('')).join('')}
-  <div style="padding:8px 22px 0"><button class="btn ghost full" onclick="openNewRoutine()">+ New routine</button></div>`;
+      <div class="step-body"><div class="step-name">${esc(r.name)}</div>
+      <div class="step-note">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'No days'} · ${activeSteps(r.steps).length} steps</div></div>
+      <span class="step-arrow">›</span></button>`).join('')}</div>`;}).join('')).join('')}
+  <div style="padding:8px 22px 0"><button class="btn ghost full" onclick="UI.modal={type:'new-routine'};render()">+ New routine</button></div>`;
 }
-
-function openNewRoutine(){UI.modal={type:'new-routine'};render();}
-
-/* ══════════════════════════════════════════════
-   ROUTINE EDIT PAGE
-══════════════════════════════════════════════ */
 function vRoutineEditPage(){
   const r=routineById(UI.editRoutineId);
-  if(!r)return`<button class="back" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Routine not found</div>`;
-  const days=[0,1,2,3,4,5,6];
+  if(!r)return`<button class="back" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Not found</div>`;
   return`<button class="back" onclick="setupBack('routines')">‹ Routines</button>
   <h1 class="page-title">Edit Routine</h1>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
   <div class="sec-label">Name</div>
   <div style="padding:0 22px 14px"><input value="${esc(r.name)}" onchange="routineById('${r.id}').name=this.value;save()"></div>
-  <div class="sec-label">Type & category</div>
-  <div class="card pad" style="display:flex;gap:10px;flex-wrap:wrap">
-    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px">TIME</label>
-    <select onchange="routineById('${r.id}').type=this.value;save();render()">
-      <option value="morning" ${r.type==='morning'?'selected':''}>Morning</option>
-      <option value="evening" ${r.type==='evening'?'selected':''}>Evening</option>
-    </select></div>
-    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px">CATEGORY</label>
-    <select onchange="routineById('${r.id}').cat=this.value;save();render()">
-      <option value="skin" ${r.cat==='skin'?'selected':''}>Skin</option>
-      <option value="hair" ${r.cat==='hair'?'selected':''}>Hair</option>
-    </select></div>
+  <div class="card pad" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase">TIME</label>
+    <select onchange="routineById('${r.id}').type=this.value;save();render()"><option value="morning" ${r.type==='morning'?'selected':''}>Morning</option><option value="evening" ${r.type==='evening'?'selected':''}>Evening</option></select></div>
+    <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase">CATEGORY</label>
+    <select onchange="routineById('${r.id}').cat=this.value;save();render()"><option value="skin" ${r.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${r.cat==='hair'?'selected':''}>Hair</option></select></div>
   </div>
   <div class="sec-label">Days</div>
   <div style="padding:0 22px 14px">
-    <div class="day-pills">${days.map(d=>`<button class="day-pill ${r.days.includes(d)?'on':''}" onclick="toggleRoutineDay('${r.id}',${d})">${'SMTWTFS'[d]}</button>`).join('')}</div>
-    <p style="font-size:11px;color:var(--ink-soft);margin-top:8px">Assigning a day already claimed by another ${r.cat} ${r.type} routine will remove it from that routine.</p>
+    <div class="day-pills">${[0,1,2,3,4,5,6].map(d=>`<button class="day-pill ${r.days.includes(d)?'on':''}" onclick="toggleRoutineDay('${r.id}',${d})">${'SMTWTFS'[d]}</button>`).join('')}</div>
+    <p style="font-size:11px;color:var(--ink-soft);margin-top:8px">Assigning a day already claimed by another ${r.cat} ${r.type} routine will remove it from there.</p>
   </div>
   <div class="sec-label">Steps</div>
-  <div class="card">${r.steps.map((s,i)=>{
-    const p=DB.products[s.p];
-    return`<div class="edit-step" style="${p&&!p.active?'opacity:.45':''}">
-      <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
-      <input type="number" value="${s.wait||0}" title="wait sec" style="width:58px;padding:5px 8px;text-align:right" onchange="routineById('${r.id}').steps[${i}].wait=parseInt(this.value)||0;save()">
-      <button class="mini" onclick="moveRStep('${r.id}',${i},-1)">↑</button>
-      <button class="mini" onclick="moveRStep('${r.id}',${i},1)">↓</button>
-      <button class="mini" style="color:var(--danger)" onclick="routineById('${r.id}').steps.splice(${i},1);save();render()">✕</button>
+  <div class="card">${r.steps.map((s,i)=>{const p=DB.products[s.p];
+    return`<div class="edit-step" style="${p&&!p.active?'opacity:.4':''}">
+    <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
+    <input type="number" value="${s.wait||0}" style="width:58px;padding:5px 8px;text-align:right" onchange="routineById('${r.id}').steps[${i}].wait=parseInt(this.value)||0;save()">
+    <button class="mini" onclick="moveRStep('${r.id}',${i},-1)">↑</button>
+    <button class="mini" onclick="moveRStep('${r.id}',${i},1)">↓</button>
+    <button class="mini" style="color:var(--danger)" onclick="routineById('${r.id}').steps.splice(${i},1);save();render()">✕</button>
     </div>`;}).join('')||'<div class="empty">No steps yet</div>'}</div>
   <div style="padding:0 22px 8px;display:flex;gap:8px">
     <button class="btn sm" onclick="UI.modal={type:'addstep',routineId:'${r.id}'};render()">+ Add step</button>
-    ${!r.id.startsWith('skin-am')&&!r.id.startsWith('skin-b')&&!r.id.startsWith('skin-a')&&!r.id.startsWith('skin-c')?`<button class="btn danger sm" onclick="deleteRoutine('${r.id}')">Delete routine</button>`:''}
+    <button class="btn danger sm" onclick="deleteRoutine('${r.id}')">Delete</button>
   </div>`;
 }
-
 function toggleRoutineDay(id,day){
   const r=routineById(id);if(!r)return;
-  if(r.days.includes(day)){
-    r.days=r.days.filter(d=>d!==day);save();render();
-  }else{
-    // check for clash
+  if(r.days.includes(day)){r.days=r.days.filter(d=>d!==day);save();render();}
+  else{
     const clash=DB.routines.find(rt=>rt.id!==id&&rt.cat===r.cat&&rt.type===r.type&&rt.days.includes(day));
-    if(clash){
-      UI._schedWarning=`${dayName(day)} removed from "${clash.name}"`;
-      clash.days=clash.days.filter(d=>d!==day);
-    }
-    r.days.push(day);
-    save();render();
+    if(clash){UI._schedWarning=`${dayName(day)} removed from "${clash.name}"`;clash.days=clash.days.filter(d=>d!==day);}
+    r.days.push(day);save();render();
     if(clash)setTimeout(()=>{UI._schedWarning=null;render();},4000);
   }
 }
 function moveRStep(id,i,d){const st=routineById(id).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
-function deleteRoutine(id){
-  if(!confirm('Delete this routine? It will be removed from all days.'))return;
-  DB.routines=DB.routines.filter(r=>r.id!==id);
-  save();UI.setupPage='routines';render();
-}
-
-/* ══════════════════════════════════════════════
-   HAIR LOOKS PAGE
-══════════════════════════════════════════════ */
+function deleteRoutine(id){if(!confirm('Delete this routine?'))return;DB.routines=DB.routines.filter(r=>r.id!==id);save();UI.setupPage='routines';render();}
 function vLooksPage(){
   const looks=DB.hairLooks||[];
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
@@ -800,10 +800,6 @@ function vLooksPage(){
     <span class="step-arrow">›</span></button>`).join('')||'<div class="empty">No looks</div>'}</div>
   <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newLook()">+ Add look</button></div>`;
 }
-
-/* ══════════════════════════════════════════════
-   INVENTORY PAGE
-══════════════════════════════════════════════ */
 function vInventoryPage(){
   const cat=UI.invCat;
   const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
@@ -811,18 +807,13 @@ function vInventoryPage(){
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">${titles[cat]||'Inventory'}</h1>
   <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
-  <div class="card">${items.map(([id,p])=>{
-    const dl=daysLeft(p);
+  <div class="card">${items.map(([id,p])=>{const dl=daysLeft(p);
     return`<button class="step" onclick="openEdit('${id}')"><div class="step-body">
-      <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
-      <div class="step-note">${p.active?(dl!==null?(dl<=0?'Likely empty':'~'+dl+' days left'):'No estimate'):p.cat+' · inactive'}</div></div>
-      ${p.active&&dl!==null&&dl<=14?'<span class="chip c-amber">Low</span>':''}<span class="step-arrow">›</span></button>`;}).join('')||'<div class="empty">Nothing here</div>'}</div>
-  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newProduct(cat==='inactive'?'skin':cat)">+ Add product</button></div>`;
+    <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
+    <div class="step-note">${p.active?(dl!==null?(dl<=0?'Likely empty':'~'+dl+' days left'):'No estimate'):p.cat+' · inactive'}</div></div>
+    ${p.active&&dl!==null&&dl<=14?'<span class="chip c-gold">Low</span>':''}<span class="step-arrow">›</span></button>`;}).join('')||'<div class="empty">Nothing here</div>'}</div>
+  <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="newProduct('${cat==='inactive'?'skin':cat}')">+ Add product</button></div>`;
 }
-
-/* ══════════════════════════════════════════════
-   SYNC PAGE
-══════════════════════════════════════════════ */
 function vSyncPage(){
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Sync</h1><p class="page-sub">Cloudflare Worker + KV</p>
@@ -837,32 +828,30 @@ function vSyncPage(){
   <p class="page-sub">Auto-pushes 2.5s after any change. Auto-pulls on open and foreground.</p>`;
 }
 
-/* ══════════════════════════════════════════════
-   CLAUDE PROMPT PAGE
-══════════════════════════════════════════════ */
+/* ══ PROMPT PAGE ══ */
 function vPromptPage(){
+  const prompts=[{key:'full',label:'Full',fn:claudePrompt},{key:'skin',label:'Skin',fn:claudePromptSkin},{key:'hair',label:'Hair',fn:claudePromptHair},{key:'scent',label:'Scent',fn:claudePromptScent}];
+  const sel=UI._promptSel||'full';UI._promptSel=sel;
+  const current=prompts.find(p=>p.key===sel)||prompts[0];
   return`<button class="back" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Claude Prompt</h1><p class="page-sub">Copy and paste into any Claude chat</p>
-  <div class="copybox">${esc(claudePrompt())}</div>
-  <div style="padding:0 22px 8px"><button class="btn full" onclick="navigator.clipboard.writeText(claudePrompt()).then(()=>alert('Copied!'))">Copy to clipboard</button></div>`;
+  <div class="seg">${prompts.map(p=>`<button class="${sel===p.key?'on':''}" onclick="UI._promptSel='${p.key}';render()">${p.label}</button>`).join('')}</div>
+  <div class="copybox">${esc(current.fn())}</div>
+  <div style="padding:0 22px 8px"><button class="btn full" onclick="copyCurrentPrompt()">Copy to clipboard</button></div>`;
+}
+function copyCurrentPrompt(){
+  const fns={full:claudePrompt,skin:claudePromptSkin,hair:claudePromptHair,scent:claudePromptScent};
+  const fn=fns[UI._promptSel||'full']||claudePrompt;
+  navigator.clipboard.writeText(fn()).then(()=>alert('Copied!'));
 }
 
-/* ══════════════════════════════════════════════
-   BACKUP PAGE (accessed via menu bottom)
-══════════════════════════════════════════════ */
-function exportData(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='thestack-backup.json';a.click();}
-function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{DB=migrate(JSON.parse(r.result));save();render();alert('Imported.');}catch(e){alert('Invalid file.');}};r.readAsText(f);}
-
-/* ══════════════════════════════════════════════
-   MODALS
-══════════════════════════════════════════════ */
+/* ══ MODALS ══ */
 function renderModal(){
   let ex=document.getElementById('ov');if(ex)ex.remove();
   if(!UI.modal)return;
   const ov=document.createElement('div');ov.className='overlay';ov.id='ov';
   ov.onclick=e=>{if(e.target===ov){UI.modal=null;render();}};
-  const m=UI.modal;
-  let inner='';
+  const m=UI.modal;let inner='';
   if(m.type==='product')inner=productView(m.id);
   else if(m.type==='edit')inner=productEdit(m.id);
   else if(m.type==='routine-view')inner=routineViewSheet(m.id);
@@ -873,28 +862,23 @@ function renderModal(){
   ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${inner}</div>`;
   document.body.appendChild(ov);
 }
-
-/* routine view sheet (for refresh & go etc) */
-function routineViewSheet(id){
-  const r=routineById(id);if(!r)return'';
-  return`<div class="sheet-handle"></div>
-  <h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type}</div>
-  ${stepsHTML(r.steps)}
-  <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>`;
-}
-
-/* product read-only */
+function routineViewSheet(id){const r=routineById(id);if(!r)return'';return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type}</div>${stepsHTML(r.steps)}<button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>`;}
 function openProduct(id){UI.modal={type:'product',id};render();}
 function openEdit(id){UI.modal={type:'edit',id};render();}
+function closeEdit(){if(UI._afterNewProduct){const rid=UI._afterNewProduct.returnToEdit;UI._afterNewProduct=null;UI.modal={type:'edit',id:rid};}else UI.modal=null;render();}
+
 function productView(id){
-  const p=DB.products[id];const dl=daysLeft(p);
+  const p=DB.products[id];if(!p)return'';const dl=daysLeft(p);
+  const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;
+  const nName=np?np.brand+' '+np.name:(p.next?p.next.name||'':'');
+  const nWhy=p.next?.why||(np?np.why:'');const nLink=p.next?.link||(np?np.link:'');
   return`<div class="sheet-handle"></div>
   <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute" style="text-transform:capitalize">${p.cat}</span>${!p.active?' <span class="chip c-danger">Inactive</span>':''}</div>
   <div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>
-  ${p.cat==='scent'&&p.tags.length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-amber">${esc(t)}</span>`).join('')}</div></div>`:''}
-  ${p.next?`<div class="desc-block" style="border-color:rgba(217,160,91,.35)"><b style="color:var(--amber)">Next up · ${esc(p.next.brand)} ${esc(p.next.name)}</b>${esc(p.next.why||'')}
-  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="swapProduct('${id}')">I've run out — swap now</button>${p.next.link?`<a class="btn ghost sm" href="${esc(p.next.link)}" target="_blank" style="text-decoration:none">Order next</a>`:''}</div></div>`:''}
-  ${p.flags.includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.4)"><b style="color:var(--danger)">Phasing out</b>Use until finished, then remove.<div style="margin-top:10px"><button class="btn danger sm" onclick="deactivate('${id}')">Finished — deactivate now</button></div></div>`:''}
+  ${p.cat==='scent'&&p.tags.length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-gold">${esc(t)}</span>`).join('')}</div></div>`:''}
+  ${p.next&&nName?`<div class="desc-block" style="border-color:rgba(212,168,67,.3)"><b style="color:var(--gold)">Next up · ${esc(nName)}</b>${esc(nWhy)}
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="swapProduct('${id}')">I've run out — swap now</button>${nLink?`<a class="btn ghost sm" href="${esc(nLink)}" target="_blank" style="text-decoration:none">Order →</a>`:''}</div></div>`:''}
+  ${p.flags.includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.35)"><b style="color:var(--danger)">Phasing out</b>Use until finished.<div style="margin-top:10px"><button class="btn danger sm" onclick="deactivate('${id}')">Finished — deactivate now</button></div></div>`:''}
   <div class="card pad" style="margin:0 0 14px">
     <div class="kv"><span class="k">Stock estimate</span><span class="v">${dl!==null?(dl<=0?'Likely empty':'~'+Math.max(0,dl)+' days left'):'—'}</span></div>
     <div class="kv"><span class="k">Lasts about</span><span class="v">${p.durationDays||'—'} days</span></div>
@@ -902,43 +886,39 @@ function productView(id){
   </div>
   ${p.notes?`<div class="field"><label>Notes</label><div class="ro-notes">${esc(p.notes)}</div></div>`:''}
   ${p.link?`<div style="margin-bottom:14px"><a class="btn ghost sm" href="${esc(p.link)}" target="_blank" style="text-decoration:none">Open reorder link →</a></div>`:''}
-  <div style="display:flex;gap:8px">
-    <button class="btn full" onclick="openEdit('${id}')">Edit</button>
-    <button class="btn ghost full" onclick="UI.modal=null;render()">Done</button>
-  </div>`;
+  <div style="display:flex;gap:8px"><button class="btn full" onclick="openEdit('${id}')">Edit</button><button class="btn ghost full" onclick="UI.modal=null;render()">Done</button></div>`;
 }
-
-/* product edit */
 function productEdit(id){
-  const p=DB.products[id];
+  const p=DB.products[id];if(!p)return'';
   const allTags=['weekday','weekend','daily','office','casual','evening','occasion','winter','summer','home','signature'];
+  const candidates=Object.entries(DB.products).filter(([oid,op])=>oid!==id&&op.cat===p.cat&&op.active);
   return`<div class="sheet-handle"></div>
   <h3>Edit — ${esc(p.name)||'New product'}</h3><div class="brand">${esc(p.brand)}</div>
   <div class="field"><label>Name</label><input value="${esc(p.name)}" onchange="upd('${id}','name',this.value)"></div>
   <div class="field"><label>Brand</label><input value="${esc(p.brand)}" onchange="upd('${id}','brand',this.value)"></div>
-  <div class="field"><label>Category</label><select onchange="upd('${id}','cat',this.value)">
-    ${['skin','hair','scent'].map(c=>`<option value="${c}" ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="field"><label>Category</label><select onchange="upd('${id}','cat',this.value)">${['skin','hair','scent'].map(c=>`<option value="${c}" ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
   <div class="field"><label>Role (short)</label><input value="${esc(p.role)}" onchange="upd('${id}','role',this.value)"></div>
   <div class="field"><label>Why it matters</label><textarea onchange="upd('${id}','why',this.value)">${esc(p.why)}</textarea></div>
   <div class="field"><label>Notes</label><textarea onchange="upd('${id}','notes',this.value)">${esc(p.notes)}</textarea></div>
   <div class="field"><label>Reorder link</label><input value="${esc(p.link)}" placeholder="https://…" onchange="upd('${id}','link',this.value)"></div>
   <div class="field"><label>Lasts about (days)</label><input type="number" value="${p.durationDays||''}" onchange="upd('${id}','durationDays',parseInt(this.value)||0)"></div>
-  ${p.cat==='scent'?`<div class="field"><label>Tags</label><div class="tags">${allTags.map(t=>`<button class="chip ${p.tags.includes(t)?'c-amber':'c-mute'}" onclick="toggleTag('${id}','${t}')">${t}</button>`).join('')}</div></div>`:''}
+  ${p.cat==='scent'?`<div class="field"><label>Tags</label><div class="tags">${allTags.map(t=>`<button class="chip ${p.tags.includes(t)?'c-gold':'c-mute'}" onclick="toggleTag('${id}','${t}')">${t}</button>`).join('')}</div></div>`:''}
   <div class="sec-label" style="margin-left:0">Replacement</div>
-  ${p.next?`<div class="field"><label>Next name</label><input value="${esc(p.next.name)}" onchange="updNext('${id}','name',this.value)"></div>
-    <div class="field"><label>Next brand</label><input value="${esc(p.next.brand)}" onchange="updNext('${id}','brand',this.value)"></div>
+  ${p.next?(()=>{const np=p.next.productId?DB.products[p.next.productId]:null;const nName=np?np.brand+' '+np.name:(p.next.name||'Unnamed');
+    return`<div class="desc-block" style="border-color:rgba(212,168,67,.3);margin-bottom:10px"><b style="color:var(--gold)">${esc(nName)}</b>${np?`<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">In inventory · hidden until swapped</div>`:''}</div>
     <div class="field"><label>Why the swap</label><textarea onchange="updNext('${id}','why',this.value)">${esc(p.next.why||'')}</textarea></div>
-    <div class="field"><label>Order link</label><input value="${esc(p.next.link||'')}" onchange="updNext('${id}','link',this.value)"></div>
-    <div style="margin-bottom:14px"><button class="btn warn sm" onclick="upd('${id}','next',null);render()">Remove replacement</button></div>`
-  :`<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="upd('${id}','next',{name:'',brand:'',role:'',why:'',link:''});render()">+ Queue a replacement</button></div>`}
+    <div class="field"><label>Order link</label><input value="${esc(p.next.link||'')}" placeholder="https://…" onchange="updNext('${id}','link',this.value)"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">${np?`<button class="btn ghost sm" onclick="openProduct('${p.next.productId}')">View product →</button>`:''}<button class="btn warn sm" onclick="upd('${id}','next',null);save();render()">Remove replacement</button></div>`;
+  })():`<div class="field"><label>Queue from inventory</label><select onchange="setNextFromInventory('${id}',this.value)"><option value="">— select —</option>${candidates.map(([oid,op])=>`<option value="${oid}">${esc(op.brand)} ${esc(op.name)}</option>`).join('')}</select></div>
+  <div style="margin-bottom:14px"><button class="btn ghost sm" onclick="createAndQueueReplacement('${id}')">+ Create new product as replacement</button></div>`}
   <div class="sec-label" style="margin-left:0">Status</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
     ${p.active?`<button class="btn warn sm" onclick="deactivate('${id}')">Deactivate</button>`:`<button class="btn sm" onclick="upd('${id}','active',true);render()">Reactivate</button>`}
     <button class="btn danger sm" onclick="deleteProduct('${id}')">Delete permanently</button>
   </div>
   <div style="display:flex;gap:8px">
-    <button class="btn full" onclick="UI.modal={type:'product',id:'${id}'};render()">Save & view</button>
-    <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>
+    <button class="btn full" onclick="UI._afterNewProduct=null;UI.modal={type:'product',id:'${id}'};render()">Save & view</button>
+    <button class="btn ghost full" onclick="closeEdit()">Close</button>
   </div>`;
 }
 function upd(id,k,v){DB.products[id][k]=v;save();}
@@ -952,139 +932,106 @@ function deleteProduct(id){
 }
 function swapProduct(id){
   const p=DB.products[id];if(!p.next)return;
-  if(!confirm('Swap to '+p.next.name+'? Notes will clear.'))return;
-  Object.assign(p,{name:p.next.name,brand:p.next.brand,role:p.next.role||p.role,why:p.next.why||p.why,link:p.next.link||'',notes:'',restockedAt:Date.now(),next:null});
-  save();render();
+  const np=p.next.productId?DB.products[p.next.productId]:null;
+  const nName=np?np.brand+' '+np.name:(p.next.name||'the new product');
+  if(!confirm('Swap to '+nName+'?\n\n· Deactivate current product\n· Replace in all routines\n· Clear notes'))return;
+  if(np){
+    DB.routines.forEach(r=>{r.steps.forEach(s=>{if(s.p===id)s.p=p.next.productId;});});
+    p.active=false;p.next=null;np.active=true;
+  }else{Object.assign(p,{name:p.next.name||p.name,brand:p.next.brand||p.brand,role:p.next.role||p.role,why:p.next.why||p.why,link:p.next.link||'',notes:'',restockedAt:Date.now(),next:null});}
+  save();UI.modal=null;render();
 }
+function setNextFromInventory(id,nextId){if(!nextId){DB.products[id].next=null;save();render();return;}DB.products[id].next={productId:nextId,why:'',link:''};save();render();}
+function createAndQueueReplacement(id){const p=DB.products[id];const newId='p'+Date.now();DB.products[newId]=P(p.cat,'','','','');DB.products[id].next={productId:newId,why:'',link:''};save();UI._afterNewProduct={returnToEdit:id};openEdit(newId);}
 function newProduct(cat){const id='p'+Date.now();DB.products[id]=P(cat||'skin','','','','');save();openEdit(id);}
-
-/* add step sheet */
 function addStepSheet(routineId){
   return`<div class="sheet-handle"></div><h3>Add step</h3><div class="brand">Pick a product</div>
   <div class="card" style="margin:0 0 12px;max-height:320px;overflow-y:auto">
     ${Object.entries(DB.products).filter(([id,p])=>p.active).map(([id,p])=>`<button class="step" onclick="routineById('${routineId}').steps.push({p:'${id}',wait:0});save();UI.modal={type:'addstep',routineId:'${routineId}'};render()">
-      <div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div></button>`).join('')}
+    <div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div></button>`).join('')}
   </div>
   <button class="btn ghost full" onclick="UI.modal=null;render()">Done</button>`;
 }
-
-/* new routine sheet */
 function newRoutineSheet(){
-  const m=UI._newR||{cat:'skin',type:'evening',name:'',copyFrom:''};
-  UI._newR=m;
+  const m=UI._newR||{cat:'skin',type:'evening',name:'',copyFrom:''};UI._newR=m;
   const copyOpts=DB.routines.filter(r=>r.cat===m.cat&&r.type===m.type);
   return`<div class="sheet-handle"></div><h3>New Routine</h3>
   <div class="field"><label>Name</label><input value="${esc(m.name)}" placeholder="e.g. Evening A — Recovery" oninput="UI._newR.name=this.value"></div>
-  <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()">
-    <option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option>
-    <option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option>
-  </select></div>
-  <div class="field"><label>Type</label><select onchange="UI._newR.type=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()">
-    <option value="morning" ${m.type==='morning'?'selected':''}>Morning</option>
-    <option value="evening" ${m.type==='evening'?'selected':''}>Evening</option>
-  </select></div>
-  <div class="field"><label>Copy steps from (optional)</label><select onchange="UI._newR.copyFrom=this.value">
-    <option value="">— start empty —</option>
-    ${copyOpts.map(r=>`<option value="${r.id}" ${m.copyFrom===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}
-  </select></div>
+  <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option></select></div>
+  <div class="field"><label>Type</label><select onchange="UI._newR.type=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="morning" ${m.type==='morning'?'selected':''}>Morning</option><option value="evening" ${m.type==='evening'?'selected':''}>Evening</option></select></div>
+  <div class="field"><label>Copy steps from (optional)</label><select onchange="UI._newR.copyFrom=this.value"><option value="">— start empty —</option>${copyOpts.map(r=>`<option value="${r.id}" ${m.copyFrom===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div>
   <div style="display:flex;gap:8px;margin-top:4px">
     <button class="btn full" onclick="createRoutine()">Create</button>
     <button class="btn ghost full" onclick="UI.modal=null;UI._newR=null;render()">Cancel</button>
   </div>`;
 }
 function createRoutine(){
-  const m=UI._newR||{};
-  const name=(m.name||'').trim();
-  if(!name){alert('Enter a routine name.');return;}
-  const id='r'+Date.now();
-  const src=m.copyFrom?routineById(m.copyFrom):null;
+  const m=UI._newR||{};const name=(m.name||'').trim();if(!name){alert('Enter a name.');return;}
+  const id='r'+Date.now();const src=m.copyFrom?routineById(m.copyFrom):null;
   const steps=src?JSON.parse(JSON.stringify(src.steps)):[];
   DB.routines.push(R(id,m.cat||'skin',m.type||'evening',name,[],steps));
-  save();UI.modal=null;UI._newR=null;
-  UI.setupPage='routine-edit';UI.editRoutineId=id;render();
+  save();UI.modal=null;UI._newR=null;UI.setupPage='routine-edit';UI.editRoutineId=id;render();
 }
-
-/* look sheet */
 function lookSheet(idx){
-  const l=(DB.hairLooks||[])[idx];if(!l)return'';
-  const r=routineById(l.id)||{steps:[]};
+  const l=(DB.hairLooks||[])[idx];if(!l)return'';const r=routineById(l.id)||{steps:[]};
   return`<div class="sheet-handle"></div><h3>Edit look</h3>
   <div class="field"><label>Name</label><input value="${esc(l.name)}" onchange="DB.hairLooks[${idx}].name=this.value;save()"></div>
   <div class="field"><label>Description</label><input value="${esc(l.desc)}" onchange="DB.hairLooks[${idx}].desc=this.value;save()"></div>
   <div class="sec-label" style="margin-left:0">Steps</div>
   <div class="card" style="margin:0 0 12px">${r.steps.map((s,i)=>`<div class="edit-step"><span class="nm">${i+1}. ${esc(pName(s.p))}</span>
-    <button class="mini" onclick="lkMove(${idx},${i},-1)">↑</button>
-    <button class="mini" onclick="lkMove(${idx},${i},1)">↓</button>
-    <button class="mini" style="color:var(--danger)" onclick="routineById(DB.hairLooks[${idx}].id).steps.splice(${i},1);save();render()">✕</button>
-  </div>`).join('')||'<div class="empty">No steps</div>'}</div>
+  <button class="mini" onclick="lkMove(${idx},${i},-1)">↑</button><button class="mini" onclick="lkMove(${idx},${i},1)">↓</button>
+  <button class="mini" style="color:var(--danger)" onclick="routineById(DB.hairLooks[${idx}].id).steps.splice(${i},1);save();render()">✕</button></div>`).join('')||'<div class="empty">No steps</div>'}</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn sm" onclick="lkAdd(${idx})">+ Add product</button>
     <button class="btn danger sm" onclick="deleteLook(${idx})">Delete look</button>
-    <button class="btn ghost sm" onclick="UI.modal=null;render()">Done</button>
-  </div>`;
+    <button class="btn ghost sm" onclick="UI.modal=null;render()">Done</button></div>`;
 }
 function lkMove(idx,i,d){const r=routineById((DB.hairLooks||[])[idx]?.id);if(!r)return;const st=r.steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
-function lkAdd(idx){
-  const l=(DB.hairLooks||[])[idx];if(!l)return;
-  const hairP=Object.entries(DB.products).filter(([id,p])=>p.cat==='hair'&&p.active);
-  const opts=hairP.map(([id,p],n)=>`${n+1}: ${p.brand} ${p.name}`).join('\n');
-  const pick=prompt('Add which product?\n'+opts);
-  const n=parseInt(pick)-1;
-  if(n>=0&&n<hairP.length){
-    let r=routineById(l.id);
-    if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);}
-    r.steps.push({p:hairP[n][0],wait:0});save();render();
-  }
-}
-function deleteLook(idx){
-  if(!confirm('Delete this look?'))return;
-  const l=DB.hairLooks[idx];
-  DB.routines=DB.routines.filter(r=>r.id!==l.id);
-  DB.hairLooks.splice(idx,1);
-  UI.modal=null;save();render();
-}
-function newLook(){
-  const id='look-'+Date.now();
-  DB.hairLooks.push({id,name:'New look',desc:''});
-  DB.routines.push(R(id,'hair','morning','New look',[],[]));
-  save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();
-}
-function lookPickSheet(){
-  return`<div class="sheet-handle"></div><h3>Pick a look</h3>
-  ${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" onclick="UI.hairLook='${l.id}';UI.modal=null;render()">
-    <div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;
-}
+function lkAdd(idx){const l=(DB.hairLooks||[])[idx];if(!l)return;const hairP=Object.entries(DB.products).filter(([id,p])=>p.cat==='hair'&&p.active);const opts=hairP.map(([id,p],n)=>`${n+1}: ${p.brand} ${p.name}`).join('\n');const pick=prompt('Add which product?\n'+opts);const n=parseInt(pick)-1;if(n>=0&&n<hairP.length){let r=routineById(l.id);if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);}r.steps.push({p:hairP[n][0],wait:0});save();render();}}
+function deleteLook(idx){if(!confirm('Delete this look?'))return;const l=DB.hairLooks[idx];DB.routines=DB.routines.filter(r=>r.id!==l.id);DB.hairLooks.splice(idx,1);UI.modal=null;save();render();}
+function newLook(){const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:''});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
+function lookPickSheet(){return`<div class="sheet-handle"></div><h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" onclick="UI.hairLook='${l.id}';UI.modal=null;render()"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;}
 
-/* ══════════════════════════════════════════════
-   CLAUDE PROMPT
-══════════════════════════════════════════════ */
+/* ══ PROMPTS ══ */
 function claudePrompt(){
-  const lines=['MY PERSONAL CARE CONTEXT — generated by The Stack, '+new Date().toLocaleDateString('en-AU'),''];
-  lines.push('SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU. MECCA/brand sites.');
-  lines.push('');
-  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{
-    lines.push('SKIN — '+r.name+' ('+( r.days.length?r.days.map(d=>dayShort(d)).join('/'):('no days assigned'))+'):');
-    activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;if(p.next)l+=' [next: '+p.next.brand+' '+p.next.name+']';if(p.flags.includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});
-    lines.push('');
-  });
-  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{
-    lines.push('HAIR — '+r.name+' ('+( r.days.length?r.days.map(d=>dayShort(d)).join('/'):('no days'))+'):');
-    activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});
-    lines.push('');
-  });
-  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' + '):''));});
-  lines.push('');
-  lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
-  const inactive=Object.values(DB.products).filter(p=>!p.active);
-  if(inactive.length){lines.push('');lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
-  const low=lowStock();
-  if(low.length){lines.push('');lines.push('LOW STOCK: '+low.map(([id,p])=>p.name+' (~'+Math.max(0,daysLeft(p))+'d)').join(', '));}
+  const lines=['MY PERSONAL CARE CONTEXT — '+new Date().toLocaleDateString('en-AU'),'','SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.',''];
+  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if(p.flags.includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
+  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
+  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
+  lines.push('');lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
+  const inactive=Object.values(DB.products).filter(p=>!p.active);if(inactive.length){lines.push('');lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
+  const low=lowStock();if(low.length){lines.push('');lines.push('LOW STOCK: '+low.map(([id,p])=>p.name+' (~'+Math.max(0,daysLeft(p))+'d)').join(', '));}
+  return lines.join('\n');
+}
+function claudePromptSkin(){
+  const lines=['MY SKIN ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.','','── PRODUCTS ──'];
+  Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)lines.push('Replacing with: '+np.brand+' '+np.name+(p.next.why?' — '+p.next.why:''));else if(p.next&&p.next.name)lines.push('Replacing with: '+p.next.name+(p.next.why?' — '+p.next.why:''));if(p.flags.includes('removeWhenDone'))lines.push('Status: Phasing out');const dl=daysLeft(p);if(dl!==null&&dl<=30)lines.push('Stock: ~'+Math.max(0,dl)+' days left');});
+  lines.push('','── ROUTINES ──');
+  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('');lines.push(r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
+  const inactive=Object.values(DB.products).filter(p=>p.cat==='skin'&&!p.active);if(inactive.length){lines.push('','RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
+  return lines.join('\n');
+}
+function claudePromptHair(){
+  const lines=['MY HAIR ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','── PRODUCTS ──'];
+  Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);const dl=daysLeft(p);if(dl!==null&&dl<=30)lines.push('Stock: ~'+Math.max(0,dl)+' days left');});
+  lines.push('','── ROUTINES ──');
+  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('');lines.push(r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
+  lines.push('','── LOOKS ──');
+  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push(l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):'no steps'));});
+  return lines.join('\n');
+}
+function claudePromptScent(){
+  const lines=['MY SCENT WARDROBE — '+new Date().toLocaleDateString('en-AU'),'','PROFILE: Woods, musks, earth and resin. Quiet intensity over projection.',''];
+  scents().forEach(s=>{lines.push(s.brand+' '+s.name);lines.push('Character: '+s.role);if(s.why)lines.push('Why: '+s.why);if(s.tags.length)lines.push('When: '+s.tags.join(', '));if(s.notes)lines.push('Notes: '+s.notes);lines.push('');});
+  const inactive=Object.values(DB.products).filter(p=>p.cat==='scent'&&!p.active);if(inactive.length)lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));
   return lines.join('\n');
 }
 
-/* ══════════════════════════════════════════════
-   BOOT
-══════════════════════════════════════════════ */
+/* ══ BACKUP ══ */
+function exportData(){const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='thestack-backup.json';a.click();}
+function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{DB=migrate(JSON.parse(r.result));save();render();alert('Imported.');}catch(e){alert('Invalid file.');}};r.readAsText(f);}
+
+/* ══ BOOT ══ */
 render();
 autoPull();
 </script>
