@@ -98,6 +98,8 @@ a{color:inherit}
 .stat-label{font-size:10px;color:var(--ink-soft);margin-top:3px;font-weight:500}
 /* today / checklist */
 .today-page{position:fixed;inset:0;background:var(--bg);z-index:55;overflow-y:auto;padding-bottom:40px;max-width:430px;margin:0 auto}
+.today-sticky{position:sticky;top:0;z-index:10;background:var(--bg);padding-bottom:2px}
+.today-sticky::after{content:'';display:block;height:1px;background:linear-gradient(to bottom,var(--card-edge),transparent);margin:0 0 0 0}
 .today-header{padding:52px 22px 4px;display:flex;justify-content:space-between;align-items:flex-end}
 .today-close{font-size:13px;color:var(--ink-mid);padding:4px 0}
 .checklist{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
@@ -194,6 +196,24 @@ a{color:inherit}
 .day-section{margin:16px 22px 10px;display:flex;align-items:center;gap:10px}
 .day-section-line{flex:1;height:1px;background:var(--card-edge)}
 .day-section-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+
+
+/* today page section headers */
+.today-section{margin:20px 22px 8px;display:flex;align-items:center;gap:10px}
+.today-section-label{font-family:'Fraunces',serif;font-size:15px;font-weight:400;color:var(--cu);white-space:nowrap}
+/* date nav */
+.date-nav{display:flex;align-items:center;justify-content:space-between;margin:0 22px 16px;background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:4px}
+.date-nav-btn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-mid);background:var(--bg-raise);border:1px solid var(--card-edge);flex-shrink:0;font-weight:300}
+.date-nav-btn:active{background:var(--card-edge)}
+.date-nav-btn.disabled{opacity:.25;pointer-events:none}
+.date-nav-label{font-family:'Fraunces',serif;font-size:17px;font-weight:400;color:var(--ink);text-align:center;flex:1}
+/* close button */
+.close-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--bg-raise);border:1px solid var(--card-edge);color:var(--ink-mid);font-size:14px;font-weight:500;flex-shrink:0}
+.close-btn:active{background:var(--card-edge)}
+/* back button */
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink-mid);padding:52px 22px 0;cursor:pointer;background:none;border:none}
+.back-btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--ink-mid);padding:8px 14px;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:100px;margin:52px 22px 0;cursor:pointer}
+.back-btn:active{background:var(--card-edge)}
 </style>
 </head>
 <body>
@@ -278,7 +298,7 @@ function migrate(d){
 /* ══ STATE ══ */
 let DB;
 try{const s=localStorage.getItem('stack_v1');DB=s?migrate(JSON.parse(s)):structuredClone(SEED);}catch(e){DB=structuredClone(SEED);}
-let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',hairLook:null,todayOpen:false,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
+let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',hairLook:null,todayOpen:false,todayDate:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
 let timerStart=null,timerInt=null;
 
 /* ══ HELPERS ══ */
@@ -301,6 +321,12 @@ function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMo
 function suggestScent(goingOut){
   const day=new Date().getDay(),h=new Date().getHours(),sc=scents();
   const tags=goingOut?['occasion','evening']:h>=17?['evening']:(day===0||day===6)?['weekend','casual']:['weekday','office','daily'];
+  for(const t of tags){const m=sc.find(s=>s.tags.includes(t));if(m)return m;}
+  return sc[0]||null;
+}
+function suggestScentForDay(dow){
+  const sc=scents();
+  const tags=(dow===0||dow===6)?['weekend','casual']:['weekday','office','daily'];
   for(const t of tags){const m=sc.find(s=>s.tags.includes(t));if(m)return m;}
   return sc[0]||null;
 }
@@ -350,8 +376,8 @@ function checklistState(rid,date){
   const doneSet=new Set((c&&c.steps?c.steps.filter(s=>s.done).map(s=>s.p):[]));
   return steps.map(s=>({...s,done:doneSet.has(s.p)}));
 }
-function tickStep(rid,productId){
-  const date=todayStr(),c=getComp(rid,date)||{completedAt:null,steps:[]};
+function tickStep(rid,productId,dateStr){
+  const date=dateStr||UI.todayDate||todayStr(),c=getComp(rid,date)||{completedAt:null,steps:[]};
   const r=routineById(rid);if(!r)return;
   const steps=activeSteps(r.steps);
   const stepMap={};(c.steps||[]).forEach(s=>stepMap[s.p]=s.done);
@@ -360,14 +386,18 @@ function tickStep(rid,productId){
   if(steps.every(s=>stepMap[s.p])&&!c.completedAt)c.completedAt=Date.now();
   if(!steps.every(s=>stepMap[s.p]))c.completedAt=null;
   DB.completions[compKey(rid,date)]=c;save();renderTodayPage();
+  UI.todayScrollTo=null; // don't auto-scroll on tick
 }
-function completeAll(rid){
-  const date=todayStr(),r=routineById(rid);if(!r)return;
-  DB.completions[compKey(rid,date)]={completedAt:Date.now(),steps:activeSteps(r.steps).map(s=>({p:s.p,done:true}))};
-  save();renderTodayPage();
+function completeAll(rid){completeAllDate(rid,todayStr());}
+function uncompleteRoutine(rid){uncompleteRoutineDate(rid,todayStr());}
+function completeAllDate(rid,dateStr){
+  const r=routineById(rid);if(!r)return;
+  DB.completions[compKey(rid,dateStr)]={completedAt:Date.now(),steps:activeSteps(r.steps).map(s=>({p:s.p,done:true}))};
+  UI.todayScrollTo=null;save();renderTodayPage();
 }
-function uncompleteRoutine(rid){
-  delete DB.completions[compKey(rid,todayStr())];save();renderTodayPage();
+function uncompleteRoutineDate(rid,dateStr){
+  delete DB.completions[compKey(rid,dateStr)];
+  UI.todayScrollTo=null;save();renderTodayPage();
 }
 
 /* ══ SYNC ══ */
@@ -411,13 +441,16 @@ function renderTabs(){
 function navTab(k){UI.todayOpen=false;stopTimer();UI.tab=k;UI.setupPage=null;render();}
 
 /* ══ TODAY PAGE (overlay) ══ */
-function openToday(){
+function openToday(dateStr){
   UI.todayOpen=true;
+  UI.todayDate=dateStr||todayStr();
+  const h=new Date().getHours();
+  UI.todayScrollTo=(UI.todayDate===todayStr()&&h>=12)?'evening':'morning';
   renderTodayPage();
   renderTabs();
 }
 function closeToday(){
-  UI.todayOpen=false;stopTimer();
+  UI.todayOpen=false;stopTimer();UI.todayDate=null;UI.todayScrollTo=null;
   let ex=document.getElementById('today-overlay');if(ex)ex.remove();
   let fab=document.getElementById('fab-today');if(fab)fab.remove();
   renderTabs();render();
@@ -425,57 +458,133 @@ function closeToday(){
 function renderTodayPage(){
   let ex=document.getElementById('today-overlay');if(ex)ex.remove();
   const prevFab=document.getElementById('fab-today');if(prevFab)prevFab.remove();
-  const now=new Date(),day=now.getDay(),h=now.getHours(),isAM=h<12;
-  const type=isAM?'morning':'evening';
-  const skinR=routineForDay(day,type,'skin');
-  const hairR=routineForDay(day,type,'hair');
+
+  const dateStr=UI.todayDate||todayStr();
+  const now=new Date();
+  const todayDate=todayStr();
+  const isToday=dateStr===todayDate;
+
+  // Parse the selected date to get day-of-week
+  const parts=dateStr.split('-');
+  const selDate=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+  const day=selDate.getDay();
+  const h=isToday?now.getHours():0;
+
+  // Date nav helpers
+  function offsetDate(ds,delta){
+    const p=ds.split('-');
+    const d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+    d.setDate(d.getDate()+delta);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function fmtDate(ds){
+    const p=ds.split('-');
+    const d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+    if(ds===todayDate)return'Today';
+    const yesterday=offsetDate(todayDate,-1);
+    if(ds===yesterday)return'Yesterday';
+    return d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+  }
+  const isFuture=dateStr>todayDate;
+  const prevDate=offsetDate(dateStr,-1);
+  const nextDate=offsetDate(dateStr,1);
+  const canGoForward=nextDate<=todayDate; // don't allow future dates beyond today
+
+  const skinMR=routineForDay(day,'morning','skin');
+  const hairMR=routineForDay(day,'morning','hair');
+  const skinER=routineForDay(day,'evening','skin');
+  const hairER=routineForDay(day,'evening','hair');
   const scent=suggestScent();
-  const done=todayDoneCount(),total=todayTotalCount();
-  let out=`<div class="today-header">
-    <div><div class="wordmark" style="font-size:20px">The <em>Stack</em></div>
-    <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">${dayName(day)} ${isAM?'morning':'evening'} · ${done}/${total} done</div></div>
-    <button class="today-close" onclick="closeToday()">✕ Close</button>
-  </div>`;
-  if(skinR){
-    const skinDone=isRoutineComplete(skinR.id,todayStr());
-    out+=`<div class="day-section"><span class="day-section-label">Skin — ${esc(skinR.name)}</span><div class="day-section-line"></div></div>`;
-    out+=checklistHTML(skinR.id);
-    out+=`<div class="complete-btns">${!skinDone?`<button class="btn full sm" onclick="completeAll('${skinR.id}')">Mark all complete</button>`:`<button class="btn ghost full sm" onclick="uncompleteRoutine('${skinR.id}')">✓ Done — undo</button>`}</div>`;
-  }
-  if(hairR){
-    const hairDone=isRoutineComplete(hairR.id,todayStr());
-    out+=`<div class="day-section"><span class="day-section-label">Hair — ${esc(hairR.name)}</span><div class="day-section-line"></div></div>`;
-    out+=checklistHTML(hairR.id);
-    out+=`<div class="complete-btns">${!hairDone?`<button class="btn full sm" onclick="completeAll('${hairR.id}')">Mark all complete</button>`:`<button class="btn ghost full sm" onclick="uncompleteRoutine('${hairR.id}')">✓ Done — undo</button>`}</div>`;
-  }
-  if(scent){
-    out+=`<div class="day-section"><span class="day-section-label">Scent — suggested</span><div class="day-section-line"></div></div>`;
-    out+=`<div class="scent-today" onclick="openProduct('${scent.id}')">
-      <div class="nm">${esc(scent.name)}</div>
-      <div class="br">${esc(scent.brand)}</div>
-      <div class="ds">${esc(scent.role)}</div>
+
+  const done=scheduledForDay(day).filter(r=>isRoutineComplete(r.id,dateStr)).length;
+  const total=scheduledForDay(day).length;
+
+  function routineSection(r,label,sectionId){
+    if(!r)return'';
+    const isDone=isRoutineComplete(r.id,dateStr);
+    return`<div class="day-section today-section" id="${sectionId}">
+      <span class="today-section-label">${label}</span>
+      <div class="day-section-line"></div>
+      ${isDone?'<span style="font-size:11px;font-weight:600;color:var(--cu);margin-left:6px;white-space:nowrap">✓ Done</span>':''}
     </div>
-    <div style="padding:0 22px 8px"><button class="btn ghost sm" onclick="navTab('scent')">Change scent →</button></div>`;
+    ${checklistHTML(r.id,dateStr)}
+    <div class="complete-btns">
+      ${!isDone
+        ?`<button class="btn full sm" onclick="completeAllDate('${r.id}','${dateStr}')">Mark all complete</button>`
+        :`<button class="btn ghost full sm" onclick="uncompleteRoutineDate('${r.id}','${dateStr}')">✓ Done — undo</button>`
+      }
+    </div>`;
   }
-  if(!skinR&&!hairR)out+=`<div class="empty" style="margin-top:40px">No routines scheduled for this ${isAM?'morning':'evening'}.<br><br><button class="btn ghost sm" onclick="UI.tab='setup';UI.setupPage='morning-schedule';closeToday()">Configure schedule →</button></div>`;
-  out+=`<div style="height:80px"></div>`;
-  const overlay=document.createElement('div');overlay.id='today-overlay';overlay.className='today-page';overlay.innerHTML=out;
+
+  let out=`
+  <div class="today-sticky">
+    <div class="today-header">
+      <div><div class="wordmark" style="font-size:20px">The <em>Stack</em></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">${done}/${total} routines complete</div></div>
+      <button class="close-btn" onclick="closeToday()">✕</button>
+    </div>
+    <div class="date-nav">
+      <button class="date-nav-btn" onclick="openToday('${prevDate}')">‹</button>
+      <span class="date-nav-label">${fmtDate(dateStr)}</span>
+      <button class="date-nav-btn ${canGoForward?'':'disabled'}" onclick="${canGoForward?`openToday('${nextDate}')`:''}">›</button>
+    </div>
+  </div>
+
+  <div id="section-morning">`;
+
+  out+=routineSection(skinMR,`Skin — ${skinMR?skinMR.name:'No routine'}  · Morning`,'');
+  out+=routineSection(hairMR,`Hair — ${hairMR?hairMR.name:'No routine'} · Morning`,'');
+
+  if(!skinMR&&!hairMR){
+    out+=`<div class="empty" style="margin:20px 0">No morning routines for ${fmtDate(dateStr)}.</div>`;
+  }
+
+  out+=`</div><div id="section-evening" style="padding-top:4px">`;
+
+  out+=routineSection(skinER,`Skin — ${skinER?skinER.name:'No routine'} · Evening`,'');
+  out+=routineSection(hairER,`Hair — ${hairER?hairER.name:'No routine'} · Evening`,'');
+
+  if(!skinER&&!hairER){
+    out+=`<div class="empty" style="margin:20px 0">No evening routines for ${fmtDate(dateStr)}.</div>`;
+  }
+
+  out+=`</div>`;
+
+  // Scent lives on Home screen only
+
+  out+=`<div style="height:100px"></div>`;
+
+  const overlay=document.createElement('div');
+  overlay.id='today-overlay';
+  overlay.className='today-page';
+  overlay.innerHTML=out;
   document.body.appendChild(overlay);
+
+  // Pre-scroll to evening section if needed
+  if(UI.todayScrollTo==='evening'){
+    requestAnimationFrame(()=>{
+      const el=overlay.querySelector('#section-evening');
+      if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  }
+
   // FAB timer
-  const fab=document.createElement('button');fab.id='fab-today';fab.className='fab-today';fab.innerHTML='⏱';fab.onclick=toggleTimer;
+  const fab=document.createElement('button');
+  fab.id='fab-today';fab.className='fab-today';fab.innerHTML='⏱';fab.onclick=toggleTimer;
   document.body.appendChild(fab);
 }
-function checklistHTML(rid){
-  const items=checklistState(rid,todayStr());
+function checklistHTML(rid,dateStr){
+  dateStr=dateStr||todayStr();
+  const items=checklistState(rid,dateStr);
   if(!items.length)return'<div class="checklist"><div class="empty">No active steps</div></div>';
   let h='<div class="checklist">';
   items.forEach((s,i)=>{
     const p=DB.products[s.p];if(!p)return;
-    h+=`<button class="citem" onclick="tickStep('${rid}','${s.p}')">
+    h+=`<button class="citem" onclick="tickStep('${rid}','${s.p}','${dateStr}')">
       <div class="ccheck ${s.done?'done':''}">${s.done?'✓':''}</div>
       <div class="cbody">
         <div class="cname ${s.done?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
-        <div class="cnote ${s.done?'done':''}">${esc(p.role)}${s.wait&&!s.done?' · wait '+fmtWait(s.wait)+' after':''}</div>
+        <div class="cnote ${s.done?'done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!s.done?' · wait '+fmtWait(s.wait)+' after':''}</div>
       </div></button>`;
     if(s.wait&&i<items.length-1&&!s.done)h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
   });
@@ -686,7 +795,7 @@ function vSetupMenu(){
 
 function vSchedulePage(type){
   const skinOpts=routinesOf('skin',type),hairOpts=routinesOf('hair',type);
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">${type==='morning'?'Morning':'Evening'} Schedule</h1>
   <p class="page-sub">Skin and hair routine assigned per day</p>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
@@ -710,7 +819,7 @@ function assignDay(day,type,cat,newId){
 
 function vRoutinesPage(){
   const cats=[['skin','Skin'],['hair','Hair']],types=['morning','evening'];
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Edit Routines</h1>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
   ${cats.map(([cat,cl])=>types.map(type=>{const rs=routinesOf(cat,type);if(!rs.length)return'';
@@ -724,8 +833,8 @@ function vRoutinesPage(){
 
 function vRoutineEditPage(){
   const r=routineById(UI.editRoutineId);
-  if(!r)return`<button class="back" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Not found</div>`;
-  return`<button class="back" onclick="setupBack('routines')">‹ Routines</button>
+  if(!r)return`<button class="back-btn" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Not found</div>`;
+  return`<button class="back-btn" onclick="setupBack('routines')">‹ Routines</button>
   <h1 class="page-title">Edit Routine</h1>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
   <div class="sec-label">Name</div>
@@ -770,7 +879,7 @@ function deleteRoutine(id){if(!confirm('Delete this routine?'))return;DB.routine
 
 function vLooksPage(){
   const looks=DB.hairLooks||[];
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Hair Looks</h1>
   <div class="card">${looks.map((l,i)=>`<button class="step" onclick="UI.modal={type:'look',idx:${i}};render()">
     <div class="step-body"><div class="step-name">${esc(l.name)}</div>
@@ -783,7 +892,7 @@ function vInventoryPage(){
   const cat=UI.invCat;
   const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
   const titles={skin:'Skin Inventory',hair:'Hair Inventory',scent:'Scent Inventory',inactive:'Inactive Products'};
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">${titles[cat]||'Inventory'}</h1>
   <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
   <div class="card">${items.map(([id,p])=>{const dl=daysLeft(p);
@@ -795,7 +904,7 @@ function vInventoryPage(){
 }
 
 function vSyncPage(){
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Sync</h1><p class="page-sub">Cloudflare Worker + KV</p>
   <div class="card pad">
     <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
@@ -813,7 +922,7 @@ function vPromptPage(){
   const prompts=[{key:'full',label:'Full',fn:claudePrompt},{key:'skin',label:'Skin',fn:claudePromptSkin},{key:'hair',label:'Hair',fn:claudePromptHair},{key:'scent',label:'Scent',fn:claudePromptScent}];
   const sel=UI._promptSel||'full';UI._promptSel=sel;
   const current=prompts.find(p=>p.key===sel)||prompts[0];
-  return`<button class="back" onclick="setupBack()">‹ Setup</button>
+  return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Claude Prompt</h1><p class="page-sub">Copy and paste into any Claude chat</p>
   <div class="seg">${prompts.map(p=>`<button class="${sel===p.key?'on':''}" onclick="UI._promptSel='${p.key}';render()">${p.label}</button>`).join('')}</div>
   <div class="copybox">${esc(current.fn())}</div>
