@@ -279,7 +279,7 @@ async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await
 async function syncPull(force=false){
   if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}
   let r;
-  try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});}
+  try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});}
   catch(e){alert('Pull failed — network/CORS error: '+(e.message||e));return;}
   if(!r.ok){alert('Pull failed — server returned HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
   let remote;
@@ -287,13 +287,19 @@ async function syncPull(force=false){
   catch(e){alert('Pull failed — server response was not valid JSON: '+(e.message||e));return;}
   try{
     if(!remote){alert('Nothing stored on server yet.');return;}
-    if(force||remote.updatedAt>(DB.updatedAt||0)){
+    if(force){
+      const localT=new Date(DB.updatedAt||0).toISOString();
+      const remoteT=new Date(remote.updatedAt||0).toISOString();
+      const sampleKey=Object.keys(remote.products||{})[0];
+      const sampleName=sampleKey?remote.products[sampleKey].name:'?';
       DB=migrate(remote);
       localStorage.setItem('stack_v1',JSON.stringify(DB));
       render();
-      if(force)alert('Pulled — data applied.');
-    }else{
-      alert('Local data is already current.');
+      alert('Pulled.\nLocal was: '+localT+'\nServer was: '+remoteT+'\nFirst product on server: '+sampleName);
+    }else if(remote.updatedAt>(DB.updatedAt||0)){
+      DB=migrate(remote);
+      localStorage.setItem('stack_v1',JSON.stringify(DB));
+      render();
     }
   }catch(e){alert('Pull fetched OK but applying data failed: '+(e.message||e));}
 }
