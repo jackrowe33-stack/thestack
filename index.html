@@ -248,6 +248,7 @@ function migrate(d){
     if(d.products.exfoliant){d.products.exfoliant.role='Gentle exfoliant — C nights only, 1–2×/week';}
     d.v=3;
   }
+  if(d.settings&&d.settings.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
 function guessCat(p){const hairBrands=['Olaplex','Oribe','Kérastase','Color Wow','Curlsmith','Davroe','Christophe Robin','Morris Motley','Hanz de Fuko','Blumaan'];return hairBrands.includes(p.brand)?'hair':'skin';}
@@ -271,6 +272,7 @@ function pmChip(k){return k==='b'?'c-plum':k==='c'?'c-amber':'c-moss';}
 UI.skinView=autoSkinView();
 
 /* ════════════════════ SYNC ════════════════════ */
+function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
 let syncTimer=null;
 function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,2500);}
 async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
@@ -507,7 +509,7 @@ function vSetup(){
 
   <div class="sec-label">Sync (Cloudflare)</div>
   <div class="card pad">
-    <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=this.value.trim();save()"></div>
+    <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
     <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
     <div style="display:flex;gap:8px"><button class="btn sm" onclick="syncPush().then(r=>alert(r===true?'Pushed.':'Push failed: '+r))">Push now</button><button class="btn ghost sm" onclick="syncPull()">Pull latest</button></div>
   </div>
