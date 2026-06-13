@@ -276,7 +276,26 @@ function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.t
 let syncTimer=null;
 function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,2500);}
 async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
-async function syncPull(){if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}try{const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});if(r.ok){const remote=await r.json();if(remote&&remote.updatedAt>(DB.updatedAt||0)){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();alert('Synced — newer data loaded.');}else{alert('Local data is already current.');}}else{alert('Sync failed: '+r.status);}}catch(e){alert('Sync failed — check URL and PIN.');}}
+async function syncPull(){
+  if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}
+  let r;
+  try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});}
+  catch(e){alert('Pull failed — network/CORS error: '+(e.message||e));return;}
+  if(!r.ok){alert('Pull failed — server returned HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
+  let remote;
+  try{remote=await r.json();}
+  catch(e){alert('Pull failed — server response was not valid JSON: '+(e.message||e));return;}
+  try{
+    if(remote&&remote.updatedAt>(DB.updatedAt||0)){
+      DB=migrate(remote);
+      localStorage.setItem('stack_v1',JSON.stringify(DB));
+      render();
+      alert('Synced — newer data loaded.');
+    }else{
+      alert('Local data is already current.');
+    }
+  }catch(e){alert('Pull fetched OK but applying data failed: '+(e.message||e));}
+}
 
 /* ════════════════════ TIMER ════════════════════ */
 function toggleTimer(){const f=document.getElementById('fab');
