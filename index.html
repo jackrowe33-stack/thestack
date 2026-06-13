@@ -273,7 +273,7 @@ UI.skinView=autoSkinView();
 /* ════════════════════ SYNC ════════════════════ */
 let syncTimer=null;
 function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,2500);}
-async function syncPush(){if(!DB.settings.syncUrl)return;try{await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});}catch(e){}}
+async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
 async function syncPull(){if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}try{const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin}});if(r.ok){const remote=await r.json();if(remote&&remote.updatedAt>(DB.updatedAt||0)){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();alert('Synced — newer data loaded.');}else{alert('Local data is already current.');}}else{alert('Sync failed: '+r.status);}}catch(e){alert('Sync failed — check URL and PIN.');}}
 
 /* ════════════════════ TIMER ════════════════════ */
@@ -509,7 +509,7 @@ function vSetup(){
   <div class="card pad">
     <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=this.value.trim();save()"></div>
     <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
-    <div style="display:flex;gap:8px"><button class="btn sm" onclick="syncPush().then(()=>alert('Pushed.'))">Push now</button><button class="btn ghost sm" onclick="syncPull()">Pull latest</button></div>
+    <div style="display:flex;gap:8px"><button class="btn sm" onclick="syncPush().then(r=>alert(r===true?'Pushed.':'Push failed: '+r))">Push now</button><button class="btn ghost sm" onclick="syncPull()">Pull latest</button></div>
   </div>
 
   <div class="sec-label">Claude prompt</div>
