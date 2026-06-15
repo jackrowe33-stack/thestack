@@ -121,9 +121,14 @@ a{color:inherit}
 .scent-today .nm{font-family:'Fraunces',serif;font-size:17px;color:var(--ink)}
 .scent-today .br{font-size:11px;color:var(--ink-mid);margin-bottom:3px}
 .scent-today .ds{font-size:12px;color:var(--ink-mid)}
-/* timer fab — today page only */
-.fab-today{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));min-width:54px;height:54px;border-radius:28px;background:var(--cu-btn);color:#f5f0e0;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:60;padding:0 16px;gap:8px}
+
+/* global timer FAB — visible across all screens when timer running */
+.fab-global{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));height:46px;border-radius:28px;background:var(--cu-btn);color:#f5f0e0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:58;padding:0 16px;gap:8px;border:none;cursor:pointer}
+.fab-global-t{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+/* today-page timer start button — only shown when timer not running */
+.fab-today{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));right:max(20px,calc(50% - 195px));min-width:54px;height:54px;border-radius:28px;background:var(--cu-btn);color:#f5f0e0;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:60;padding:0 16px;gap:8px}
 .fab-today .t{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+
 /* steps (read-only) */
 .steps{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
 .step{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%}
@@ -219,6 +224,7 @@ a{color:inherit}
 <body>
 <div id="app"></div>
 <nav class="tabs" id="tabs"></nav>
+<button class="fab-global" id="fab-global" style="display:none" onclick="stopTimerGlobal()">⏱ <span class="fab-global-t">0:00</span></button>
 <script>
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
@@ -226,58 +232,42 @@ function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
 const SEED={
   v:5,updatedAt:0,settings:{syncUrl:'',pin:''},completions:{},
   products:{
-    sekkisei:P('skin','Sekkisei Lotion','Kosé','Hydrating toner','Herbal extracts and glycerin restore moisture balance.',{durationDays:120}),
-    dg:P('skin','Fill+Repair Serum','Dr. Dennis Gross','Hydration + peptide workhorse','Four molecular weights of HA; niacinamide; four peptides; ceramides NP/AP/EOP.',{durationDays:75}),
-    vitc:P('skin','C-Firma Vitamin C','Drunk Elephant','AM antioxidant','15% L-ascorbic acid with vitamin E and ferulic acid.',{next:{name:'CE Ferulic',brand:'SkinCeuticals',role:'AM antioxidant',why:'Deepest clinical evidence. Note: metallic scent.',link:'https://www.skinceuticals.com.au/skincare/facial-serums/c-e-ferulic-vitamin-c-serum/SKC_0001.html'}}),
-    serumveil:P('skin','Serum Veil Deep Repair','One by Kosé','Moisture retention booster','Rice Power No.11 improves ceramide production.'),
-    emulsion:P('skin','Kosé Emulsion','Kosé','Moisture seal — as needed','Light emulsion on drier days.',{durationDays:120,flags:['optional']}),
-    spf:P('skin','No.3 SPF 50','Rationale','Daily UV protection','Zinc oxide plus Tinosorb S. Always last in AM.',{durationDays:60,flags:['permanent'],link:'https://rationale.com'}),
-    oil:P('skin','Cleansing Oil','Kosé','First cleanse','Dissolves sunscreen and oil-based debris.'),
-    no4:P('skin','No.4 Cleanser','Rationale','Second cleanse','Water-based cleanse prepares skin for actives.',{link:'https://rationale.com'}),
-    no5:P('skin','No.5 Milk Concentrate','Rationale','Barrier support — phasing out','Phasing out.',{durationDays:60,flags:['removeWhenDone']}),
-    exfoliant:P('skin','6% Mandelic + 2% Lactic','Paula\'s Choice','Gentle exfoliant — 1-2x/week','After toner, before serums. Never on retinol nights.',{durationDays:180,link:'https://www.paulaschoice.com.au/skin-perfecting-6pct-mandelic-acid-and-2pct-lactic-acid-liquid-exfoliant/1470.html'}),
-    retinol:P('skin','Retinol 0.3%','SkinCeuticals','Cell turnover + collagen','Encapsulated retinol. 4 nights/week.',{link:'https://www.skinceuticals.com.au',next:{name:'Retinol 0.5%',brand:'SkinCeuticals',role:'Strength upgrade',why:'Same delivery, higher concentration.',link:'https://www.adorebeauty.com.au/p/skinceuticals/skinceuticals-pure-retinol-0-5.html'}}),
-    night:P('skin','No.6 Night Crème','Rationale','Night moisturiser','Occlusive night layer.',{durationDays:75,next:{name:'Ceramidin Skin Barrier Moisturising Cream',brand:'Dr. Jart+',role:'Barrier-first upgrade',why:'Five ceramide types. Purpose-built for dry skin.',link:'https://www.mecca.com/en-au/'}}),
-    excellent:P('skin','Crème Excellent','Kosé','Rich night treatment — A nights','Apply after night crème.',{flags:['optional']}),
-    eye:P('skin','Eye Crème','Rationale','Periorbital care','Every night.',{next:{name:'Peptides & Omegas Firming Eye Cream',brand:'Allies of Skin',role:'Active-dense upgrade',why:'Four peptide types, bakuchiol, ceramide NP.',link:'https://www.mecca.com/en-au/allies-of-skin/peptides-omegas-firming-eye-cream-I-059513/'}}),
-    olaplex:P('hair','No.6 Bond Smoother','Olaplex','Bond repair + smoothing','Repairs disulphide bonds, reduces frizz.'),
-    oribecreme:P('hair','Style Crème','Oribe','Daily styling crème','Control and polish.'),
-    kerastase:P('hair','Elixir Ultime L\'Huile Légère','Kérastase','Post-wash oil','Frizz control, heat protection.',{durationDays:120}),
-    colorwow:P('hair','Cocktail Bionic Tonic','Color Wow','Strengthener — optional','Before oil on dry/damaged days.',{durationDays:120,flags:['optional']}),
-    curlsmith:P('hair','Bond Curl Rehab Salve','Curlsmith','Pre-wash treatment','15-30 min before washing.',{durationDays:180}),
-    davroe:P('hair','Smooth Senses Shampoo','Davroe','Weekly cleanse','Once weekly.',{durationDays:150}),
-    oribecond:P('hair','Gold Lust Conditioner','Oribe','Weekly condition','Mid-lengths to ends.',{durationDays:150}),
-    robin:P('hair','Regenerating Mask','Christophe Robin','Deep nourishment — every 2-3 weeks','Swap for conditioner.',{durationDays:240,flags:['optional']}),
-    morris:P('hair','Matte Balm','Morris Motley','Weekday finish','Back to front, Kent KFM3 brush.',{durationDays:120}),
-    quicksand:P('hair','Quicksand','Hanz de Fuko','Pre-styler — structured volume','Roots and top.',{durationDays:120}),
-    blumaan:P('hair','Cavalier Clay','Blumaan','Weekend finish','After Quicksand.',{durationDays:120}),
-    seasalt:P('hair','Sea Salt Spray','—','Casual texture','Mist on damp hair.',{durationDays:150,flags:['optional']}),
-    a13:P('scent','Another 13','Le Labo','Clean ambroxan musk','Weekday signature.',{durationDays:365,tags:['weekday','office','daily']}),
-    e20:P('scent','Eucalyptus 20','Le Labo','Smoky cedar and frankincense','Evening and winter.',{durationDays:365,tags:['evening','winter']}),
-    b19:P('scent','Baie 19','Le Labo','Petrichor, juniper, patchouli','Weekend casual.',{durationDays:365,tags:['weekend','casual']}),
-    aventus:P('scent','Aventus','Creed','Fruity-smoky chypre','Occasions.',{durationDays:365,tags:['occasion','evening']}),
-    s33:P('scent','Santal 33','Le Labo','Signature sandalwood','Home.',{durationDays:365,tags:['home','signature']})
+    water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
+    soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
+    mystery:P('skin','Mystery Serum','Found It At The Back Of The Cupboard','Active — unknown vintage','Smells like 2019. Probably fine.',{durationDays:60,next:{name:'Something That Actually Expired This Decade',brand:'Any Brand',role:'Upgrade',why:'The expiry date said 2021 and its now concerning.'}}),
+    sunscreen:P('skin','Sunscreen (Applied Once)','Technically Applied','UV protection — annual application','Put on sunscreen they said. Every day they said. You compromised on "occasionally".',{durationDays:365,flags:['permanent']}),
+    moisturiser:P('skin','Definitely Moisturiser','Probably Not Hand Cream','Hydration — fingers crossed','It was in a white pump bottle on the bathroom shelf. Could be anything honestly.',{durationDays:45}),
+    oil:P('skin','Cleansing Oil','Big Dropper Energy','First cleanse — fancy','Massage in, emulsify with water, feel like you\'re in a spa advert. Youre not. You\'re in your bathroom.',{durationDays:90}),
+    retinol:P('skin','Retinol (The Scary One)','Skin Terror Inc.','Cell turnover — with consequences','Start low and slow they said. Used it three nights in a row. Looked like a lizard. Classic.',{durationDays:90,next:{name:'Retinol 0.5% (Even Scarier)',brand:'Skin Terror Inc.',role:'More consequences',why:'Youve earned it. Or suffered for it. Same thing.'}}),
+    spf:P('skin','SPF 50','The One Good Habit','UV armour — non-negotiable','The single product every dermatologist agrees on. You own it. You sometimes use it. Progress.',{durationDays:60,flags:['permanent']}),
+    olaplex:P('hair','Bond Smoother','Olaplex','Daily leave-in','Applied to hair. Hair responds. Relationship ongoing.',{}),
+    shampoo:P('hair','Shampoo','It Was On Sale','Weekly cleanse — economic','Does it have sulphates? Probably. Is it SLS free? Unknown. It lathers well and costs $4.',{durationDays:90}),
+    conditioner:P('hair','Conditioner','Same Brand As Shampoo','Weekly condition — matched set','Came in the 2-for-1. Living its best life.',{durationDays:90}),
+    wax:P('hair','Hair Wax','Sticky Situation Co.','Weekday finish — structural integrity','Applied to dry hair with fingers. Redistributed to keyboard. Redistributed to face. Classic cycle.',{durationDays:120}),
+    pomade:P('hair','Pomade','Weekend Warrior Products','Weekend finish — helmet mode','High hold. Water soluble technically. Requires industrial degreaser in practice.',{durationDays:120}),
+    a13:P('scent','Generic Musk No. 7','Department Store Counter','Skin scent — works fine','Spritzed on the wrist. Sniffed. Purchased. Now part of the rotation forever.',{durationDays:365,tags:['weekday','office','daily']}),
+    coffee:P('scent','Oud & Burnt Coffee','Probably Niche','Evening depth — conversation starter','Either smells incredible or like a Melbourne cafe that takes itself too seriously. No in between.',{durationDays:365,tags:['evening','winter']}),
+    weekend:P('scent','Something Casual','It Was A Gift','Weekend — diplomatic','A gift from someone who clearly thought "he seems like a fresh scents person". They were not wrong.',{durationDays:365,tags:['weekend','casual']})
   },
   routines:[
-    R('skin-am','skin','morning','Morning',[0,1,2,3,4,5,6],[{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'vitc',wait:90},{p:'serumveil',wait:60},{p:'emulsion',wait:30},{p:'spf',wait:0}]),
-    R('skin-a','skin','evening','Evening A — Recovery',[0,4],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'excellent',wait:0},{p:'eye',wait:0}]),
-    R('skin-b','skin','evening','Evening B — Retinol',[2,3,5,6],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'no5',wait:60},{p:'retinol',wait:300},{p:'night',wait:0},{p:'eye',wait:0}]),
-    R('skin-c','skin','evening','Evening C — Exfoliation',[1],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'exfoliant',wait:120},{p:'dg',wait:60},{p:'no5',wait:60},{p:'night',wait:0},{p:'eye',wait:0}]),
-    R('skin-refresh','skin','morning','Refresh & Go',[],[{p:'oil',wait:0},{p:'no4',wait:30},{p:'sekkisei',wait:30},{p:'dg',wait:60},{p:'serumveil',wait:60},{p:'spf',wait:0}]),
-    R('hair-morning','hair','morning','Daily base',[1,2,3,4,5,6],[{p:'olaplex',wait:0},{p:'oribecreme',wait:0}]),
-    R('hair-sunday','hair','morning','Sunday ritual',[0],[{p:'curlsmith',wait:1800},{p:'davroe',wait:0},{p:'oribecond',wait:0},{p:'robin',wait:0},{p:'kerastase',wait:0},{p:'olaplex',wait:0},{p:'oribecreme',wait:0}]),
+    R('skin-am','skin','morning','Morning',[0,1,2,3,4,5,6],[{p:'water',wait:0},{p:'moisturiser',wait:30},{p:'mystery',wait:60},{p:'spf',wait:0}]),
+    R('skin-a','skin','evening','Evening A — Recovery',[0,4],[{p:'oil',wait:0},{p:'soap',wait:30},{p:'water',wait:30},{p:'moisturiser',wait:60}]),
+    R('skin-b','skin','evening','Evening B — Retinol',[2,3,5,6],[{p:'oil',wait:0},{p:'soap',wait:30},{p:'water',wait:30},{p:'retinol',wait:300},{p:'moisturiser',wait:0}]),
+    R('skin-c','skin','evening','Evening C — Exfoliation',[1],[{p:'oil',wait:0},{p:'soap',wait:30},{p:'water',wait:30},{p:'mystery',wait:120},{p:'moisturiser',wait:0}]),
+    R('skin-refresh','skin','morning','Refresh & Go',[],[{p:'water',wait:0},{p:'moisturiser',wait:30},{p:'spf',wait:0}]),
+    R('hair-morning','hair','morning','Daily base',[1,2,3,4,5,6],[{p:'olaplex',wait:0},{p:'wax',wait:0}]),
+    R('hair-sunday','hair','morning','Sunday ritual',[0],[{p:'shampoo',wait:0},{p:'conditioner',wait:0},{p:'olaplex',wait:0},{p:'pomade',wait:0}]),
     R('hair-evening','hair','evening','Evening Hair',[0,1,2,3,4,5,6],[{p:'olaplex',wait:0}]),
-    R('hair-look-weekday','hair','morning','Look — Weekday',[],[{p:'morris',wait:0}]),
-    R('hair-look-weekend','hair','morning','Look — Weekend',[],[{p:'quicksand',wait:0},{p:'blumaan',wait:0}]),
-    R('hair-look-beachy','hair','morning','Look — Beachy',[],[{p:'seasalt',wait:0}])
+    R('hair-look-weekday','hair','morning','Look — Weekday',[],[{p:'wax',wait:0}]),
+    R('hair-look-weekend','hair','morning','Look — Weekend',[],[{p:'pomade',wait:0}]),
+    R('hair-look-beachy','hair','morning','Look — Beachy',[],[{p:'shampoo',wait:0}])
   ],
   hairLooks:[
-    {id:'hair-look-weekday',name:'Weekday — Clean & sculpted',desc:'Controlled, professional, soft matte finish'},
-    {id:'hair-look-weekend',name:'Weekend — Bold & textured',desc:'High volume, dry texture, durable matte hold'},
-    {id:'hair-look-beachy',name:'Casual — Beachy texture',desc:'Soft, airy volume with flexible hold'}
+    {id:'hair-look-weekday',name:'Weekday — Controlled Chaos',desc:'Presentable from 9-5, questionable at 5:01'},
+    {id:'hair-look-weekend',name:'Weekend — Helmet',desc:'High hold, no regrets, several regrets'},
+    {id:'hair-look-beachy',name:'Casual — Just Woke Up',desc:'Definitely not 20 minutes of effort.'}
   ]
 };
-
 /* ══ MIGRATION ══ */
 function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
 function migrate(d){
@@ -424,6 +414,10 @@ document.addEventListener('visibilitychange',()=>{
 
 /* ══ RENDER ══ */
 function render(){
+  // Save current scroll before re-rendering
+  if(!UI._scrollPositions)UI._scrollPositions={};
+  const curKey=UI.tab+(UI.setupPage||'');
+  if(!UI._scrollRestoring)UI._scrollPositions[curKey]=window.scrollY;
   const app=document.getElementById('app');
   if(UI.tab==='home')app.innerHTML=vHome();
   else if(UI.tab==='skin')app.innerHTML=vSkin();
@@ -432,31 +426,61 @@ function render(){
   else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
   renderTabs();renderModal();
   if(!UI.todayOpen){let ex=document.getElementById('today-overlay');if(ex)ex.remove();let fabEl=document.getElementById('fab-today');if(fabEl)fabEl.remove();}
-  window.scrollTo(0,0);
+  // Restore scroll for this tab/page if we have a saved position, else scroll to top
+  const scrollKey=UI.tab+(UI.setupPage||'');
+  if(UI._scrollPositions&&UI._scrollPositions[scrollKey]!==undefined&&UI._scrollRestoring){
+    requestAnimationFrame(()=>window.scrollTo(0,UI._scrollPositions[scrollKey]));
+    UI._scrollRestoring=false;
+  } else if(!UI._scrollRestoring){
+    window.scrollTo(0,0);
+  }
 }
 function renderTabs(){
   const t=[['home','⌂','Home'],['skin','✦','Skin'],['hair','〰','Hair'],['scent','◈','Scent'],['setup','⚙','Setup']];
   document.getElementById('tabs').innerHTML=t.map(([k,ic,l])=>`<button class="tab ${UI.tab===k&&!UI.todayOpen?'active':''}" onclick="navTab('${k}')"><span class="ic">${ic}</span>${l}</button>`).join('');
 }
-function navTab(k){UI.todayOpen=false;stopTimer();UI.tab=k;UI.setupPage=null;render();}
+function saveScroll(){if(!UI._scrollPositions)UI._scrollPositions={};UI._scrollPositions[UI.tab+(UI.setupPage||'')]=window.scrollY;}
+function navTab(k){saveScroll();UI.todayOpen=false;UI.tab=k;UI.setupPage=null;UI._scrollRestoring=true;render();}
 
 /* ══ TODAY PAGE (overlay) ══ */
+let _wakeLock=null;
+async function acquireWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      _wakeLock=await navigator.wakeLock.request('screen');
+    }
+  }catch(e){}
+}
+function releaseWakeLock(){
+  if(_wakeLock){_wakeLock.release().catch(()=>{});_wakeLock=null;}
+}
+// Re-acquire if tab becomes visible again while Today is open
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&UI.todayOpen)acquireWakeLock();
+});
 function openToday(dateStr){
   UI.todayOpen=true;
   UI.todayDate=dateStr||todayStr();
   const h=new Date().getHours();
   UI.todayScrollTo=(UI.todayDate===todayStr()&&h>=12)?'evening':'morning';
+  acquireWakeLock();
   renderTodayPage();
   renderTabs();
 }
 function closeToday(){
-  UI.todayOpen=false;stopTimer();UI.todayDate=null;UI.todayScrollTo=null;
+  UI.todayOpen=false;UI.todayDate=null;UI.todayScrollTo=null;releaseWakeLock();
+  // Remove Today start button but keep timer running if active
+  const tf=document.getElementById('fab-today');if(tf)tf.remove();
   let ex=document.getElementById('today-overlay');if(ex)ex.remove();
   let fab=document.getElementById('fab-today');if(fab)fab.remove();
   renderTabs();render();
 }
 function renderTodayPage(){
-  let ex=document.getElementById('today-overlay');if(ex)ex.remove();
+  // Save scroll position before recreating
+  const prevOverlay=document.getElementById('today-overlay');
+  const savedScroll=prevOverlay?prevOverlay.scrollTop:0;
+  if(prevOverlay)prevOverlay.remove();
+  // Remove only the Today start button (not the global FAB)
   const prevFab=document.getElementById('fab-today');if(prevFab)prevFab.remove();
 
   const dateStr=UI.todayDate||todayStr();
@@ -560,18 +584,35 @@ function renderTodayPage(){
   overlay.innerHTML=out;
   document.body.appendChild(overlay);
 
-  // Pre-scroll to evening section if needed
+  // Restore scroll or pre-scroll to section
   if(UI.todayScrollTo==='evening'){
     requestAnimationFrame(()=>{
       const el=overlay.querySelector('#section-evening');
-      if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+      if(el){
+        // Offset by sticky header height so section label isn't hidden behind it
+        const stickyEl=overlay.querySelector('.today-sticky');
+        const stickyH=stickyEl?stickyEl.offsetHeight:120;
+        const elTop=el.getBoundingClientRect().top - overlay.getBoundingClientRect().top + overlay.scrollTop;
+        overlay.scrollTo({top:Math.max(0,elTop-stickyH-8),behavior:'smooth'});
+      }
+      UI.todayScrollTo=null;
     });
+  } else if(savedScroll>0){
+    // Restore previous scroll position (e.g. after ticking a step)
+    requestAnimationFrame(()=>{ overlay.scrollTop=savedScroll; });
   }
 
-  // FAB timer
-  const fab=document.createElement('button');
-  fab.id='fab-today';fab.className='fab-today';fab.innerHTML='⏱';fab.onclick=toggleTimer;
-  document.body.appendChild(fab);
+  // Today start button — only shown when timer is not running
+  if(!timerStart){
+    const fab=document.createElement('button');
+    fab.id='fab-today';fab.className='fab-today';
+    fab.innerHTML='⏱ Start';fab.onclick=toggleTimer;
+    document.body.appendChild(fab);
+  }
+  // Make sure global FAB is correctly shown/hidden based on timer state
+  const gfab=document.getElementById('fab-global');
+  if(gfab)gfab.style.display=timerStart?'flex':'none';
+  if(timerStart)updateTimerDisplay();
 }
 function checklistHTML(rid,dateStr){
   dateStr=dateStr||todayStr();
@@ -592,12 +633,42 @@ function checklistHTML(rid,dateStr){
 }
 
 /* ══ TIMER ══ */
-function stopTimer(){if(timerStart){clearInterval(timerInt);timerStart=null;}}
+function fmtTimer(){const s=Math.floor((Date.now()-timerStart)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function updateTimerDisplay(){
+  const globalFab=document.getElementById('fab-global');
+  if(globalFab){
+    const t=globalFab.querySelector('.fab-global-t');
+    if(t)t.textContent=fmtTimer();
+  }
+}
+function startTimer(){
+  if(timerStart)return; // already running
+  timerStart=Date.now();
+  // Show global FAB
+  const gfab=document.getElementById('fab-global');
+  if(gfab)gfab.style.display='flex';
+  // Hide the Today start button if Today is open
+  const todayFab=document.getElementById('fab-today');
+  if(todayFab)todayFab.style.display='none';
+  timerInt=setInterval(()=>{
+    updateTimerDisplay();
+  },1000);
+}
+function stopTimerGlobal(){
+  if(!timerStart)return;
+  clearInterval(timerInt);timerStart=null;
+  // Hide global FAB
+  const gfab=document.getElementById('fab-global');
+  if(gfab)gfab.style.display='none';
+  // Show Today start button again if Today is open
+  const todayFab=document.getElementById('fab-today');
+  if(todayFab)todayFab.style.display='flex';
+}
+function stopTimer(){stopTimerGlobal();}
+// toggleTimer is only callable from Today overlay — starts the timer
 function toggleTimer(){
-  const fab=document.getElementById('fab-today');if(!fab)return;
-  if(timerStart){stopTimer();fab.innerHTML='⏱';}
-  else{timerStart=Date.now();fab.innerHTML='⏱ <span class="t">0:00</span>';
-    timerInt=setInterval(()=>{const s=Math.floor((Date.now()-timerStart)/1000);const m=Math.floor(s/60);const f=document.getElementById('fab-today');if(f&&f.querySelector('.t'))f.querySelector('.t').textContent=m+':'+String(s%60).padStart(2,'0');},1000);}
+  if(timerStart){stopTimerGlobal();}
+  else{startTimer();}
 }
 
 /* ══ HOME ══ */
@@ -627,6 +698,20 @@ function vHome(){
   return`
   <div class="top"><div class="wordmark">The <em>Stack</em></div>
   <div class="date"><strong>${dayName(day)} ${isAM?'morning':'evening'}</strong>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}</div></div>
+  ${allDone?`
+  <div class="streak-card" style="border-color:rgba(184,112,64,.4)">
+    <div class="streak-num" style="font-size:52px">✓</div>
+    <div class="streak-body">
+      <div class="streak-eyebrow" style="color:var(--cu)">All complete</div>
+      <div class="streak-sub" style="font-weight:500;color:var(--ink)">Every routine done today</div>
+      <div class="streak-dots">${dots}</div>
+    </div>
+  </div>
+  <div class="prog-row">
+    <div class="prog-item"><div class="prog-label">Streak</div><div class="prog-val">${streak} days</div><div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div></div>
+    <div class="prog-item"><div class="prog-label">This week</div><div class="prog-val">${wk.done} / ${wk.total}</div><div class="prog-bar"><div class="prog-fill" style="width:${wk.total?Math.round(wk.done/wk.total*100):0}%"></div></div></div>
+    <div class="prog-item"><div class="prog-label">Best streak</div><div class="prog-val">${bs} days</div><div class="prog-bar"><div class="prog-fill" style="width:${bs?Math.min(100,Math.round(streak/bs*100)):0}%"></div></div></div>
+  </div>`:`
   <div class="streak-card">
     <div class="streak-num">${streak}</div>
     <div class="streak-body">
@@ -639,7 +724,7 @@ function vHome(){
     <div class="prog-item"><div class="prog-label">Today</div><div class="prog-val">${done} / ${total}</div><div class="prog-bar"><div class="prog-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div></div>
     <div class="prog-item"><div class="prog-label">This week</div><div class="prog-val">${wk.done} / ${wk.total}</div><div class="prog-bar"><div class="prog-fill" style="width:${wk.total?Math.round(wk.done/wk.total*100):0}%"></div></div></div>
     <div class="prog-item"><div class="prog-label">Best streak</div><div class="prog-val">${bs} days</div><div class="prog-bar"><div class="prog-fill" style="width:${bs?Math.min(100,Math.round(streak/bs*100)):0}%"></div></div></div>
-  </div>
+  </div>`}
   <button class="hero" onclick="openToday()">
     <p class="hero-eyebrow">${allDone?'All done today ✓':'Up next · '+(isAM?'Morning':'Evening')}</p>
     <h2>${skinR?esc(skinR.name):'No routine set'}</h2>
@@ -763,7 +848,7 @@ function vSetupRouter(){
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
 }
-function setupBack(page){UI.setupPage=page||null;render();}
+function setupBack(page){saveScroll();UI.setupPage=page||null;UI._scrollRestoring=!!(page);render();}
 
 function vSetupMenu(){
   const low=lowStock().length;
