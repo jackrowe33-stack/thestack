@@ -1307,9 +1307,9 @@ function productDetailSheet(id){
   const showStock=dl!==null||p.durationDays;
   return`<div class="sheet-handle"></div>
   <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute">${p.cat}</span></div>
+  ${(p.why||p.role)?`<div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>`:''}
   ${psteps.length?`<div class="sec-label" style="margin-left:0;margin-top:8px">How to apply</div>
   <div class="desc-block">${psteps.map((s,i)=>`<div style="display:flex;gap:10px;margin-bottom:${i<psteps.length-1?'10px':'0'}"><span style="color:var(--cu);font-size:11px;font-weight:700;min-width:16px;padding-top:1px">${i+1}</span><span style="font-size:13px;color:var(--ink);line-height:1.5">${esc(s.text)}</span></div>`).join('')}</div>`:''}
-  ${(p.why||p.role)?`<div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>`:''}
   ${p.notes?`<div class="field"><label>Notes</label><div class="ro-notes">${esc(p.notes)}</div></div>`:''}
   ${p.link?`<div style="margin-bottom:14px"><a class="btn ghost sm" href="${esc(p.link)}" target="_blank" style="text-decoration:none">Open reorder link →</a></div>`:''}
   ${showStock?`<div class="card pad" style="margin:0 0 14px">
