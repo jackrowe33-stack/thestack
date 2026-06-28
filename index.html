@@ -71,6 +71,10 @@ a{color:inherit}
 .sdot.off{background:var(--hairline)}
 @keyframes sdot-p{0%,100%{opacity:1}50%{opacity:.3}}
 .sdot.pulse{animation:sdot-p 1.8s ease-in-out infinite}
+@keyframes clist-out{to{max-height:0;opacity:0;padding:0}}
+.routine-collapsed-row{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;margin:0 22px 10px;padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;width:calc(100% - 44px)}
+.routine-collapsed-label{flex:1;font-size:14px;font-weight:500;color:var(--ink-soft)}
+.routine-collapsed-check{font-size:11px;font-weight:600;color:var(--cu);white-space:nowrap}
 .prog-row{display:flex;gap:6px;margin:6px 22px 0}
 .prog-item{flex:1;background:var(--card);border:1px solid var(--card-edge);border-radius:10px;padding:10px 10px 8px}
 .prog-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px}
@@ -308,7 +312,7 @@ function migrate(d){
 /* ══ STATE ══ */
 let DB;
 try{const s=localStorage.getItem('stack_v1');DB=s?migrate(JSON.parse(s)):structuredClone(SEED);}catch(e){DB=structuredClone(SEED);}
-let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',routinesCat:'skin',hairLook:null,todayOpen:false,todayDate:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
+let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',routinesCat:'skin',hairLook:null,todayOpen:false,todayDate:null,todayExpanded:{},todayLook:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
 let timerStart=null,timerInt=null;
 
 /* ══ HELPERS ══ */
@@ -391,13 +395,31 @@ function tickStep(rid,productId,dateStr){
   const date=dateStr||UI.todayDate||todayStr(),c=getComp(rid,date)||{completedAt:null,steps:[]};
   const r=routineById(rid);if(!r)return;
   const steps=activeSteps(r.steps);
+  const wasComplete=!!c.completedAt;
   const stepMap={};(c.steps||[]).forEach(s=>stepMap[s.p]=s.done);
   stepMap[productId]=!stepMap[productId];
-  c.steps=steps.map(s=>({p:s.p,done:!!stepMap[s.p]}));
-  if(steps.every(s=>stepMap[s.p])&&!c.completedAt)c.completedAt=Date.now();
-  if(!steps.every(s=>stepMap[s.p]))c.completedAt=null;
-  DB.completions[compKey(rid,date)]=c;save();renderTodayPage();
-  UI.todayScrollTo=null; // don't auto-scroll on tick
+  c.steps=steps.map(s=>({p:s.p,done:!!stepMap[s.p],state:c.steps.find(x=>x.p===s.p)?.state||(stepMap[s.p]?'done':null),appliedAt:c.steps.find(x=>x.p===s.p)?.appliedAt||null}));
+  const allDone=steps.every(s=>stepMap[s.p]);
+  if(allDone&&!wasComplete)c.completedAt=Date.now();
+  if(!allDone)c.completedAt=null;
+  DB.completions[compKey(rid,date)]=c;
+  save();
+  UI.todayScrollTo=null;
+  if(allDone&&!wasComplete){
+    const el=document.getElementById('clist-'+rid);
+    if(el){
+      const h=el.offsetHeight;
+      el.style.overflow='hidden';
+      el.style.maxHeight=h+'px';
+      el.style.transition='max-height 250ms ease-out,opacity 250ms ease-out';
+      if(!UI.todayExpanded)UI.todayExpanded={};
+      delete UI.todayExpanded[rid];
+      requestAnimationFrame(()=>{el.style.maxHeight='0';el.style.opacity='0';});
+      setTimeout(()=>renderTodayPage(),270);
+      return;
+    }
+  }
+  renderTodayPage();
 }
 function completeAll(rid){completeAllDate(rid,todayStr());}
 function uncompleteRoutine(rid){uncompleteRoutineDate(rid,todayStr());}
@@ -549,6 +571,15 @@ function renderTodayPage(){
   function routineSection(r,label,sectionId){
     if(!r)return'';
     const isDone=isRoutineComplete(r.id,dateStr);
+    const isExpanded=!isDone||(UI.todayExpanded&&UI.todayExpanded[r.id]);
+    if(isDone&&!isExpanded){
+      const n=activeSteps(r.steps).length;
+      return`<button class="routine-collapsed-row" onclick="if(!UI.todayExpanded)UI.todayExpanded={};UI.todayExpanded['${r.id}']=true;renderTodayPage()">
+        <span class="today-section-label" style="font-size:13px;color:var(--cu)">${label}</span>
+        <span class="routine-collapsed-check">✓ ${n}/${n}</span>
+        <span style="color:var(--ink-soft);font-size:14px">›</span>
+      </button>`;
+    }
     return`<div class="day-section today-section" id="${sectionId}">
       <span class="today-section-label">${label}</span>
       <div class="day-section-line"></div>
@@ -557,7 +588,7 @@ function renderTodayPage(){
     ${checklistHTML(r.id,dateStr)}
     <div class="complete-btns">
       ${!isDone
-        ?`<button class="btn full sm" onclick="completeAllDate('${r.id}','${dateStr}')">Mark all complete</button>`
+        ?`<button class="btn full sm" onclick="completeAllDate('${r.id}','${dateStr}')">Mark all done</button>`
         :`<button class="btn ghost full sm" onclick="uncompleteRoutineDate('${r.id}','${dateStr}')">✓ Done — undo</button>`
       }
     </div>`;
