@@ -1236,7 +1236,10 @@ function routineViewSheet(id){
   const days=r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not scheduled';
   return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type} · ${days}</div>
   ${stepsWithInventoryHTML(r.steps)}
-  <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>`;
+  <div style="display:flex;gap:8px;margin-top:4px">
+    <button class="btn full" onclick="UI.modal=null;UI.tab='setup';UI.setupPage='routine-edit';UI.editRoutineId='${r.id}';render()">Edit</button>
+    <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>
+  </div>`;
 }
 function openProduct(id){UI.modal={type:'product',id};render();}
 function openEdit(id){UI.modal={type:'edit',id};render();}
