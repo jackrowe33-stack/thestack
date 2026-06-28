@@ -246,7 +246,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-06-28 · stage9';
+const BUILD='2026-06-28 · addstep-feedback';
 const SEED={
   v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1449,10 +1449,17 @@ function setNextFromInventory(id,nextId){if(!nextId){DB.products[id].next=null;s
 function createAndQueueReplacement(id){const p=DB.products[id];const newId='p'+Date.now();DB.products[newId]=P(p.cat,'','','','');DB.products[id].next={productId:newId,why:'',link:''};save();UI._afterNewProduct={returnToEdit:id};openEdit(newId);}
 function newProduct(cat){const id='p'+Date.now();DB.products[id]=P(cat||'skin','','','','');save();openEdit(id);}
 
+function toggleStep(routineId,productId){
+  const r=routineById(routineId);if(!r)return;
+  const i=r.steps.findIndex(s=>s.p===productId);
+  if(i>=0)r.steps.splice(i,1);else r.steps.push({p:productId,wait:0});
+  save();UI.modal={type:'addstep',routineId};render();
+}
 function addStepSheet(routineId){
   const r=routineById(routineId);
   const cat=r?r.cat:null;
   const q=(UI._stepSearch||'').toLowerCase();
+  const steps=r?r.steps:[];
   let products=Object.entries(DB.products).filter(([id,p])=>{
     if(!p.active)return false;
     if(cat&&p.cat!==cat)return false;
@@ -1472,8 +1479,13 @@ function addStepSheet(routineId){
   <div class="brand" style="margin-bottom:10px">${fallback?`No ${cat} products — showing all`:cat?`${cat} products`:'Pick a product'}</div>
   <input placeholder="Search…" value="${esc(UI._stepSearch||'')}" oninput="UI._stepSearch=this.value;renderModal()" style="margin-bottom:10px">
   <div class="card" style="margin:0 0 12px;max-height:300px;overflow-y:auto">
-    ${products.map(([id,p])=>`<button class="step" onclick="routineById('${routineId}').steps.push({p:'${id}',wait:0});save();UI.modal={type:'addstep',routineId:'${routineId}'};render()">
-    <div class="step-body"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div></button>`).join('')||'<div class="empty">No products found</div>'}
+    ${products.map(([id,p])=>{
+      const isAdded=steps.some(s=>s.p===id);
+      return`<button class="step" onclick="toggleStep('${routineId}','${id}')" style="display:flex;align-items:center${isAdded?';opacity:.8':''}">
+      <div class="step-body" style="flex:1"><div class="step-name">${esc(p.brand)} ${esc(p.name)}</div><div class="step-note">${p.cat}</div></div>
+      ${isAdded?`<span style="font-size:11px;font-weight:700;color:var(--cu);flex-shrink:0;margin-left:8px;padding:2px 6px;background:rgba(184,112,64,.1);border-radius:4px">✓ Added</span>`:''}
+      </button>`;
+    }).join('')||'<div class="empty">No products found</div>'}
   </div>
   <button class="btn ghost full" onclick="UI._stepSearch=null;UI.modal=null;render()">Done</button>`;
 }
