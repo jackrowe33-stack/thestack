@@ -352,8 +352,11 @@ function compKey(rid,date){return rid+'_'+(date||todayStr());}
 function getComp(rid,date){return DB.completions[compKey(rid,date)]||null;}
 function isRoutineComplete(rid,date){const c=getComp(rid,date);return!!(c&&c.completedAt);}
 function scheduledForDay(day){
-  return[['morning','skin'],['morning','hair'],['evening','skin'],['evening','hair']]
-    .map(([type,cat])=>routineForDay(day,type,cat)).filter(Boolean);
+  const scope=DB.settings?.streakScope||{skin:true};
+  const slots=[];
+  if(scope.skin!==false){slots.push(['morning','skin'],['evening','skin']);}
+  if(scope.hair){slots.push(['morning','hair'],['evening','hair']);}
+  return slots.map(([type,cat])=>routineForDay(day,type,cat)).filter(Boolean);
 }
 function dayComplete(day,ds){const rs=scheduledForDay(day);return rs.length>0&&rs.every(r=>isRoutineComplete(r.id,ds));}
 function calcStreak(){
@@ -961,6 +964,15 @@ function vSetupMenu(){
     <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(184,112,64,.1)">⇅</div><div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='prompt';render()"><div class="menu-icon" style="background:rgba(160,139,192,.1)">✦</div><div class="menu-body"><div class="menu-title">Claude Prompt</div><div class="menu-sub">Copy full routine context</div></div><span class="menu-arrow">›</span></button>
   </div>
+  <div class="sec-label">Streak</div>
+  <div class="card pad">
+    <p style="font-size:12px;color:var(--ink-mid);margin-bottom:12px">Which categories count toward your daily streak?</p>
+    ${['skin','hair','scent','supplements'].map(cat=>{
+      const on=DB.settings?.streakScope?.[cat]!==false&&(cat==='skin'?true:!!(DB.settings?.streakScope?.[cat]));
+      return`<div class="kv"><span class="k" style="text-transform:capitalize">${cat}</span>
+      <button class="chip ${on?'c-cu':'c-mute'}" onclick="toggleStreakScope('${cat}')">${on?'On':'Off'}</button></div>`;
+    }).join('')}
+  </div>
   <div class="sec-label">Data</div>
   <div class="card">
     <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div></div></button>
@@ -1221,6 +1233,7 @@ function productEdit(id){
   </div>`;
 }
 function upd(id,k,v){DB.products[id][k]=v;save();}
+function toggleStreakScope(cat){if(!DB.settings.streakScope)DB.settings.streakScope={skin:true,hair:false,scent:false,supplements:false};DB.settings.streakScope[cat]=!DB.settings.streakScope[cat];save();render();}
 function updNext(id,k,v){if(!DB.products[id].next)DB.products[id].next={};DB.products[id].next[k]=v;save();}
 function toggleTag(id,t){const p=DB.products[id];const i=p.tags.indexOf(t);if(i>=0)p.tags.splice(i,1);else p.tags.push(t);save();render();}
 function addProductStep(id){if(!DB.products[id].steps)DB.products[id].steps=[];DB.products[id].steps.push({text:''});save();renderModal();requestAnimationFrame(()=>{const ins=document.querySelectorAll('#ov .edit-step input');if(ins.length)ins[ins.length-1].focus();});}
