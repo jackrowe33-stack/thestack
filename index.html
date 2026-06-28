@@ -1158,6 +1158,30 @@ function vRoutinesPage(){
 function vRoutineEditPage(){
   const r=routineById(UI.editRoutineId);
   if(!r)return`<button class="back-btn" onclick="setupBack('routines')">‹ Routines</button><div class="empty">Not found</div>`;
+  const lookEntry=(DB.hairLooks||[]).find(l=>l.id===r.id);
+  const isLook=!!lookEntry;
+  const stepsHTML=r.steps.map((s,i)=>{const p=DB.products[s.p];
+    return`<div class="edit-step" style="${p&&!p.active?'opacity:.4':''}">
+    <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
+    <input type="number" value="${s.wait||0}" style="width:58px;padding:5px 8px;text-align:right" onchange="routineById('${r.id}').steps[${i}].wait=parseInt(this.value)||0;save()">
+    <button class="mini" onclick="moveRStep('${r.id}',${i},-1)">↑</button>
+    <button class="mini" onclick="moveRStep('${r.id}',${i},1)">↓</button>
+    <button class="mini" style="color:var(--danger)" onclick="routineById('${r.id}').steps.splice(${i},1);save();render()">✕</button>
+    </div>`;}).join('')||'<div class="empty">No steps yet</div>';
+  if(isLook){
+    return`<button class="back-btn" onclick="setupBack('routines')">‹ Routines</button>
+    <h1 class="page-title">Edit Look</h1>
+    <div class="sec-label">Look Name</div>
+    <div style="padding:0 22px 14px"><input value="${esc(lookEntry.name)}" onchange="updateLookName('${r.id}',this.value)"></div>
+    <div class="sec-label">Description</div>
+    <div style="padding:0 22px 14px"><input value="${esc(lookEntry.desc||'')}" placeholder="Short description…" onchange="updateLookDesc('${r.id}',this.value)"></div>
+    <div class="sec-label">Products</div>
+    <div class="card">${stepsHTML}</div>
+    <div style="padding:0 22px 8px;display:flex;gap:8px">
+      <button class="btn sm" onclick="UI.modal={type:'addstep',routineId:'${r.id}'};render()">+ Add product</button>
+      <button class="btn danger sm" onclick="deleteLook(${(DB.hairLooks||[]).indexOf(lookEntry)})">Delete look</button>
+    </div>`;
+  }
   return`<button class="back-btn" onclick="setupBack('routines')">‹ Routines</button>
   <h1 class="page-title">Edit Routine</h1>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
@@ -1175,14 +1199,7 @@ function vRoutineEditPage(){
     <p style="font-size:11px;color:var(--ink-soft);margin-top:8px">Assigning a day already claimed by another ${r.cat} ${r.type} routine removes it from there.</p>
   </div>
   <div class="sec-label">Steps</div>
-  <div class="card">${r.steps.map((s,i)=>{const p=DB.products[s.p];
-    return`<div class="edit-step" style="${p&&!p.active?'opacity:.4':''}">
-    <span class="nm">${i+1}. ${esc(pName(s.p))}${p&&!p.active?' (inactive)':''}</span>
-    <input type="number" value="${s.wait||0}" style="width:58px;padding:5px 8px;text-align:right" onchange="routineById('${r.id}').steps[${i}].wait=parseInt(this.value)||0;save()">
-    <button class="mini" onclick="moveRStep('${r.id}',${i},-1)">↑</button>
-    <button class="mini" onclick="moveRStep('${r.id}',${i},1)">↓</button>
-    <button class="mini" style="color:var(--danger)" onclick="routineById('${r.id}').steps.splice(${i},1);save();render()">✕</button>
-    </div>`;}).join('')||'<div class="empty">No steps yet</div>'}</div>
+  <div class="card">${stepsHTML}</div>
   <div style="padding:0 22px 8px;display:flex;gap:8px">
     <button class="btn sm" onclick="UI.modal={type:'addstep',routineId:'${r.id}'};render()">+ Add step</button>
     <button class="btn danger sm" onclick="deleteRoutine('${r.id}')">Delete</button>
@@ -1200,6 +1217,17 @@ function toggleRoutineDay(id,day){
 }
 function moveRStep(id,i,d){const st=routineById(id).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
 function deleteRoutine(id){if(!confirm('Delete this routine?'))return;DB.routines=DB.routines.filter(r=>r.id!==id);save();UI.setupPage='routines';render();}
+function updateLookName(rid,val){
+  const r=routineById(rid);if(r)r.name=val;
+  const l=(DB.hairLooks||[]).find(l=>l.id===rid);
+  if(l){l.name=val;}else{if(!DB.hairLooks)DB.hairLooks=[];DB.hairLooks.push({id:rid,name:val,desc:''});}
+  save();
+}
+function updateLookDesc(rid,val){
+  const l=(DB.hairLooks||[]).find(l=>l.id===rid);
+  if(l){l.desc=val;}else{if(!DB.hairLooks)DB.hairLooks=[];DB.hairLooks.push({id:rid,name:routineById(rid)?.name||rid,desc:val});}
+  save();
+}
 
 function vLooksPage(){
   const looks=DB.hairLooks||[];
