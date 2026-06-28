@@ -124,6 +124,8 @@ a{color:inherit}
 .citem-tick:active{background:rgba(184,112,64,.04)}
 .citem-info{width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);border-left:1px solid var(--hairline);background:none;flex-shrink:0;font-size:16px;cursor:pointer}
 .citem-info:active{background:rgba(184,112,64,.04)}
+.citem-peek{width:32px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--cu);background:none;flex-shrink:0;font-size:12px;cursor:pointer;border-left:1px solid var(--hairline)}
+.citem-peek:active{background:rgba(184,112,64,.04)}
 .psteps{margin-top:5px}
 .pstep{font-size:11.5px;display:flex;gap:6px;margin-bottom:3px;align-items:flex-start}
 .pstep-num{color:var(--cu);font-size:10px;font-weight:700;min-width:14px;padding-top:1px}
@@ -246,7 +248,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-06-28 · v11';
+const BUILD='2026-06-28 · v12';
 const SEED={
   v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -794,17 +796,28 @@ function checklistHTML(rid,dateStr){
     const checkClass=isDone?'done':isApplied?'applied':'';
     const checkContent=isDone?'✓':isApplied?'·':'';
     const psteps=(p.steps||[]).filter(x=>x.text);
+    const peekKey=rid+':'+s.p;
+    const peeked=isTicked&&psteps.length&&!!(UI.todayStepPeek&&UI.todayStepPeek[peekKey]);
+    let bodyInner;
+    if(psteps.length){
+      if(isTicked){
+        bodyInner=`<div class="cnote done" style="margin-bottom:${peeked?'4px':'0'};font-size:10.5px">${esc(p.role)}</div>`
+          +(peeked?`<div class="psteps">${psteps.map((st2,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text done">${esc(st2.text)}</span></div>`).join('')}</div>`:'');
+      }else{
+        bodyInner=`<div class="cnote" style="margin-bottom:4px;font-size:10.5px">${esc(p.role)}</div><div class="psteps">${psteps.map((st2,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text">${esc(st2.text)}</span></div>`).join('')}</div>`;
+      }
+    }else{
+      bodyInner=`<div class="cnote${isTicked?' done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!isTicked?' · wait '+fmtWait(s.wait)+' after':''}</div>`;
+    }
     h+=`<div class="citem-row">
       <button class="citem-tick" onclick="tickStep('${rid}','${s.p}','${dateStr}')">
         <div class="ccheck ${checkClass}">${checkContent}</div>
         <div class="cbody">
           <div class="cname ${isTicked?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
-          ${psteps.length
-            ?`<div class="cnote${isTicked?' done':''}" style="margin-bottom:4px;font-size:10.5px">${esc(p.role)}</div><div class="psteps">${psteps.map((st2,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text${isTicked?' done':''}">${esc(st2.text)}</span></div>`).join('')}</div>`
-            :`<div class="cnote${isTicked?' done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!isTicked?' · wait '+fmtWait(s.wait)+' after':''}</div>`
-          }
+          ${bodyInner}
         </div>
       </button>
+      ${isTicked&&psteps.length?`<button class="citem-peek" onclick="peekStep('${rid}','${s.p}');event.stopPropagation()">${peeked?'⌃':'⌄'}</button>`:''}
       <button class="citem-info" onclick="openProductDetail('${rid}','${s.p}','${dateStr}')">ⓘ</button>
     </div>`;
     if(isApplied&&s.appliedAt&&s.wait){
@@ -815,6 +828,12 @@ function checklistHTML(rid,dateStr){
     }
   });
   return h+'</div>';
+}
+function peekStep(rid,pid){
+  if(!UI.todayStepPeek)UI.todayStepPeek={};
+  const k=rid+':'+pid;
+  UI.todayStepPeek[k]=!UI.todayStepPeek[k];
+  renderTodayPage();
 }
 
 /* ══ TIMER — wait countdown ══ */
@@ -886,6 +905,10 @@ function vHome(){
   const scentTag=scent&&scent.tags&&scent.tags.length?scent.tags[0]:'';
   const refreshR=DB.routines.find(r=>r.id==='skin-refresh');
   const cardBorder=todayComplete?'border-color:rgba(184,112,64,.45)':'';
+  const _rR=13,_rC=17,_rSz=34,_rCirc=2*Math.PI*_rR;
+  const _rDash=(total>0?(done/total)*_rCirc:0).toFixed(2);
+  const _rGap=(_rCirc-parseFloat(_rDash)).toFixed(2);
+  const ringHtml=total>0?`<svg width="${_rSz}" height="${_rSz}" style="flex-shrink:0" viewBox="0 0 ${_rSz} ${_rSz}"><circle cx="${_rC}" cy="${_rC}" r="${_rR}" fill="none" stroke="var(--hairline)" stroke-width="2.5"/><circle cx="${_rC}" cy="${_rC}" r="${_rR}" fill="none" stroke="var(--cu)" stroke-width="2.5" stroke-dasharray="${_rDash} ${_rGap}" stroke-linecap="round" transform="rotate(-90 ${_rC} ${_rC})"/><text x="${_rC}" y="${_rC}" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="700" font-family="Inter,system-ui,sans-serif" fill="${todayComplete?'var(--cu)':'var(--ink-mid)'}">${todayComplete?'✓':done+'/'+total}</text></svg>`:'';
   return`
   <div style="min-height:calc(100vh - 132px);min-height:calc(100svh - 132px);display:flex;flex-direction:column">
   <div class="top">
@@ -904,7 +927,10 @@ function vHome(){
   </button>
   <div class="card pad" style="margin:0 22px 10px">
     <div style="display:flex;justify-content:space-between;align-items:center${todayScheduled.length?';margin-bottom:12px':''}">
-      <span style="font-size:13px;font-weight:500;color:${todayComplete?'var(--cu)':'var(--ink)'}">${todayComplete?'All done for today ✓':'Today isn\'t done yet'}</span>
+      <div style="display:flex;align-items:center;gap:11px">
+        ${ringHtml}
+        <span style="font-size:13px;font-weight:500;color:${todayComplete?'var(--cu)':'var(--ink)'}">${todayComplete?'All done for today ✓':'Today isn\'t done yet'}</span>
+      </div>
       <button style="font-size:13px;color:var(--cu);font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-family:inherit;flex-shrink:0;margin-left:12px" onclick="openToday()">Open Today →</button>
     </div>
     ${todayScheduled.map(r=>{
