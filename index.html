@@ -101,8 +101,8 @@ a{color:inherit}
 .stat-label{font-size:10px;color:var(--ink-soft);margin-top:3px;font-weight:500}
 /* today / checklist */
 .today-page{position:fixed;inset:0;background:var(--bg);z-index:55;overflow-y:auto;padding-bottom:calc(110px + env(safe-area-inset-bottom));max-width:430px;margin:0 auto}
-.today-sticky{position:sticky;top:0;z-index:10;background:var(--bg);padding-bottom:2px}
-.today-sticky::after{content:'';display:block;height:1px;background:linear-gradient(to bottom,var(--card-edge),transparent);margin:0 0 0 0}
+.today-sticky{position:sticky;top:0;z-index:10;background:var(--bg);padding:0 0 2px}
+.today-sticky::after{content:'';display:block;height:1px;background:linear-gradient(to bottom,var(--card-edge),transparent)}
 .today-header{padding:calc(env(safe-area-inset-top,0px) + 12px) 22px 8px;display:flex;justify-content:space-between;align-items:flex-end}
 .today-close{font-size:13px;color:var(--ink-mid);padding:4px 0}
 .checklist{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
@@ -246,7 +246,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-06-28 · v10-headers';
+const BUILD='2026-06-28 · v11';
 const SEED={
   v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -663,17 +663,48 @@ function renderTodayPage(){
   const suppMR=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='morning'&&r.days.includes(day));
   const suppER=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='evening'&&r.days.includes(day));
 
-  // Hair look selector helper (at top of hair sub-view)
+  // Hair look selector helper (spacing + label only — checklist merged into mergedHairSection)
   const _looks=DB.hairLooks||[];
   function lookSelectorHTML(){
     if(!_looks.length)return'';
     const defLook=(day===0||day===6)?(DB.lookByContext&&DB.lookByContext.weekend):(DB.lookByContext&&DB.lookByContext.weekday);
     const selLook=UI.todayLook||defLook||_looks[0]?.id;
-    const lookR=routineById(selLook);
-    return`<div style="margin:0 22px 10px;display:flex;align-items:center;gap:8px">
-      <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)">Look</span>
-      <div class="seg" style="flex:1;margin:0">${_looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.todayLook='${l.id}';renderTodayPage()">${esc(l.name.split('—')[0].trim())}</button>`).join('')}</div>
-    </div>${lookR&&activeSteps(lookR.steps).length?checklistHTML(lookR.id,dateStr):''}`;
+    return`<div style="margin-top:14px">
+      <div class="sec-label" style="margin:0 22px 6px">Look</div>
+      <div style="margin:0 22px 12px"><div class="seg" style="margin:0">${_looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.todayLook='${l.id}';renderTodayPage()">${esc(l.name.split('—')[0].trim())}</button>`).join('')}</div></div>
+    </div>`;
+  }
+  // Merged hair section: base steps + selected look steps in one continuous checklist
+  function mergedHairSection(hairR,label,sectionId){
+    if(!hairR)return'';
+    const defLook=(day===0||day===6)?(DB.lookByContext&&DB.lookByContext.weekend):(DB.lookByContext&&DB.lookByContext.weekday);
+    const selLook=UI.todayLook||defLook||_looks[0]?.id;
+    const lookR=selLook?routineById(selLook):null;
+    const hasLookSteps=lookR&&activeSteps(lookR.steps).length>0;
+    const isDone=isRoutineComplete(hairR.id,dateStr);
+    const isExpanded=!isDone||(UI.todayExpanded&&UI.todayExpanded[hairR.id]);
+    if(isDone&&!isExpanded){
+      return`<button class="day-section today-section" style="width:calc(100% - 44px);background:none;border:none;cursor:pointer;padding:0;text-align:left" onclick="if(!UI.todayExpanded)UI.todayExpanded={};UI.todayExpanded['${hairR.id}']=true;renderTodayPage()">
+        <span class="today-section-label">${label}</span>
+        <div class="day-section-line"></div>
+        <span style="font-size:11px;font-weight:600;color:var(--cu);white-space:nowrap;flex-shrink:0">✓</span>
+        <div style="min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:18px;flex-shrink:0;margin-right:-10px">⌄</div>
+      </button>`;
+    }
+    return`<div class="day-section today-section" id="${sectionId}">
+      <span class="today-section-label">${label}</span>
+      <div class="day-section-line"></div>
+      ${isDone?`<span style="font-size:11px;font-weight:600;color:var(--cu);white-space:nowrap;flex-shrink:0">✓ Done</span>
+      <button style="min-width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:18px;flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;margin-right:-10px" onclick="if(!UI.todayExpanded)UI.todayExpanded={};UI.todayExpanded['${hairR.id}']=false;renderTodayPage()">⌃</button>`:''}
+    </div>
+    ${checklistHTML(hairR.id,dateStr)}
+    ${hasLookSteps?checklistHTML(lookR.id,dateStr):''}
+    <div class="complete-btns">
+      ${!isDone
+        ?`<button class="btn full sm" onclick="completeAllDate('${hairR.id}','${dateStr}')">Mark all done</button>`
+        :`<button class="btn ghost full sm" onclick="uncompleteRoutineDate('${hairR.id}','${dateStr}')">✓ Done — undo</button>`
+      }
+    </div>`;
   }
 
   // Skin|Hair toggle state
@@ -688,11 +719,11 @@ function renderTodayPage(){
       <button class="${segM==='hair'?'on':''}" onclick="if(!UI.todaySeg)UI.todaySeg={};UI.todaySeg.morning='hair';renderTodayPage()">Hair</button>
     </div>`;
     if(segM==='skin'){out+=routineSection(skinMR,`Skin — ${skinMR.name} · Morning`,'');}
-    else{out+=lookSelectorHTML();out+=routineSection(hairMR,`Hair — ${hairMR.name} · Morning`,'');}
+    else{out+=lookSelectorHTML();out+=mergedHairSection(hairMR,`Hair — ${hairMR.name} · Morning`,'');}
   } else if(skinMR){
     out+=routineSection(skinMR,`Skin — ${skinMR.name} · Morning`,'');
   } else if(hairMR){
-    out+=lookSelectorHTML();out+=routineSection(hairMR,`Hair — ${hairMR.name} · Morning`,'');
+    out+=lookSelectorHTML();out+=mergedHairSection(hairMR,`Hair — ${hairMR.name} · Morning`,'');
   }
   suppMR.forEach(r=>{out+=routineSection(r,`Supplements — ${r.name} · Morning`,'');});
   if(!skinMR&&!hairMR&&!suppMR.length){
@@ -708,11 +739,11 @@ function renderTodayPage(){
       <button class="${segE==='hair'?'on':''}" onclick="if(!UI.todaySeg)UI.todaySeg={};UI.todaySeg.evening='hair';renderTodayPage()">Hair</button>
     </div>`;
     if(segE==='skin'){out+=routineSection(skinER,`Skin — ${skinER.name} · Evening`,'');}
-    else{out+=lookSelectorHTML();out+=routineSection(hairER,`Hair — ${hairER.name} · Evening`,'');}
+    else{out+=lookSelectorHTML();out+=mergedHairSection(hairER,`Hair — ${hairER.name} · Evening`,'');}
   } else if(skinER){
     out+=routineSection(skinER,`Skin — ${skinER.name} · Evening`,'');
   } else if(hairER){
-    out+=lookSelectorHTML();out+=routineSection(hairER,`Hair — ${hairER.name} · Evening`,'');
+    out+=lookSelectorHTML();out+=mergedHairSection(hairER,`Hair — ${hairER.name} · Evening`,'');
   }
   suppER.forEach(r=>{out+=routineSection(r,`Supplements — ${r.name} · Evening`,'');});
   if(!skinER&&!hairER&&!suppER.length){
