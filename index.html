@@ -167,6 +167,7 @@ a{color:inherit}
 .day-pill.on{background:rgba(184,112,64,.15);border-color:var(--cu);color:var(--cu)}
 .edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
 .edit-step:last-child{border-bottom:none}
+.edit-step input{flex:1;min-width:0;padding:6px 10px;font-size:13px;border-radius:8px;border:1px solid var(--card-edge);background:var(--bg-raise);color:var(--ink)}
 .edit-step .nm{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
 .mini{width:30px;height:30px;border-radius:9px;background:var(--bg-raise);border:1px solid var(--card-edge);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink-mid);flex-shrink:0}
 /* tabs */
@@ -1096,6 +1097,14 @@ function productEdit(id){
   <div class="field"><label>Role (short)</label><input value="${esc(p.role)}" onchange="upd('${id}','role',this.value)"></div>
   <div class="field"><label>Why it matters</label><textarea onchange="upd('${id}','why',this.value)">${esc(p.why)}</textarea></div>
   <div class="field"><label>Notes</label><textarea onchange="upd('${id}','notes',this.value)">${esc(p.notes)}</textarea></div>
+  <div class="sec-label" style="margin-left:0">Application steps</div>
+  <div class="card" style="margin:0 0 8px">${(p.steps&&p.steps.length)?p.steps.map((s,i)=>`<div class="edit-step">
+    <input value="${esc(s.text)}" placeholder="Step ${i+1}" onchange="updateProductStep('${id}',${i},this.value)">
+    <button class="mini" onclick="moveProductStep('${id}',${i},-1)">↑</button>
+    <button class="mini" onclick="moveProductStep('${id}',${i},1)">↓</button>
+    <button class="mini" style="color:var(--danger)" onclick="removeProductStep('${id}',${i})">✕</button>
+  </div>`).join(''):'<div class="empty" style="padding:12px 16px;font-size:13px">No steps — add one to guide application</div>'}</div>
+  <div style="padding:0 0 14px"><button class="btn ghost sm" onclick="addProductStep('${id}')">+ Add step</button></div>
   <div class="field"><label>Reorder link</label><input value="${esc(p.link)}" placeholder="https://…" onchange="upd('${id}','link',this.value)"></div>
   <div class="field"><label>Lasts about (days)</label><input type="number" value="${p.durationDays||''}" onchange="upd('${id}','durationDays',parseInt(this.value)||0)"></div>
   ${p.cat==='scent'?`<div class="field"><label>Tags</label><div class="tags">${allTags.map(t=>`<button class="chip ${p.tags.includes(t)?'c-cu':'c-mute'}" onclick="toggleTag('${id}','${t}')">${t}</button>`).join('')}</div></div>`:''}
@@ -1120,6 +1129,10 @@ function productEdit(id){
 function upd(id,k,v){DB.products[id][k]=v;save();}
 function updNext(id,k,v){if(!DB.products[id].next)DB.products[id].next={};DB.products[id].next[k]=v;save();}
 function toggleTag(id,t){const p=DB.products[id];const i=p.tags.indexOf(t);if(i>=0)p.tags.splice(i,1);else p.tags.push(t);save();render();}
+function addProductStep(id){if(!DB.products[id].steps)DB.products[id].steps=[];DB.products[id].steps.push({text:''});save();renderModal();requestAnimationFrame(()=>{const ins=document.querySelectorAll('#ov .edit-step input');if(ins.length)ins[ins.length-1].focus();});}
+function removeProductStep(id,i){DB.products[id].steps.splice(i,1);save();renderModal();}
+function moveProductStep(id,i,d){const st=DB.products[id].steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();renderModal();}
+function updateProductStep(id,i,v){if(DB.products[id].steps)DB.products[id].steps[i].text=v;save();}
 function deactivate(id){DB.products[id].active=false;UI.modal=null;save();render();}
 function deleteProduct(id){if(!confirm('Delete permanently?'))return;DB.routines.forEach(r=>{r.steps=r.steps.filter(s=>s.p!==id);});delete DB.products[id];UI.modal=null;save();render();}
 function swapProduct(id){
