@@ -69,6 +69,8 @@ a{color:inherit}
 .sdot.on{background:var(--cu)}
 .sdot.today{background:var(--cu);box-shadow:0 0 8px rgba(184,112,64,.5)}
 .sdot.off{background:var(--hairline)}
+@keyframes sdot-p{0%,100%{opacity:1}50%{opacity:.3}}
+.sdot.pulse{animation:sdot-p 1.8s ease-in-out infinite}
 .prog-row{display:flex;gap:6px;margin:6px 22px 0}
 .prog-item{flex:1;background:var(--card);border:1px solid var(--card-edge);border-radius:10px;padding:10px 10px 8px}
 .prog-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px}
@@ -227,10 +229,10 @@ a{color:inherit}
 <button class="fab-global" id="fab-global" style="display:none" onclick="stopTimerGlobal()">⏱ <span class="fab-global-t">0:00</span></button>
 <script>
 /* ══ SEED ══ */
-function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
+function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
 const SEED={
-  v:5,updatedAt:0,settings:{syncUrl:'',pin:''},completions:{},
+  v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -281,6 +283,12 @@ function migrate(d){
     d.v=4;
   }
   if(d.v<5){if(!d.completions)d.completions={};d.v=5;}
+  if(d.v<6){
+    Object.values(d.products||{}).forEach(p=>{if(!p.steps)p.steps=[];});
+    if(!d.lookByContext){const wdL=(d.hairLooks||[]).find(l=>l.id==='hair-look-weekday');const weL=(d.hairLooks||[]).find(l=>l.id==='hair-look-weekend');d.lookByContext={weekday:wdL?wdL.id:null,weekend:weL?weL.id:null};}
+    if(!d.settings)d.settings={};if(!d.settings.streakScope)d.settings.streakScope={skin:true,hair:false,scent:false,supplements:false};
+    d.v=6;
+  }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
@@ -288,7 +296,7 @@ function migrate(d){
 /* ══ STATE ══ */
 let DB;
 try{const s=localStorage.getItem('stack_v1');DB=s?migrate(JSON.parse(s)):structuredClone(SEED);}catch(e){DB=structuredClone(SEED);}
-let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',hairLook:null,todayOpen:false,todayDate:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
+let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',routinesCat:'skin',hairLook:null,todayOpen:false,todayDate:null,modal:null,skinSelId:null,hairSelId:null,_promptSel:'full',_newR:null,_schedWarning:null,_afterNewProduct:null};
 let timerStart=null,timerInt=null;
 
 /* ══ HELPERS ══ */
@@ -420,10 +428,9 @@ function render(){
   if(!UI._scrollRestoring)UI._scrollPositions[curKey]=window.scrollY;
   const app=document.getElementById('app');
   if(UI.tab==='home')app.innerHTML=vHome();
-  else if(UI.tab==='skin')app.innerHTML=vSkin();
-  else if(UI.tab==='hair')app.innerHTML=vHair();
-  else if(UI.tab==='scent')app.innerHTML=vScent();
+  else if(UI.tab==='routines')app.innerHTML=vRoutines();
   else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
+  else app.innerHTML=vHome();
   renderTabs();renderModal();
   if(!UI.todayOpen){let ex=document.getElementById('today-overlay');if(ex)ex.remove();let fabEl=document.getElementById('fab-today');if(fabEl)fabEl.remove();}
   // Restore scroll for this tab/page if we have a saved position, else scroll to top
@@ -436,11 +443,14 @@ function render(){
   }
 }
 function renderTabs(){
-  const t=[['home','⌂','Home'],['skin','✦','Skin'],['hair','〰','Hair'],['scent','◈','Scent'],['setup','⚙','Setup']];
-  document.getElementById('tabs').innerHTML=t.map(([k,ic,l])=>`<button class="tab ${UI.tab===k&&!UI.todayOpen?'active':''}" onclick="navTab('${k}')"><span class="ic">${ic}</span>${l}</button>`).join('');
+  const ts=[['home','⌂','Home'],['today','◉','Today'],['routines','≡','Routines']];
+  document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
+    const active=k==='today'?UI.todayOpen:(UI.tab===k&&!UI.todayOpen);
+    return`<button class="tab ${active?'active':''}" onclick="navTab('${k}')"><span class="ic">${ic}</span>${l}</button>`;
+  }).join('');
 }
 function saveScroll(){if(!UI._scrollPositions)UI._scrollPositions={};UI._scrollPositions[UI.tab+(UI.setupPage||'')]=window.scrollY;}
-function navTab(k){saveScroll();UI.todayOpen=false;UI.tab=k;UI.setupPage=null;UI._scrollRestoring=true;render();}
+function navTab(k){saveScroll();if(k==='today'){openToday();return;}UI.todayOpen=false;UI.tab=k;UI.setupPage=null;UI._scrollRestoring=true;render();}
 
 /* ══ TODAY PAGE (overlay) ══ */
 let _wakeLock=null;
@@ -673,91 +683,70 @@ function toggleTimer(){
 
 /* ══ HOME ══ */
 function vHome(){
-  const now=new Date(),day=now.getDay(),h=now.getHours(),isAM=h<12;
-  const type=isAM?'morning':'evening';
-  const skinR=routineForDay(day,type,'skin');
-  const hairR=routineForDay(day,type,'hair');
+  const now=new Date(),day=now.getDay();
+  const streak=calcStreak();
+  const done=todayDoneCount(),total=todayTotalCount();
+  const todayComplete=total>0&&done===total;
+  const low=lowStock();
   const scent=suggestScent();
-  const streak=calcStreak(),done=todayDoneCount(),total=todayTotalCount();
-  const wk=weekStats(),bs=bestStreak();
   const dots=[0,1,2,3,4,5,6].map(i=>{
     const d=new Date(now);d.setDate(d.getDate()-(6-i));
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const isToday=i===6;const complete=dayComplete(d.getDay(),ds);
-    return`<div class="sdot ${isToday?(complete?'today':'today'):complete?'on':'off'}"></div>`;
+    if(isToday)return`<div class="sdot ${complete?'today':'off pulse'}"></div>`;
+    return`<div class="sdot ${complete?'on':'off'}"></div>`;
   }).join('');
-  const streakMsg=streak===0?'Start your streak today':streak===1?'1 day — keep going':streak+' days — on a roll';
-  const skinSteps=skinR?activeSteps(skinR.steps):[];
-  const mins=Math.max(3,Math.round(skinSteps.reduce((a,s)=>a+(s.wait||0),0)/60)+skinSteps.length);
-  const allDone=total>0&&done===total;
-  const low=lowStock();
-  // product stats
-  const skinCount=Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length;
-  const hairCount=Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).length;
-  const scentCount=Object.values(DB.products).filter(p=>p.cat==='scent'&&p.active).length;
+  const heroSubtitle=todayComplete?'Every routine complete':'Open Today →';
+  const heroNum=todayComplete?'✓':streak;
+  const heroNumSize=todayComplete?'font-size:38px':'font-size:48px';
+  const cardBorder=todayComplete?'border-color:rgba(184,112,64,.45)':'';
   return`
   <div class="top"><div class="wordmark">The <em>Stack</em></div>
-  <div class="date"><strong>${dayName(day)} ${isAM?'morning':'evening'}</strong>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}</div></div>
-  ${allDone?`
-  <div class="streak-card" style="border-color:rgba(184,112,64,.4)">
-    <div class="streak-num" style="font-size:52px">✓</div>
+  <div class="date"><strong>${dayName(day)}</strong>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}</div></div>
+  <button class="streak-card" onclick="openToday()" style="width:calc(100% - 44px);cursor:pointer;text-align:left;${cardBorder}">
+    <div class="streak-num" style="${heroNumSize}">${heroNum}</div>
     <div class="streak-body">
-      <div class="streak-eyebrow" style="color:var(--cu)">All complete</div>
-      <div class="streak-sub" style="font-weight:500;color:var(--ink)">Every routine done today</div>
+      <div class="streak-eyebrow">${todayComplete?'All done today':'Day streak'}</div>
+      <div class="streak-sub">${esc(heroSubtitle)}</div>
       <div class="streak-dots">${dots}</div>
     </div>
-  </div>
-  <div class="prog-row">
-    <div class="prog-item"><div class="prog-label">Streak</div><div class="prog-val">${streak} days</div><div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div></div>
-    <div class="prog-item"><div class="prog-label">This week</div><div class="prog-val">${wk.done} / ${wk.total}</div><div class="prog-bar"><div class="prog-fill" style="width:${wk.total?Math.round(wk.done/wk.total*100):0}%"></div></div></div>
-    <div class="prog-item"><div class="prog-label">Best streak</div><div class="prog-val">${bs} days</div><div class="prog-bar"><div class="prog-fill" style="width:${bs?Math.min(100,Math.round(streak/bs*100)):0}%"></div></div></div>
-  </div>`:`
-  <div class="streak-card">
-    <div class="streak-num">${streak}</div>
-    <div class="streak-body">
-      <div class="streak-eyebrow">Day streak</div>
-      <div class="streak-sub">${esc(streakMsg)}</div>
-      <div class="streak-dots">${dots}</div>
-    </div>
-  </div>
-  <div class="prog-row">
-    <div class="prog-item"><div class="prog-label">Today</div><div class="prog-val">${done} / ${total}</div><div class="prog-bar"><div class="prog-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div></div>
-    <div class="prog-item"><div class="prog-label">This week</div><div class="prog-val">${wk.done} / ${wk.total}</div><div class="prog-bar"><div class="prog-fill" style="width:${wk.total?Math.round(wk.done/wk.total*100):0}%"></div></div></div>
-    <div class="prog-item"><div class="prog-label">Best streak</div><div class="prog-val">${bs} days</div><div class="prog-bar"><div class="prog-fill" style="width:${bs?Math.min(100,Math.round(streak/bs*100)):0}%"></div></div></div>
-  </div>`}
-  <button class="hero" onclick="openToday()">
-    <p class="hero-eyebrow">${allDone?'All done today ✓':'Up next · '+(isAM?'Morning':'Evening')}</p>
-    <h2>${skinR?esc(skinR.name):'No routine set'}</h2>
-    <p class="sub">${skinSteps.length} skin steps · hair & scent · ~${mins} min</p>
-    <span class="btn">${allDone?'Review today →':'Open today →'}</span>
   </button>
-  ${low.length?`<div class="sec-label">Running low</div>`+low.map(([id,p])=>{const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;const nName=np?np.brand+' '+np.name:(p.next?p.next.name||'':'');return`<button class="alert" onclick="openProduct('${id}')"><span>⏳</span><div><b>${esc(p.name)}</b> — ~${Math.max(0,daysLeft(p))} days left${nName?' · '+esc(nName)+' queued':''}</div></button>`;}).join(''):''}
-  ${scent?`<div class="sec-label">Scent today</div>
-  <button class="row" onclick="UI.tab='scent';render()">
-    <div class="row-icon ri-scent">◈</div>
-    <div class="row-body"><div class="row-title">${esc(scent.name)}</div>
-    <div class="row-sub">${esc(scent.brand)} · suggested ${h>=17?'tonight':'today'}</div></div>
-    <span class="chip c-cu">Change</span>
-  </button>`:''}
-  <div class="sec-label">Quick start</div>
-  <button class="row" onclick="openRefresh()">
-    <div class="row-icon ri-refresh">✨</div>
-    <div class="row-body"><div class="row-title">Refresh & Go</div>
-    <div class="row-sub">Post-shower reset before going out</div></div>
-    <span class="chip c-mute">Open</span>
-  </button>
-  <div class="sec-label">The Stack</div>
-  <div class="stats-grid">
-    <div class="stat-item"><div class="stat-num">${skinCount}</div><div class="stat-label">Skin products</div></div>
-    <div class="stat-item"><div class="stat-num">${hairCount}</div><div class="stat-label">Hair products</div></div>
-    <div class="stat-item"><div class="stat-num">${scentCount}</div><div class="stat-label">Scents</div></div>
-    <div class="stat-item"><div class="stat-num">${DB.routines.filter(r=>r.cat!=='skin'||r.id!=='skin-refresh').length}</div><div class="stat-label">Routines</div></div>
-    <div class="stat-item"><div class="stat-num">${(DB.hairLooks||[]).length}</div><div class="stat-label">Hair looks</div></div>
-    <div class="stat-item"><div class="stat-num">${Object.values(DB.products).filter(p=>!p.active).length}</div><div class="stat-label">Retired</div></div>
+  ${scent?`<p style="padding:14px 22px 0;font-size:13px;color:var(--ink-soft)">Scent — <span style="color:var(--ink)">${esc(scent.name)}</span></p>`:''}
+  ${low.length?`<p style="padding:8px 22px 0"><button style="font-size:12.5px;color:var(--cu);background:none;border:none;cursor:pointer;font-family:inherit;padding:0" onclick="UI.tab='setup';UI.setupPage='inventory';UI.invCat='skin';render()">${low.length} product${low.length>1?'s':''} running low ›</button></p>`:''}
+  <div style="margin-top:40px;border-top:1px solid var(--hairline)">
+    <button class="row" style="margin-top:12px" onclick="UI.tab='setup';UI.setupPage=null;render()">
+      <div class="row-icon" style="background:var(--bg-raise)">⚙</div>
+      <div class="row-body"><div class="row-title">Settings</div></div>
+      <span style="color:var(--ink-soft);font-size:16px">›</span>
+    </button>
   </div>`;
 }
 function openRefresh(){
   UI.modal={type:'routine-view',id:'skin-refresh'};render();
+}
+
+/* ══ ROUTINES TAB ══ */
+function vRoutines(){
+  const cats=[['skin','Skin'],['hair','Hair'],['scent','Scent'],['supplements','Supplements']];
+  const sel=UI.routinesCat||'skin';UI.routinesCat=sel;
+  const catRs=DB.routines.filter(r=>r.cat===sel&&!r.id.startsWith('hair-look'));
+  const morning=catRs.filter(r=>r.type==='morning');
+  const evening=catRs.filter(r=>r.type==='evening');
+  function summary(r){const n=activeSteps(r.steps).length;const d=r.days.length?r.days.map(i=>dayShort(i)).join(' · '):'Not scheduled';return n+' step'+(n!==1?'s':'')+' · '+d;}
+  function rowList(rs){return rs.map(r=>`<button class="step" onclick="UI.modal={type:'routine-view',id:'${r.id}'};render()">
+    <div class="step-body"><div class="step-name">${esc(r.name)}</div><div class="step-note">${summary(r)}</div></div>
+    <span class="step-arrow">›</span></button>`).join('');}
+  let body='';
+  if(!catRs.length){body=`<div class="empty" style="padding:48px 22px">No ${sel} routines yet — add one in Settings</div>`;}
+  else{
+    if(morning.length)body+=`<div class="sec-label">Morning</div><div class="card">${rowList(morning)}</div>`;
+    if(evening.length)body+=`<div class="sec-label">Evening</div><div class="card">${rowList(evening)}</div>`;
+    const other=catRs.filter(r=>r.type!=='morning'&&r.type!=='evening');
+    if(other.length)body+=`<div class="card">${rowList(other)}</div>`;
+  }
+  return`<h1 class="page-title">Routines</h1>
+  <div class="seg">${cats.map(([k,l])=>`<button class="${sel===k?'on':''}" onclick="UI.routinesCat='${k}';render()">${l}</button>`).join('')}</div>
+  ${body}`;
 }
 
 /* ══ SKIN TAB (read-only) ══ */
@@ -834,6 +823,29 @@ function stepsHTML(steps){
   return h+'</div>';
 }
 
+/* ══ STEPS WITH INVENTORY ══ */
+function stepsWithInventoryHTML(steps){
+  const act=activeSteps(steps);
+  if(!act.length)return'<div class="steps"><div class="empty">No active steps</div></div>';
+  let h='<div class="steps">';
+  act.forEach((s,i)=>{
+    const p=DB.products[s.p];if(!p)return;
+    const dl=daysLeft(p);
+    const invLabel=dl!==null?(dl<=0?'Likely empty':'~'+dl+'d left'):'';
+    const invClass=dl!==null&&dl<=14?'c-cu':'c-mute';
+    h+=`<button class="step" onclick="openProduct('${s.p}')">
+      <span class="step-num">${i+1}</span>
+      <div class="step-body">
+        <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
+        <div class="step-note">${esc(p.role)}</div>
+      </div>
+      ${invLabel?`<span class="chip ${invClass}" style="font-size:10px;flex-shrink:0">${invLabel}</span>`:''}
+      <span class="step-arrow">›</span></button>`;
+    if(s.wait&&i<act.length-1)h+=`<div class="wait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+  });
+  return h+'</div>';
+}
+
 /* ══ SETUP ══ */
 function vSetupRouter(){
   const p=UI.setupPage;
@@ -863,6 +875,7 @@ function vSetupMenu(){
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='skin';render()"><div class="menu-icon" style="background:rgba(184,112,64,.1)">✦</div><div class="menu-body"><div class="menu-title">Skin Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length} active${low?' · '+low+' low stock':''}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='hair';render()"><div class="menu-icon" style="background:rgba(160,139,192,.1)">〰️</div><div class="menu-body"><div class="menu-title">Hair Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).length} active products</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='scent';render()"><div class="menu-icon" style="background:rgba(45,200,180,.07)">◈</div><div class="menu-body"><div class="menu-title">Scent Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='scent'&&p.active).length} active scents</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='supplements';render()"><div class="menu-icon" style="background:rgba(45,200,180,.07)">⊕</div><div class="menu-body"><div class="menu-title">Supplements</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length} active</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='inactive';render()"><div class="menu-icon" style="background:var(--bg-raise)">◻</div><div class="menu-body"><div class="menu-title">Inactive Products</div><div class="menu-sub">${Object.values(DB.products).filter(p=>!p.active).length} deactivated</div></div><span class="menu-arrow">›</span></button>
   </div>
   <div class="card">
@@ -903,7 +916,7 @@ function assignDay(day,type,cat,newId){
 }
 
 function vRoutinesPage(){
-  const cats=[['skin','Skin'],['hair','Hair']],types=['morning','evening'];
+  const cats=[['skin','Skin'],['hair','Hair'],['supplements','Supplements']],types=['morning','evening'];
   return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">Edit Routines</h1>
   ${UI._schedWarning?`<div class="warn-banner">⚠️ ${esc(UI._schedWarning)}</div>`:''}
@@ -928,7 +941,7 @@ function vRoutineEditPage(){
     <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase">TIME</label>
     <select onchange="routineById('${r.id}').type=this.value;save();render()"><option value="morning" ${r.type==='morning'?'selected':''}>Morning</option><option value="evening" ${r.type==='evening'?'selected':''}>Evening</option></select></div>
     <div style="flex:1;min-width:120px"><label style="font-size:11px;color:var(--ink-soft);display:block;margin-bottom:4px;letter-spacing:.08em;text-transform:uppercase">CATEGORY</label>
-    <select onchange="routineById('${r.id}').cat=this.value;save();render()"><option value="skin" ${r.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${r.cat==='hair'?'selected':''}>Hair</option></select></div>
+    <select onchange="routineById('${r.id}').cat=this.value;save();render()"><option value="skin" ${r.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${r.cat==='hair'?'selected':''}>Hair</option><option value="supplements" ${r.cat==='supplements'?'selected':''}>Supplements</option></select></div>
   </div>
   <div class="sec-label">Days</div>
   <div style="padding:0 22px 14px">
@@ -976,10 +989,10 @@ function vLooksPage(){
 function vInventoryPage(){
   const cat=UI.invCat;
   const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
-  const titles={skin:'Skin Inventory',hair:'Hair Inventory',scent:'Scent Inventory',inactive:'Inactive Products'};
+  const titles={skin:'Skin Inventory',hair:'Hair Inventory',scent:'Scent Inventory',supplements:'Supplements',inactive:'Inactive Products'};
   return`<button class="back-btn" onclick="setupBack()">‹ Setup</button>
   <h1 class="page-title">${titles[cat]||'Inventory'}</h1>
-  <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
+  <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['supplements','Suppl.'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" onclick="UI.invCat='${k}';render()">${l}</button>`).join('')}</div>
   <div class="card">${items.map(([id,p])=>{const dl=daysLeft(p);
     return`<button class="step" onclick="openEdit('${id}')"><div class="step-body">
     <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
@@ -1038,8 +1051,9 @@ function renderModal(){
 
 function routineViewSheet(id){
   const r=routineById(id);if(!r)return'';
-  return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type}</div>
-  ${stepsHTML(r.steps)}
+  const days=r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not scheduled';
+  return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type} · ${days}</div>
+  ${stepsWithInventoryHTML(r.steps)}
   <button class="btn ghost full" onclick="UI.modal=null;render()">Close</button>`;
 }
 function openProduct(id){UI.modal={type:'product',id};render();}
@@ -1076,7 +1090,7 @@ function productEdit(id){
   <h3>Edit — ${esc(p.name)||'New product'}</h3><div class="brand">${esc(p.brand)}</div>
   <div class="field"><label>Name</label><input value="${esc(p.name)}" onchange="upd('${id}','name',this.value)"></div>
   <div class="field"><label>Brand</label><input value="${esc(p.brand)}" onchange="upd('${id}','brand',this.value)"></div>
-  <div class="field"><label>Category</label><select onchange="upd('${id}','cat',this.value)">${['skin','hair','scent'].map(c=>`<option value="${c}" ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="field"><label>Category</label><select onchange="upd('${id}','cat',this.value)">${['skin','hair','scent','supplements'].map(c=>`<option value="${c}" ${p.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
   <div class="field"><label>Role (short)</label><input value="${esc(p.role)}" onchange="upd('${id}','role',this.value)"></div>
   <div class="field"><label>Why it matters</label><textarea onchange="upd('${id}','why',this.value)">${esc(p.why)}</textarea></div>
   <div class="field"><label>Notes</label><textarea onchange="upd('${id}','notes',this.value)">${esc(p.notes)}</textarea></div>
@@ -1132,7 +1146,7 @@ function newRoutineSheet(){
   const copyOpts=DB.routines.filter(r=>r.cat===m.cat&&r.type===m.type);
   return`<div class="sheet-handle"></div><h3>New Routine</h3>
   <div class="field"><label>Name</label><input value="${esc(m.name)}" placeholder="e.g. Evening A — Recovery" oninput="UI._newR.name=this.value"></div>
-  <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option></select></div>
+  <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option><option value="supplements" ${m.cat==='supplements'?'selected':''}>Supplements</option></select></div>
   <div class="field"><label>Type</label><select onchange="UI._newR.type=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="morning" ${m.type==='morning'?'selected':''}>Morning</option><option value="evening" ${m.type==='evening'?'selected':''}>Evening</option></select></div>
   <div class="field"><label>Copy steps from (optional)</label><select onchange="UI._newR.copyFrom=this.value"><option value="">— start empty —</option>${copyOpts.map(r=>`<option value="${r.id}" ${m.copyFrom===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div>
   <div style="display:flex;gap:8px;margin-top:4px"><button class="btn full" onclick="createRoutine()">Create</button><button class="btn ghost full" onclick="UI.modal=null;UI._newR=null;render()">Cancel</button></div>`;
@@ -1171,6 +1185,7 @@ function claudePrompt(){
   DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
   (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
   lines.push('');lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
+  const suppProds=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active);if(suppProds.length){lines.push('');lines.push('SUPPLEMENTS: '+suppProds.map(p=>p.brand+' '+p.name).join(', '));}
   const inactive=Object.values(DB.products).filter(p=>!p.active);if(inactive.length){lines.push('');lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
   const low=lowStock();if(low.length){lines.push('');lines.push('LOW STOCK: '+low.map(([id,p])=>p.name+' (~'+Math.max(0,daysLeft(p))+'d)').join(', '));}
   return lines.join('\n');
