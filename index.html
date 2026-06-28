@@ -876,8 +876,8 @@ function openRefresh(){
 
 /* ══ ROUTINES TAB ══ */
 function vRoutines(){
-  const cats=[['skin','Skin'],['hair','Hair'],['scent','Scent'],['supplements','Supplements']];
-  const sel=UI.routinesCat||'skin';UI.routinesCat=sel;
+  const cats=[['skin','Skin'],['hair','Hair'],['supplements','Supplements']];
+  const sel=(UI.routinesCat&&cats.some(c=>c[0]===UI.routinesCat))?UI.routinesCat:'skin';UI.routinesCat=sel;
   const catRs=DB.routines.filter(r=>r.cat===sel&&!r.id.startsWith('hair-look'));
   const morning=catRs.filter(r=>r.type==='morning');
   const evening=catRs.filter(r=>r.type==='evening');
