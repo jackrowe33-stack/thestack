@@ -246,6 +246,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
+const BUILD='2026-06-28 · stage9';
 const SEED={
   v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1116,7 +1117,8 @@ function vSetupMenu(){
     <button class="menu-item" onclick="document.getElementById('imp').click()"><div class="menu-body"><div class="menu-title">Import backup</div></div></button>
     <button class="menu-item" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div></div></button>
   </div>
-  <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">`;
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
+  <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v}</div>`;
 }
 
 function vSchedulePage(type){
