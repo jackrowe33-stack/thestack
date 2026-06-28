@@ -114,6 +114,8 @@ a{color:inherit}
 .citem:active{background:rgba(184,112,64,.04)}
 .ccheck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--card-edge);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink);transition:all .2s cubic-bezier(.3,1.2,.4,1)}
 .ccheck.done{background:var(--cu-btn);border-color:var(--cu-btn);color:#fff}
+.ccheck.applied{background:rgba(184,112,64,.18);border-color:var(--cu);color:var(--cu)}
+.wait-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(184,112,64,.12);color:var(--cu);font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;font-variant-numeric:tabular-nums}
 .cbody{flex:1;min-width:0}
 .cname{font-size:14px;font-weight:500;color:var(--ink);transition:all .2s}
 .cname.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--card-edge)}
@@ -242,7 +244,7 @@ a{color:inherit}
 <body>
 <div id="app"></div>
 <nav class="tabs" id="tabs"></nav>
-<button class="fab-global" id="fab-global" style="display:none" onclick="stopTimerGlobal()">⏱ <span class="fab-global-t">0:00</span></button>
+<button class="fab-global" id="fab-global" style="display:none" onclick="goToWaitStep()">⏱ <span class="fab-global-t">–:––</span></button>
 <script>
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
@@ -392,31 +394,36 @@ function checklistState(rid,date){
   return steps.map(s=>({...s,...(si[s.p]||{done:false,state:null,appliedAt:null})}));
 }
 function tickStep(rid,productId,dateStr){
-  const date=dateStr||UI.todayDate||todayStr(),c=getComp(rid,date)||{completedAt:null,steps:[]};
+  const date=dateStr||UI.todayDate||todayStr();
   const r=routineById(rid);if(!r)return;
   const steps=activeSteps(r.steps);
+  const c=getComp(rid,date)||{completedAt:null,steps:[]};
   const wasComplete=!!c.completedAt;
-  const stepMap={};(c.steps||[]).forEach(s=>stepMap[s.p]=s.done);
-  stepMap[productId]=!stepMap[productId];
-  c.steps=steps.map(s=>({p:s.p,done:!!stepMap[s.p],state:c.steps.find(x=>x.p===s.p)?.state||(stepMap[s.p]?'done':null),appliedAt:c.steps.find(x=>x.p===s.p)?.appliedAt||null}));
-  const allDone=steps.every(s=>stepMap[s.p]);
+  const rStep=steps.find(s=>s.p===productId);
+  const hasWait=rStep&&(rStep.wait||0)>0;
+  const sm={};
+  (c.steps||[]).forEach(s=>{sm[s.p]={state:s.state||(s.done?'done':null),appliedAt:s.appliedAt||null};});
+  const cur=(sm[productId]||{}).state||null;
+  if(cur===null){
+    sm[productId]={state:hasWait?'applied':'done',appliedAt:hasWait?Date.now():null};
+    const idx=steps.findIndex(s=>s.p===productId);
+    steps.slice(0,idx).forEach(s=>{if((sm[s.p]||{}).state==='applied')sm[s.p]={state:'done',appliedAt:(sm[s.p]||{}).appliedAt||null};});
+  } else {
+    sm[productId]={state:null,appliedAt:null};
+  }
+  c.steps=steps.map(s=>{const st=sm[s.p]||{state:null,appliedAt:null};return{p:s.p,done:st.state==='applied'||st.state==='done',state:st.state,appliedAt:st.appliedAt};});
+  const allDone=steps.every(s=>{const st=(sm[s.p]||{}).state;return st==='applied'||st==='done';});
   if(allDone&&!wasComplete)c.completedAt=Date.now();
   if(!allDone)c.completedAt=null;
   DB.completions[compKey(rid,date)]=c;
-  save();
-  UI.todayScrollTo=null;
+  save();UI.todayScrollTo=null;
   if(allDone&&!wasComplete){
     const el=document.getElementById('clist-'+rid);
     if(el){
-      const h=el.offsetHeight;
-      el.style.overflow='hidden';
-      el.style.maxHeight=h+'px';
-      el.style.transition='max-height 250ms ease-out,opacity 250ms ease-out';
-      if(!UI.todayExpanded)UI.todayExpanded={};
-      delete UI.todayExpanded[rid];
+      const h=el.offsetHeight;el.style.overflow='hidden';el.style.maxHeight=h+'px';el.style.transition='max-height 250ms ease-out,opacity 250ms ease-out';
+      if(!UI.todayExpanded)UI.todayExpanded={};delete UI.todayExpanded[rid];
       requestAnimationFrame(()=>{el.style.maxHeight='0';el.style.opacity='0';});
-      setTimeout(()=>renderTodayPage(),270);
-      return;
+      setTimeout(()=>renderTodayPage(),270);return;
     }
   }
   renderTodayPage();
@@ -425,7 +432,7 @@ function completeAll(rid){completeAllDate(rid,todayStr());}
 function uncompleteRoutine(rid){uncompleteRoutineDate(rid,todayStr());}
 function completeAllDate(rid,dateStr){
   const r=routineById(rid);if(!r)return;
-  DB.completions[compKey(rid,dateStr)]={completedAt:Date.now(),steps:activeSteps(r.steps).map(s=>({p:s.p,done:true}))};
+  DB.completions[compKey(rid,dateStr)]={completedAt:Date.now(),steps:activeSteps(r.steps).map(s=>({p:s.p,done:true,state:'done',appliedAt:null}))};
   UI.todayScrollTo=null;save();renderTodayPage();
 }
 function uncompleteRoutineDate(rid,dateStr){
@@ -658,17 +665,7 @@ function renderTodayPage(){
     requestAnimationFrame(()=>{ overlay.scrollTop=savedScroll; });
   }
 
-  // Today start button — only shown when timer is not running
-  if(!timerStart){
-    const fab=document.createElement('button');
-    fab.id='fab-today';fab.className='fab-today';
-    fab.innerHTML='⏱ Start';fab.onclick=toggleTimer;
-    document.body.appendChild(fab);
-  }
-  // Make sure global FAB is correctly shown/hidden based on timer state
-  const gfab=document.getElementById('fab-global');
-  if(gfab)gfab.style.display=timerStart?'flex':'none';
-  if(timerStart)updateTimerDisplay();
+  updateWaitDisplay();
 }
 function checklistHTML(rid,dateStr){
   dateStr=dateStr||todayStr();
@@ -677,64 +674,60 @@ function checklistHTML(rid,dateStr){
   let h=`<div class="checklist" id="clist-${rid}">`;
   items.forEach((s,i)=>{
     const p=DB.products[s.p];if(!p)return;
-    const isDone=s.state==='done'||s.state==='applied';
-    const psteps=(p.steps||[]).filter(st=>st.text);
+    const st=s.state||null;
+    const isDone=st==='done';const isApplied=st==='applied';const isTicked=isDone||isApplied;
+    const checkClass=isDone?'done':isApplied?'applied':'';
+    const checkContent=isDone?'✓':isApplied?'·':'';
+    const psteps=(p.steps||[]).filter(x=>x.text);
     h+=`<div class="citem-row">
       <button class="citem-tick" onclick="tickStep('${rid}','${s.p}','${dateStr}')">
-        <div class="ccheck ${isDone?'done':''}">${isDone?'✓':''}</div>
+        <div class="ccheck ${checkClass}">${checkContent}</div>
         <div class="cbody">
-          <div class="cname ${isDone?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
+          <div class="cname ${isTicked?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
           ${psteps.length
-            ?`<div class="psteps">${psteps.map((st,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text${isDone?' done':''}">${esc(st.text)}</span></div>`).join('')}</div><div class="cnote${isDone?' done':''}" style="margin-top:4px;font-size:10.5px">${esc(p.role)}</div>`
-            :`<div class="cnote${isDone?' done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!isDone?' · wait '+fmtWait(s.wait)+' after':''}</div>`
+            ?`<div class="psteps">${psteps.map((st2,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text${isTicked?' done':''}">${esc(st2.text)}</span></div>`).join('')}</div><div class="cnote${isTicked?' done':''}" style="margin-top:4px;font-size:10.5px">${esc(p.role)}</div>`
+            :`<div class="cnote${isTicked?' done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!isTicked?' · wait '+fmtWait(s.wait)+' after':''}</div>`
           }
         </div>
       </button>
       <button class="citem-info" onclick="openProductDetail('${rid}','${s.p}','${dateStr}')">ⓘ</button>
     </div>`;
-    if(s.wait&&i<items.length-1&&!isDone)h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+    if(isApplied&&s.appliedAt&&s.wait){
+      const rem=s.wait*1000-(Date.now()-s.appliedAt);
+      h+=`<div class="cwait"><span class="wait-chip" data-wait-chip data-wait="${s.wait}" data-at="${s.appliedAt}">${rem>0?fmtCountdown(rem)+' ⏱':'ready ✓'}</span></div>`;
+    } else if(s.wait&&i<items.length-1&&!isTicked){
+      h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+    }
   });
   return h+'</div>';
 }
 
-/* ══ TIMER ══ */
-function fmtTimer(){const s=Math.floor((Date.now()-timerStart)/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
-function updateTimerDisplay(){
-  const globalFab=document.getElementById('fab-global');
-  if(globalFab){
-    const t=globalFab.querySelector('.fab-global-t');
-    if(t)t.textContent=fmtTimer();
-  }
-}
-function startTimer(){
-  if(timerStart)return; // already running
-  timerStart=Date.now();
-  // Show global FAB
+/* ══ TIMER — wait countdown ══ */
+function fmtCountdown(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+let _waitInt=null;
+function startWaitInterval(){if(_waitInt)return;_waitInt=setInterval(updateWaitDisplay,1000);}
+function updateWaitDisplay(){
+  const date=UI.todayDate||todayStr();
+  const parts=date.split('-');const dow=new Date(+parts[0],+parts[1]-1,+parts[2]).getDay();
+  let minRem=Infinity,anyActive=false;
+  scheduledForDay(dow).forEach(r=>{
+    const c=getComp(r.id,date);if(!c||!c.steps)return;
+    c.steps.forEach(step=>{
+      if(step.state==='applied'&&step.appliedAt&&step.wait){
+        const rem=step.wait*1000-(Date.now()-step.appliedAt);
+        if(rem>0){anyActive=true;minRem=Math.min(minRem,rem);}
+      }
+    });
+  });
   const gfab=document.getElementById('fab-global');
-  if(gfab)gfab.style.display='flex';
-  // Hide the Today start button if Today is open
-  const todayFab=document.getElementById('fab-today');
-  if(todayFab)todayFab.style.display='none';
-  timerInt=setInterval(()=>{
-    updateTimerDisplay();
-  },1000);
+  if(gfab){if(anyActive){gfab.style.display='flex';const t=gfab.querySelector('.fab-global-t');if(t)t.textContent=fmtCountdown(minRem);}else gfab.style.display='none';}
+  document.querySelectorAll('[data-wait-chip]').forEach(el=>{
+    const rem=parseInt(el.dataset.wait)*1000-(Date.now()-parseInt(el.dataset.at));
+    el.textContent=rem>0?fmtCountdown(rem)+' ⏱':'ready ✓';
+  });
 }
-function stopTimerGlobal(){
-  if(!timerStart)return;
-  clearInterval(timerInt);timerStart=null;
-  // Hide global FAB
-  const gfab=document.getElementById('fab-global');
-  if(gfab)gfab.style.display='none';
-  // Show Today start button again if Today is open
-  const todayFab=document.getElementById('fab-today');
-  if(todayFab)todayFab.style.display='flex';
-}
-function stopTimer(){stopTimerGlobal();}
-// toggleTimer is only callable from Today overlay — starts the timer
-function toggleTimer(){
-  if(timerStart){stopTimerGlobal();}
-  else{startTimer();}
-}
+function goToWaitStep(){if(!UI.todayOpen)openToday();else{const ov=document.getElementById('today-overlay');if(ov){const chip=ov.querySelector('[data-wait-chip]');if(chip)chip.scrollIntoView({behavior:'smooth',block:'center'});}}}
+startWaitInterval();
 
 /* ══ HOME ══ */
 function vHome(){
