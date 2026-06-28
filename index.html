@@ -115,6 +115,17 @@ a{color:inherit}
 .cname.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--card-edge)}
 .cnote{font-size:11px;color:var(--ink-mid);margin-top:1px}
 .cnote.done{color:var(--hairline)}
+.citem-row{display:flex;align-items:stretch;border-bottom:1px solid var(--hairline)}
+.citem-row:last-child{border-bottom:none}
+.citem-tick{flex:1;display:flex;align-items:flex-start;gap:13px;padding:14px 12px 14px 16px;background:none;text-align:left;transition:background .12s;cursor:pointer}
+.citem-tick:active{background:rgba(184,112,64,.04)}
+.citem-info{width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);border-left:1px solid var(--hairline);background:none;flex-shrink:0;font-size:16px;cursor:pointer}
+.citem-info:active{background:rgba(184,112,64,.04)}
+.psteps{margin-top:5px}
+.pstep{font-size:11.5px;display:flex;gap:6px;margin-bottom:3px;align-items:flex-start}
+.pstep-num{color:var(--cu);font-size:10px;font-weight:700;min-width:14px;padding-top:1px}
+.pstep-text{color:var(--ink-mid);line-height:1.4;flex:1}
+.pstep-text.done{color:var(--hairline)}
 .cwait{display:flex;align-items:center;gap:8px;padding:0 16px;font-size:10px;color:var(--ink-soft);background:var(--bg-raise)}
 .cwait::before,.cwait::after{content:'';flex:1;border-top:1px dashed var(--card-edge)}
 .cwait span{padding:5px 0}
@@ -372,8 +383,9 @@ function checklistState(rid,date){
   const r=routineById(rid);if(!r)return[];
   const steps=activeSteps(r.steps);
   const c=getComp(rid,date);
-  const doneSet=new Set((c&&c.steps?c.steps.filter(s=>s.done).map(s=>s.p):[]));
-  return steps.map(s=>({...s,done:doneSet.has(s.p)}));
+  const si={};
+  (c&&c.steps||[]).forEach(s=>{si[s.p]={done:s.done,state:s.state||(s.done?'done':null),appliedAt:s.appliedAt||null};});
+  return steps.map(s=>({...s,...(si[s.p]||{done:false,state:null,appliedAt:null})}));
 }
 function tickStep(rid,productId,dateStr){
   const date=dateStr||UI.todayDate||todayStr(),c=getComp(rid,date)||{completedAt:null,steps:[]};
@@ -631,16 +643,25 @@ function checklistHTML(rid,dateStr){
   dateStr=dateStr||todayStr();
   const items=checklistState(rid,dateStr);
   if(!items.length)return'<div class="checklist"><div class="empty">No active steps</div></div>';
-  let h='<div class="checklist">';
+  let h=`<div class="checklist" id="clist-${rid}">`;
   items.forEach((s,i)=>{
     const p=DB.products[s.p];if(!p)return;
-    h+=`<button class="citem" onclick="tickStep('${rid}','${s.p}','${dateStr}')">
-      <div class="ccheck ${s.done?'done':''}">${s.done?'✓':''}</div>
-      <div class="cbody">
-        <div class="cname ${s.done?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
-        <div class="cnote ${s.done?'done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!s.done?' · wait '+fmtWait(s.wait)+' after':''}</div>
-      </div></button>`;
-    if(s.wait&&i<items.length-1&&!s.done)h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
+    const isDone=s.state==='done'||s.state==='applied';
+    const psteps=(p.steps||[]).filter(st=>st.text);
+    h+=`<div class="citem-row">
+      <button class="citem-tick" onclick="tickStep('${rid}','${s.p}','${dateStr}')">
+        <div class="ccheck ${isDone?'done':''}">${isDone?'✓':''}</div>
+        <div class="cbody">
+          <div class="cname ${isDone?'done':''}">${esc(p.brand)} ${esc(p.name)}</div>
+          ${psteps.length
+            ?`<div class="psteps">${psteps.map((st,n)=>`<div class="pstep"><span class="pstep-num">${n+1}</span><span class="pstep-text${isDone?' done':''}">${esc(st.text)}</span></div>`).join('')}</div><div class="cnote${isDone?' done':''}" style="margin-top:4px;font-size:10.5px">${esc(p.role)}</div>`
+            :`<div class="cnote${isDone?' done':''}">${p.cat==='hair'&&p.notes?esc(p.notes):esc(p.role)}${s.wait&&!isDone?' · wait '+fmtWait(s.wait)+' after':''}</div>`
+          }
+        </div>
+      </button>
+      <button class="citem-info" onclick="openProductDetail('${rid}','${s.p}','${dateStr}')">ⓘ</button>
+    </div>`;
+    if(s.wait&&i<items.length-1&&!isDone)h+=`<div class="cwait"><span>wait ${fmtWait(s.wait)}</span></div>`;
   });
   return h+'</div>';
 }
@@ -1042,6 +1063,7 @@ function renderModal(){
   ov.onclick=e=>{if(e.target===ov){UI.modal=null;render();}};
   const m=UI.modal;let inner='';
   if(m.type==='product')inner=productView(m.id);
+  else if(m.type==='product-detail')inner=productDetailSheet(m.id);
   else if(m.type==='edit')inner=productEdit(m.id);
   else if(m.type==='routine-view')inner=routineViewSheet(m.id);
   else if(m.type==='addstep')inner=addStepSheet(m.routineId);
@@ -1062,6 +1084,23 @@ function routineViewSheet(id){
 function openProduct(id){UI.modal={type:'product',id};render();}
 function openEdit(id){UI.modal={type:'edit',id};render();}
 function closeEdit(){if(UI._afterNewProduct){const rid=UI._afterNewProduct.returnToEdit;UI._afterNewProduct=null;UI.modal={type:'edit',id:rid};}else UI.modal=null;render();}
+function productDetailSheet(id){
+  const p=DB.products[id];if(!p)return'';
+  const dl=daysLeft(p);
+  const psteps=(p.steps||[]).filter(s=>s.text);
+  return`<div class="sheet-handle"></div>
+  <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute">${p.cat}</span></div>
+  ${psteps.length?`<div class="sec-label" style="margin-left:0;margin-top:8px">How to apply</div>
+  <div class="desc-block">${psteps.map((s,i)=>`<div style="display:flex;gap:10px;margin-bottom:${i<psteps.length-1?'10px':'0'}"><span style="color:var(--cu);font-size:11px;font-weight:700;min-width:16px;padding-top:1px">${i+1}</span><span style="font-size:13px;color:var(--ink);line-height:1.5">${esc(s.text)}</span></div>`).join('')}</div>`:''}
+  <div class="desc-block"><b>Why this step</b>${esc(p.why||p.role)}</div>
+  ${p.notes?`<div class="field"><label>Notes</label><div class="ro-notes">${esc(p.notes)}</div></div>`:''}
+  <div class="card pad" style="margin:0 0 14px">
+    <div class="kv"><span class="k">Stock estimate</span><span class="v">${dl!==null?(dl<=0?'Likely empty':'~'+Math.max(0,dl)+' days left'):'—'}</span></div>
+    <div class="kv"><span class="k">Lasts about</span><span class="v">${p.durationDays?p.durationDays+' days':'—'}</span></div>
+  </div>
+  <button class="btn ghost full" onclick="UI.modal=null;renderModal()">Done</button>`;
+}
+function openProductDetail(rid,productId,dateStr){UI.modal={type:'product-detail',id:productId,rid,dateStr};renderModal();}
 
 function productView(id){
   const p=DB.products[id];if(!p)return'';const dl=daysLeft(p);
