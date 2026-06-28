@@ -796,6 +796,9 @@ function goToWaitStep(){if(!UI.todayOpen)openToday();else{const ov=document.getE
 startWaitInterval();
 
 /* ══ HOME ══ */
+function routineEstMins(r){
+  return Math.round(activeSteps(r.steps).reduce((s,st)=>s+(st.wait||0),0)/60);
+}
 function vHome(){
   const now=new Date(),day=now.getDay();
   const streak=calcStreak();
@@ -812,26 +815,15 @@ function vHome(){
     if(isToday&&!complete)return`<div class="sdot" style="background:none;border:1.5px solid var(--cu);box-sizing:border-box"></div>`;
     return`<div class="sdot ${complete?(isToday?'today':'on'):'off'}"></div>`;
   }).join('');
-  // Next incomplete routine + estimated remaining time
-  const incompleteRoutines=scheduledForDay(day).filter(r=>!isRoutineComplete(r.id,dateStr));
-  const nextName=incompleteRoutines.length?incompleteRoutines[0].name:'';
-  let remSec=0;
-  incompleteRoutines.forEach(r=>{activeSteps(r.steps).forEach(s=>{remSec+=s.wait||0;});});
-  const remMins=Math.ceil(remSec/60);
+  // Today summary card data
+  const todayScheduled=scheduledForDay(day);
+  const incompleteRoutines=todayScheduled.filter(r=>!isRoutineComplete(r.id,dateStr));
+  const remMins=incompleteRoutines.reduce((s,r)=>s+routineEstMins(r),0);
   // Scent context tag
   const scentTag=scent&&scent.tags&&scent.tags.length?scent.tags[0]:'';
   // Refresh & Go routine
   const refreshR=DB.routines.find(r=>r.id==='skin-refresh');
   const cardBorder=todayComplete?'border-color:rgba(184,112,64,.45)':'';
-  // Today overview — all scheduled routines, completed greyed
-  const todayScheduled=scheduledForDay(day);
-  const overviewRows=todayScheduled.map(r=>{
-    const isDone=isRoutineComplete(r.id,dateStr);
-    return`<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
-      <span style="font-size:11px;font-weight:600;color:${isDone?'var(--cu)':'var(--ink-soft)'};min-width:12px">${isDone?'✓':'○'}</span>
-      <span style="font-size:13px;color:${isDone?'var(--ink-soft)':'var(--ink)'};${isDone?'text-decoration:line-through;text-decoration-color:var(--card-edge)':''}">${esc(r.name)}</span>
-    </div>`;
-  }).join('');
   return`
   <div style="min-height:calc(100vh - 132px);display:flex;flex-direction:column">
   <div class="top">
@@ -843,19 +835,25 @@ function vHome(){
       <div class="streak-num" style="${todayComplete?'font-size:42px':'font-size:52px'}">${todayComplete?'✓':streak}</div>
       <div class="streak-body">
         <div class="streak-eyebrow">${todayComplete?'All done today':'Day streak'}</div>
-        <div class="streak-dots" style="margin-top:8px">${dots}</div>
+        <div class="streak-dots" style="margin-top:10px">${dots}</div>
       </div>
     </div>
-    <div style="height:1px;background:var(--card-edge);margin:16px 0 12px"></div>
-    ${todayComplete
-      ?`<div style="font-size:13px;color:var(--cu);font-weight:500">All done for today ✓</div>`
-      :`<div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:var(--ink-mid)">Today isn't done yet</span>
-        <span style="font-size:12px;color:var(--cu);font-weight:500">Open Today →</span>
-      </div>
-      ${nextName?`<div style="font-size:11px;color:var(--ink-soft);margin-top:5px">Next: ${esc(nextName)}${remMins>0?' · ⏱ ~'+remMins+' min remaining':''}</div>`:''}`
-    }
   </button>
+  <div class="card pad" style="margin:0 22px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center${todayScheduled.length?';margin-bottom:12px':''}">
+      <span style="font-size:13px;font-weight:500;color:${todayComplete?'var(--cu)':'var(--ink)'}">${todayComplete?'All done for today ✓':'Today isn\'t done yet'}</span>
+      <button style="font-size:13px;color:var(--cu);font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-family:inherit;flex-shrink:0;margin-left:12px" onclick="openToday()">Open Today →</button>
+    </div>
+    ${todayScheduled.map(r=>{
+      const isDone=isRoutineComplete(r.id,dateStr);
+      const mins=routineEstMins(r);
+      return`<div style="display:flex;align-items:center;gap:8px;padding:3px 0">
+        <span style="font-size:13px;color:${isDone?'var(--ink-soft)':'var(--ink)'};${isDone?'text-decoration:line-through;text-decoration-color:var(--card-edge);':''}flex:1;line-height:1.3">${esc(r.name)}</span>
+        ${mins?`<span style="font-size:11px;color:var(--ink-soft);flex-shrink:0">~${mins} min</span>`:''}
+      </div>`;
+    }).join('')}
+    ${!todayComplete&&remMins>0?`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--hairline);font-size:11px;color:var(--ink-soft)">~${remMins} min remaining</div>`:''}
+  </div>
   ${scent?`<button class="row" onclick="UI.tab='scent';render()">
     <div class="row-icon" style="width:36px;height:36px;border-radius:50%;background:rgba(45,200,180,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">◈</div>
     <div class="row-body">
@@ -873,11 +871,7 @@ function vHome(){
     </div>
     <span style="color:var(--ink-soft);font-size:16px">›</span>
   </button>`:''}
-  ${todayScheduled.length?`<div class="card pad" style="margin:0 22px 10px">
-    ${overviewRows}
-    ${low.length?`<div style="height:1px;background:var(--hairline);margin:10px 0 8px"></div>
-    <button style="font-size:12px;color:var(--cu);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;font-weight:500" onclick="UI.tab='setup';UI.setupPage='inventory';UI.invCat='skin';render()">${low.length} product${low.length>1?'s':''} running low ›</button>`:''}
-  </div>`:''}
+  ${low.length?`<div style="padding:4px 22px 0"><button style="font-size:12.5px;color:var(--cu);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;font-weight:500" onclick="UI.tab='setup';UI.setupPage='inventory';UI.invCat='skin';render()">⚠ ${low.length} product${low.length>1?'s':''} running low ›</button></div>`:''}
   <div style="flex:1"></div>
   <div style="display:flex;justify-content:flex-end;padding:8px 22px 16px">
     <button style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ink-mid);background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:100px;padding:8px 14px;cursor:pointer" onclick="UI.tab='setup';UI.setupPage=null;render()">⚙ Settings</button>
