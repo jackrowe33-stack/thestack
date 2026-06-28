@@ -103,7 +103,7 @@ a{color:inherit}
 .today-page{position:fixed;inset:0;background:var(--bg);z-index:55;overflow-y:auto;padding-bottom:calc(110px + env(safe-area-inset-bottom));max-width:430px;margin:0 auto}
 .today-sticky{position:sticky;top:0;z-index:10;background:var(--bg);padding-bottom:2px}
 .today-sticky::after{content:'';display:block;height:1px;background:linear-gradient(to bottom,var(--card-edge),transparent);margin:0 0 0 0}
-.today-header{padding:calc(env(safe-area-inset-top,0px) + 12px) 22px 4px;display:flex;justify-content:space-between;align-items:flex-end}
+.today-header{padding:calc(env(safe-area-inset-top,0px) + 12px) 22px 8px;display:flex;justify-content:space-between;align-items:flex-end}
 .today-close{font-size:13px;color:var(--ink-mid);padding:4px 0}
 .checklist{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;margin:0 22px 14px;overflow:hidden}
 .citem{display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--hairline);width:100%;background:none;text-align:left;transition:background .12s}
@@ -246,7 +246,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-06-28 · addstep-feedback';
+const BUILD='2026-06-28 · v10-headers';
 const SEED={
   v:6,updatedAt:0,settings:{syncUrl:'',pin:'',streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -619,11 +619,9 @@ function renderTodayPage(){
     if(rSingle){
       const isDoneSingle=isRoutineComplete(rSingle.id,dateStr);
       let rOut=`<div class="today-sticky">
-        <div class="today-header" style="justify-content:flex-end">
-          <div style="text-align:right">
-            <div class="wordmark">The <em>Stack</em></div>
-            <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">${esc(rSingle.name)}</div>
-          </div>
+        <div class="today-header">
+          <div style="font-size:11px;color:var(--ink-soft)">${esc(rSingle.name)}</div>
+          <div class="wordmark">The <em>Stack</em></div>
         </div>
       </div>
       <div class="day-section today-section">
@@ -649,11 +647,9 @@ function renderTodayPage(){
 
   let out=`
   <div class="today-sticky">
-    <div class="today-header" style="justify-content:flex-end">
-      <div style="text-align:right">
-        <div class="wordmark">The <em>Stack</em></div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">${done}/${total} routines complete</div>
-      </div>
+    <div class="today-header">
+      <div style="font-size:11px;color:var(--ink-soft)">${done}/${total} routines complete</div>
+      <div class="wordmark">The <em>Stack</em></div>
     </div>
     <div class="date-nav">
       <button class="date-nav-btn" onclick="openToday('${prevDate}')">‹</button>
@@ -941,7 +937,7 @@ function vRoutines(){
     const other=catRs.filter(r=>r.type!=='morning'&&r.type!=='evening');
     if(other.length)body+=`<div class="card">${rowList(other)}</div>`;
   }
-  return`<div style="padding:52px 22px 8px;display:flex;justify-content:space-between;align-items:flex-end">
+  return`<div class="top">
     <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Routines</h1>
     <div class="wordmark">The <em>Stack</em></div>
   </div>
@@ -990,7 +986,7 @@ function vHair(){
 /* ══ SCENT SCREEN ══ */
 function vScent(){
   const sug=suggestScent();const sc=scents();
-  return`<div style="padding:52px 22px 8px;display:flex;justify-content:space-between;align-items:flex-end">
+  return`<div class="top">
     <button class="back-btn" style="margin:0;padding:8px 14px" onclick="UI.tab='home';render()">‹ Home</button>
     <div class="wordmark">The <em>Stack</em></div>
   </div>
@@ -1080,7 +1076,7 @@ function setupBack(page){saveScroll();UI.setupPage=page||null;UI._scrollRestorin
 
 function vSetupMenu(){
   const low=lowStock().length;
-  return`<div style="padding:52px 22px 8px;display:flex;justify-content:space-between;align-items:flex-end">
+  return`<div class="top">
     <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Setup</h1>
     <div class="wordmark">The <em>Stack</em></div>
   </div>
