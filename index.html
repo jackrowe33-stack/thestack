@@ -1229,6 +1229,17 @@ function renderModal(){
   else if(m.type==='new-routine')inner=newRoutineSheet();
   ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${inner}</div>`;
   document.body.appendChild(ov);
+  if(m.type==='routine-view'){
+    const sheet=ov.querySelector('.sheet');
+    if(sheet){
+      let _sy=0,_moved=false;
+      sheet.addEventListener('touchstart',e=>{_sy=e.touches[0].clientY;_moved=false;},{passive:true});
+      sheet.addEventListener('touchmove',e=>{_moved=true;},{passive:true});
+      sheet.addEventListener('touchend',e=>{
+        if(_moved&&e.changedTouches[0].clientY-_sy>72){UI.modal=null;render();}
+      },{passive:true});
+    }
+  }
 }
 
 function routineViewSheet(id){
