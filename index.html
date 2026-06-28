@@ -520,7 +520,7 @@ function openToday(dateStr){
   renderTabs();
 }
 function closeToday(){
-  UI.todayOpen=false;UI.todayDate=null;UI.todayScrollTo=null;releaseWakeLock();
+  UI.todayOpen=false;UI.todayDate=null;UI.todayScrollTo=null;UI.todayLook=null;releaseWakeLock();
   // Remove Today start button but keep timer running if active
   const tf=document.getElementById('fab-today');if(tf)tf.remove();
   let ex=document.getElementById('today-overlay');if(ex)ex.remove();
@@ -622,8 +622,23 @@ function renderTodayPage(){
   out+=routineSection(skinMR,`Skin — ${skinMR?skinMR.name:'No routine'}  · Morning`,'');
   out+=routineSection(hairMR,`Hair — ${hairMR?hairMR.name:'No routine'} · Morning`,'');
 
+  // Hair look selector (§10)
+  if(hairMR){
+    const looks=DB.hairLooks||[];
+    if(looks.length){
+      const defLook=(day===0||day===6)?(DB.lookByContext&&DB.lookByContext.weekend):(DB.lookByContext&&DB.lookByContext.weekday);
+      const selLook=UI.todayLook||defLook||looks[0]?.id;
+      const lookR=routineById(selLook);
+      out+=`<div style="margin:0 22px 10px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)">Look</span>
+        <div class="seg" style="flex:1;margin:0">${looks.map(l=>`<button class="${selLook===l.id?'on':''}" onclick="UI.todayLook='${l.id}';renderTodayPage()">${esc(l.name.split('—')[0].trim())}</button>`).join('')}</div>
+      </div>`;
+      if(lookR&&activeSteps(lookR.steps).length)out+=checklistHTML(lookR.id,dateStr);
+    }
+  }
+
   if(!skinMR&&!hairMR){
-    out+=`<div class="empty" style="margin:20px 0">No morning routines for ${fmtDate(dateStr)}.</div>`;
+    out+=`<div class="empty" style="margin:20px 22px;font-size:13px;color:var(--ink-soft)">Nothing scheduled this morning</div>`;
   }
 
   out+=`</div><div id="section-evening" style="padding-top:4px">`;
@@ -632,10 +647,26 @@ function renderTodayPage(){
   out+=routineSection(hairER,`Hair — ${hairER?hairER.name:'No routine'} · Evening`,'');
 
   if(!skinER&&!hairER){
-    out+=`<div class="empty" style="margin:20px 0">No evening routines for ${fmtDate(dateStr)}.</div>`;
+    out+=`<div class="empty" style="margin:20px 22px;font-size:13px;color:var(--ink-soft)">Nothing scheduled this evening</div>`;
   }
 
   out+=`</div>`;
+
+  // Supplements (§11)
+  const suppRoutines=DB.routines.filter(r=>r.cat==='supplements'&&r.days.includes(day));
+  if(suppRoutines.length){
+    out+=`<div class="day-section today-section"><span class="today-section-label">Supplements</span><div class="day-section-line"></div></div>`;
+    suppRoutines.forEach(r=>{
+      out+=checklistHTML(r.id,dateStr);
+      out+=`<div class="complete-btns">${!isRoutineComplete(r.id,dateStr)
+        ?`<button class="btn full sm" onclick="completeAllDate('${r.id}','${dateStr}')">Mark all done</button>`
+        :`<button class="btn ghost full sm" onclick="uncompleteRoutineDate('${r.id}','${dateStr}')">✓ Done — undo</button>`
+      }</div>`;
+    });
+  } else if(Object.values(DB.products).some(p=>p.cat==='supplements'&&p.active)){
+    out+=`<div class="day-section today-section"><span class="today-section-label">Supplements</span><div class="day-section-line"></div></div>`;
+    out+=`<div style="padding:12px 22px;font-size:13px;color:var(--ink-soft)">No supplements scheduled for today</div>`;
+  }
 
   // Scent lives on Home screen only
 
