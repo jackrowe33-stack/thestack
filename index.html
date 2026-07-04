@@ -208,12 +208,14 @@ a{color:inherit}
 @keyframes page-down{from{transform:translateY(0)}to{transform:translateY(100vh)}}
 .page-down{animation:page-down .42s cubic-bezier(.32,.72,0,1) forwards}
 .page-down-ghost{animation:page-down .42s cubic-bezier(.32,.72,0,1) forwards}
-.today-sheet{position:relative;background:var(--bg-raise);border:1px solid var(--card-edge);border-bottom:none;border-radius:24px 24px 0 0;margin-top:calc(env(safe-area-inset-top,0px) + 6px);margin-bottom:-150px;padding-bottom:170px;min-height:calc(100vh - env(safe-area-inset-top,0px) - 6px)}
+.today-sheet{position:relative;background:var(--bg-raise);border:1px solid var(--card-edge);border-bottom:none;border-radius:24px 24px 0 0;margin-top:calc(env(safe-area-inset-top,0px) + 48px);margin-bottom:-150px;padding-bottom:170px;min-height:calc(100vh - env(safe-area-inset-top,0px) - 48px)}
+.bg-ghost{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:var(--bg)}
+.bg-ghost>div{filter:blur(11px) brightness(.72);will-change:filter}
 .today-sheet::before{content:'';position:absolute;top:0;left:0;right:0;height:400px;border-radius:24px 24px 0 0;background:radial-gradient(ellipse at 50% 0%,rgba(var(--cu-rgb),.06),transparent 70%);pointer-events:none}
 .sheet-close-tap{display:block;width:100%;padding:14px 0 8px;background:none;border:none;cursor:pointer}
 .sheet-close-tap .sheet-handle{margin:0 auto}
 .sheet-close-tap:active .sheet-handle{background:var(--ink-soft)}
-.today-sheet .today-sticky{background:var(--bg-raise);top:env(safe-area-inset-top,0px)}
+.today-sheet .today-sticky{background:var(--bg-raise);top:0}
 .today-sheet .today-header{padding-top:4px}
 .statusbar-scrim{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:56;pointer-events:none}
 .today-sticky{position:sticky;top:0;z-index:10;background:var(--bg);padding:0 0 2px}
@@ -383,7 +385,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-03 · v44';
+const BUILD='2026-07-03 · v46';
 const SEED={
   v:9,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -694,11 +696,12 @@ function render(){
   else if(UI.tab==='routines')app.innerHTML=vRoutines();
   else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
   else if(UI.tab==='scent')app.innerHTML=vScent();
+  else if(UI.tab==='history')app.innerHTML=vHistory();
   else app.innerHTML=vHome();
   app.classList.remove('tab-fade');
   if(UI._tabFade){void app.offsetWidth;app.classList.add('tab-fade');UI._tabFade=false;}
   renderTabs();renderModal();
-  if(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent')attachSheetSwipe();
+  if(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history')attachSheetSwipe();
   // Wake lock follows the checklist views
   if(UI.tab==='today'||UI.tab==='runner')acquireWakeLock();else releaseWakeLock();
   // Scroll handling: exact-restore (mid-checklist re-render) > evening auto-scroll > per-tab restore > top
@@ -725,8 +728,9 @@ function renderTabs(){
 function saveScroll(){if(!UI._scrollPositions)UI._scrollPositions={};UI._scrollPositions[UI.tab+(UI.setupPage||'')]=window.scrollY;}
 function leaveToday(fn){
   const sheet=document.querySelector('.today-sheet');
-  if((UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent')&&sheet&&!UI._exitingToday){
+  if((UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history')&&sheet&&!UI._exitingToday){
     UI._exitingToday=true;
+    removeBgGhost();
     const r=sheet.getBoundingClientRect();
     const ghost=document.createElement('div');
     ghost.style.cssText=`position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px;z-index:40;pointer-events:none;overflow:hidden`;
@@ -740,39 +744,45 @@ function leaveToday(fn){
     fn();
     requestAnimationFrame(()=>{ghost.classList.add('page-down-ghost');});
     setTimeout(()=>{ghost.remove();UI._exitingToday=false;},440);
-  } else fn();
+  } else {removeBgGhost();fn();}
 }
 function snapshotBg(){
   const appEl=document.getElementById('app');
   const old=document.getElementById('bg-ghost');if(old)old.remove();
   const g=document.createElement('div');
-  g.id='bg-ghost';
-  g.style.cssText='position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden';
+  g.id='bg-ghost';g.className='bg-ghost';
   const inner=document.createElement('div');
   inner.style.cssText=`max-width:430px;margin:0 auto;transform:translateY(${-window.scrollY}px)`;
   inner.innerHTML=appEl.innerHTML;
   g.appendChild(inner);
   document.body.appendChild(g);
-  setTimeout(()=>{g.remove();},560);
 }
+function removeBgGhost(){const g=document.getElementById('bg-ghost');if(g)g.remove();}
 function attachSheetSwipe(){
   const sheet=document.querySelector('.today-sheet');
   if(!sheet||sheet._swipeBound)return;
   sheet._swipeBound=true;
-  let sy=0,armed=false,dragging=false,dy=0,lastY=0,lastT=0,vel=0;
+  let sx=0,sy=0,armed=false,dragging=false,dead=false,dy=0,lastY=0,lastT=0,vel=0;
   sheet.addEventListener('touchstart',e=>{
-    sy=e.touches[0].clientY;lastY=sy;lastT=e.timeStamp;vel=0;dy=0;dragging=false;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+    lastY=sy;lastT=e.timeStamp;vel=0;dy=0;dragging=false;dead=false;
     armed=window.scrollY<=2&&!UI._exitingToday;
   },{passive:true});
   sheet.addEventListener('touchmove',e=>{
-    if(!armed)return;
+    if(!armed||dead)return;
     const y=e.touches[0].clientY;
+    const dx=e.touches[0].clientX-sx;
     dy=y-sy;
     vel=(y-lastY)/Math.max(1,e.timeStamp-lastT);
     lastY=y;lastT=e.timeStamp;
-    if(dy>8&&!dragging){dragging=true;sheet.style.transition='none';}
-    if(dragging)sheet.style.transform=`translateY(${Math.max(0,dy)}px)`;
-  },{passive:true});
+    if(!dragging){
+      if(dy<-6||Math.abs(dx)>Math.abs(dy)+6){dead=true;return;}
+      if(dy>6){dragging=true;sheet.style.transition='none';}
+      else return;
+    }
+    e.preventDefault();
+    sheet.style.transform=`translateY(${Math.max(0,dy)}px)`;
+  },{passive:false});
   sheet.addEventListener('touchend',()=>{
     if(!dragging){armed=false;return;}
     dragging=false;armed=false;
@@ -788,9 +798,9 @@ function attachSheetSwipe(){
 }
 function dismissSheet(){
   const ret=UI._sheetReturn;
-  if(ret&&ret.tab==='setup'){
+  if(ret&&(ret.tab==='setup'||ret.tab==='history')){
     saveScroll();
-    leaveToday(()=>{UI.tab='setup';UI.setupPage=ret.setupPage||null;UI.runnerId=null;UI._scrollRestoring=true;UI._tabFade=true;render();});
+    leaveToday(()=>{UI.tab=ret.tab;UI.setupPage=ret.tab==='setup'?(ret.setupPage||null):null;UI.runnerId=null;UI._scrollRestoring=true;UI._tabFade=true;render();});
   } else {
     navTab(ret&&(ret.tab==='home'||ret.tab==='routines')?ret.tab:'home');
   }
@@ -826,13 +836,13 @@ function openToday(dateStr,routineId){
   saveScroll();
   if(routineId){
     UI._todayEnter=UI.tab!=='runner';
-    if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
+    if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
     if(UI._todayEnter)snapshotBg();
     UI.tab='runner';UI.runnerId=routineId;UI.todayDate=dateStr||todayStr();UI.setupPage=null;
     UI.todayScrollTo=null;render();return;
   }
   UI._todayEnter=UI.tab!=='today';
-  if(UI._todayEnter&&!(UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
+  if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
   if(UI._todayEnter)snapshotBg();
   UI.tab='today';UI.setupPage=null;UI.runnerId=null;
   UI.todayDate=dateStr||todayStr();
@@ -1477,7 +1487,6 @@ function vSetupRouter(){
   if(p==='appearance')return vAppearancePage();
   if(p==='streak')return vStreakPage();
   if(p==='lowstock')return vLowStockPage();
-  if(p==='history')return vHistoryPage();
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
 }
@@ -1733,8 +1742,15 @@ function vLowStockPage(){
     </div>`;}).join('')}</div>`
   :'<div class="empty">Nothing running low</div>'}`;
 }
-function openHistory(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage='history';render();});}
-function vHistoryPage(){
+function openHistory(){
+  saveScroll();
+  UI._todayEnter=UI.tab!=='history';
+  if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
+  if(UI._todayEnter)snapshotBg();
+  UI.tab='history';UI.setupPage=null;render();
+}
+function vHistory(){
+  const enter=UI._todayEnter;UI._todayEnter=false;
   const off=UI._histOff||0;
   const now=new Date();const base=new Date(now.getFullYear(),now.getMonth()+off,1);
   const y=base.getFullYear(),m=base.getMonth();
@@ -1755,8 +1771,8 @@ function vHistoryPage(){
   }
   const monthName=base.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
   const canFwd=off<0;
-  return`<button class="back-btn" aria-label="Back" onclick="closeSetup()">${CHEV_SVG}</button>
-  <h1 class="page-title">History</h1>
+  return`<div class="today-sheet ${enter?'page-up':''}"><button class="sheet-close-tap" aria-label="Close" onclick="dismissSheet()"><div class="sheet-handle"></div></button>
+  <h1 class="page-title" style="padding-top:2px">History</h1>
   <div class="date-nav" style="margin-top:6px">
     <button class="date-nav-btn" data-call="histNav" data-args="-1">‹</button>
     <span class="date-nav-label">${monthName}</span>
@@ -1766,7 +1782,8 @@ function vHistoryPage(){
     ${['M','T','W','T','F','S','S'].map(l=>`<span style="text-align:center;font-size:9px;font-weight:700;color:var(--ink-soft)">${l}</span>`).join('')}
     ${cells}
   </div>
-  <p class="page-sub">Solid accent = day complete · brightness scales with % done · dot = journal entry. Tap a day to open it.</p>`;
+  <p class="page-sub">Solid accent = day complete · brightness scales with % done · dot = journal entry. Tap a day to open it.</p>
+  <div style="height:40px"></div></div>`;
 }
 function vSyncPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
