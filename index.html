@@ -318,15 +318,16 @@ a{color:inherit}
 .tab.active .ic{opacity:1;color:var(--cu)}
 .tab.active .tab-label{max-width:90px;opacity:1;margin-left:-4px}
 /* overlay/sheet */
-.overlay{position:fixed;inset:0;background:rgba(8,8,10,.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.overlay{position:fixed;inset:0;background:rgba(8,8,10,.35);backdrop-filter:blur(11px) brightness(.85);-webkit-backdrop-filter:blur(11px) brightness(.85);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 @keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes sheet-down{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes sheet-down{to{transform:translateY(105%)}}
 @keyframes ov-in{from{opacity:0}to{opacity:1}}
-@keyframes ov-out{from{opacity:1}to{opacity:0}}
+@keyframes ov-out{to{opacity:0}}
 .overlay.enter{animation:ov-in .3s ease}
-.overlay.enter .sheet{animation:sheet-up .44s cubic-bezier(.32,.72,0,1)}
-.overlay.closing{animation:ov-out .32s ease forwards;pointer-events:none}
-.overlay.closing .sheet{animation:sheet-down .36s cubic-bezier(.32,.72,0,1) forwards}
+.overlay.enter .sheet{animation:sheet-up .52s cubic-bezier(.32,.72,0,1)}
+.overlay.closing{animation:ov-out .4s ease forwards;pointer-events:none}
+.overlay.closing .sheet{animation:sheet-down .42s cubic-bezier(.32,.72,0,1) forwards}
+.sheet .sheet-close-tap{padding:12px 0 6px}
 .sheet{background:var(--bg-raise);border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:10px 22px calc(32px + env(safe-area-inset-bottom));border:1px solid var(--card-edge);border-bottom:none}
 .sheet-handle{width:38px;height:4px;border-radius:4px;background:var(--card-edge);margin:8px auto 18px}
 .sheet h3{font-family:'Fraunces',serif;font-size:21px;font-weight:400;margin-bottom:2px;color:var(--ink)}
@@ -385,7 +386,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-03 · v46';
+const BUILD='2026-07-03 · v47';
 const SEED={
   v:9,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1832,8 +1833,9 @@ function renderModal(){
   else if(m.type==='look')inner=lookSheet(m.idx);
   else if(m.type==='lookpick')inner=lookPickSheet();
   else if(m.type==='new-routine')inner=newRoutineSheet();
-  ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">${inner}</div>`;
+  ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
+  attachModalSwipe(ov.querySelector('.sheet'));
   const sheet=ov.querySelector('.sheet');
   if(sheet){
     let _sy=0,_moved=false;
@@ -1855,12 +1857,47 @@ function routineViewSheet(id){
     <button class="btn ghost full" onclick="closeModal()">Close</button>
   </div>`;
 }
+function attachModalSwipe(sheetEl){
+  let sx=0,sy=0,armed=false,dragging=false,dead=false,dy=0,lastY=0,lastT=0,vel=0;
+  sheetEl.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+    lastY=sy;lastT=e.timeStamp;vel=0;dy=0;dragging=false;dead=false;
+    armed=sheetEl.scrollTop<=2;
+  },{passive:true});
+  sheetEl.addEventListener('touchmove',e=>{
+    if(!armed||dead)return;
+    const y=e.touches[0].clientY;
+    const dx=e.touches[0].clientX-sx;
+    dy=y-sy;
+    vel=(y-lastY)/Math.max(1,e.timeStamp-lastT);
+    lastY=y;lastT=e.timeStamp;
+    if(!dragging){
+      if(dy<-6||Math.abs(dx)>Math.abs(dy)+6){dead=true;return;}
+      if(dy>6){dragging=true;sheetEl.style.transition='none';}
+      else return;
+    }
+    e.preventDefault();
+    sheetEl.style.transform=`translateY(${Math.max(0,dy)}px)`;
+  },{passive:false});
+  sheetEl.addEventListener('touchend',()=>{
+    if(!dragging){armed=false;return;}
+    dragging=false;armed=false;
+    if(dy>140||(dy>60&&vel>0.5)){
+      sheetEl.style.transition='';
+      closeModal();
+    }else{
+      sheetEl.style.transition='transform .3s cubic-bezier(.32,.72,0,1)';
+      sheetEl.style.transform='translateY(0)';
+      setTimeout(()=>{sheetEl.style.transition='';sheetEl.style.transform='';},320);
+    }
+  },{passive:true});
+}
 function closeModal(after){
   const ov=document.getElementById('ov');
   UI.modal=null;
   if(!ov||ov.classList.contains('closing')){if(after)after();render();return;}
   ov.classList.add('closing');
-  setTimeout(()=>{ov.remove();if(after)after();render();},340);
+  setTimeout(()=>{ov.remove();if(after)after();render();},430);
 }
 function openProduct(id){UI.modal={type:'product',id};render();}
 function openEdit(id){UI.modal={type:'edit',id};render();}
