@@ -178,6 +178,29 @@ a{color:inherit}
 /* today / checklist */
 @keyframes page-up{from{transform:translateY(100vh)}to{transform:translateY(0)}}
 .page-up{animation:page-up .52s cubic-bezier(.32,.72,0,1)}
+@keyframes ddscrim{0%{opacity:0}12%{opacity:1}82%{opacity:1}100%{opacity:0}}
+.dd-scrim{position:fixed;inset:0;z-index:59;background:rgba(8,8,10,.28);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);animation:ddscrim 2.5s ease forwards;pointer-events:none}
+@keyframes rd{0%{opacity:0;transform:translate(-50%,-50%) scale(.88)}15%{opacity:1;transform:translate(-50%,-50%) scale(1)}78%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.97)}}
+@keyframes rd-ring{from{stroke-dashoffset:94}to{stroke-dashoffset:0}}
+.routine-done{position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);z-index:59;background:var(--card);border:1px solid var(--card-edge);border-radius:100px;padding:11px 22px 11px 13px;display:flex;align-items:center;gap:11px;box-shadow:0 14px 40px rgba(0,0,0,.4);animation:rd 1.7s ease forwards;pointer-events:none}
+.rd-ring{position:relative;width:34px;height:34px;flex-shrink:0}
+.rd-ring svg{width:34px;height:34px;display:block}
+.rd-track{stroke:var(--hairline);stroke-width:2.5;fill:none}
+.rd-arc{stroke:var(--cu);stroke-width:2.5;fill:none;stroke-linecap:round;stroke-dasharray:94;stroke-dashoffset:94;animation:rd-ring .45s cubic-bezier(.4,0,.2,1) .1s forwards;transform:rotate(-90deg);transform-origin:center}
+.rd-tick{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--cu);opacity:0;animation:dd-tick .3s cubic-bezier(.3,1.4,.4,1) .45s forwards}
+.rd-label{font-size:13.5px;font-weight:500;color:var(--ink);white-space:nowrap}
+@keyframes dd{0%{opacity:0;transform:translate(-50%,-50%) scale(.85)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}82%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.97)}}
+@keyframes dd-ring{from{stroke-dashoffset:151}to{stroke-dashoffset:0}}
+@keyframes dd-tick{0%{opacity:0;transform:scale(.5)}60%{opacity:1;transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
+@keyframes dd-pulse{from{box-shadow:0 0 0 0 rgba(var(--cu-rgb),.3)}to{box-shadow:0 0 0 44px rgba(var(--cu-rgb),0)}}
+.day-done{position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);z-index:59;background:var(--card);border:1px solid var(--card-edge);border-radius:22px;padding:24px 34px 20px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:dd 2.5s ease forwards;pointer-events:none}
+.dd-ring{position:relative;width:64px;height:64px;border-radius:50%;animation:dd-pulse .9s ease-out .5s 1;margin-bottom:6px}
+.dd-ring svg{width:64px;height:64px;display:block}
+.dd-track{stroke:var(--hairline);stroke-width:3;fill:none}
+.dd-arc{stroke:var(--cu);stroke-width:3;fill:none;stroke-linecap:round;stroke-dasharray:151;stroke-dashoffset:151;animation:dd-ring .75s cubic-bezier(.4,0,.2,1) .2s forwards;transform:rotate(-90deg);transform-origin:center}
+.dd-tick{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--cu);opacity:0;animation:dd-tick .35s cubic-bezier(.3,1.4,.4,1) .65s forwards}
+.dd-title{font-family:'Fraunces',serif;font-size:17px;color:var(--ink)}
+.dd-sub{font-size:12px;color:var(--ink-mid)}
 @keyframes ack-pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.18)}100%{transform:scale(1);opacity:1}}
 .ack-pop{display:inline-block;animation:ack-pop .45s cubic-bezier(.3,1.4,.4,1)}
 @keyframes tabfade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -360,7 +383,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-03 · v42';
+const BUILD='2026-07-03 · v44';
 const SEED={
   v:9,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -482,6 +505,28 @@ function suggestScent(goingOut){
 }
 /* ══ GAMIFICATION ══ */
 function haptic(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
+function celebrateRoutine(label){
+  const el=document.createElement('div');
+  el.className='routine-done';
+  el.innerHTML=`<div class="rd-ring"><svg viewBox="0 0 34 34"><circle class="rd-track" cx="17" cy="17" r="15"/><circle class="rd-arc" cx="17" cy="17" r="15"/></svg><span class="rd-tick">✓</span></div>
+  <span class="rd-label">${esc(label)} done</span>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1800);
+}
+function celebrateDay(){
+  const streak=calcStreak()+1;
+  const scrim=document.createElement('div');
+  scrim.className='dd-scrim';
+  document.body.appendChild(scrim);
+  setTimeout(()=>scrim.remove(),2600);
+  const el=document.createElement('div');
+  el.className='day-done';
+  el.innerHTML=`<div class="dd-ring"><svg viewBox="0 0 64 64"><circle class="dd-track" cx="32" cy="32" r="24"/><circle class="dd-arc" cx="32" cy="32" r="24"/></svg><span class="dd-tick">✓</span></div>
+  <div class="dd-title">Day complete</div>
+  <div class="dd-sub">${streak} day streak</div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2600);
+}
 function compKey(rid,date){return rid+'_'+(date||todayStr());}
 function getComp(rid,date){return DB.completions[compKey(rid,date)]||null;}
 function isRoutineComplete(rid,date){const c=getComp(rid,date);return!!(c&&c.completedAt);}
@@ -577,7 +622,9 @@ function tickStep(rid,productId,dateStr){
   if(allDone&&!wasComplete){
     UI._justCompleted=rid;
     const dp=date.split('-');const ddow=new Date(+dp[0],+dp[1]-1,+dp[2]).getDay();
-    haptic(dayComplete(ddow,date)?[20,40,20,40,40]:[15,30,15]);
+    const isDayDone=dayComplete(ddow,date);
+    haptic(isDayDone?[20,40,20,40,40]:[15,30,15]);
+    if(date===todayStr()){if(isDayDone)celebrateDay();else celebrateRoutine(r.name);}
   } else if(cur===null){haptic(10);}
   if(allDone&&!wasComplete){
     const el=document.getElementById('clist-'+rid);
@@ -597,7 +644,9 @@ function completeAllDate(rid,dateStr){
   DB.completions[compKey(rid,dateStr)]={completedAt:Date.now(),steps:activeSteps(r.steps).map(s=>({p:s.p,done:true,state:'done',appliedAt:null}))};
   UI._justCompleted=rid;
   const dp=dateStr.split('-');const ddow=new Date(+dp[0],+dp[1]-1,+dp[2]).getDay();
-  haptic(dayComplete(ddow,dateStr)?[20,40,20,40,40]:[15,30,15]);
+  const isDayDone=dayComplete(ddow,dateStr);
+  haptic(isDayDone?[20,40,20,40,40]:[15,30,15]);
+  if(dateStr===todayStr()){if(isDayDone)celebrateDay();else celebrateRoutine(r.name);}
   UI.todayScrollTo=null;save();renderTodayPage();
 }
 function uncompleteRoutineDate(rid,dateStr){
