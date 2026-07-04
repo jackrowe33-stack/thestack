@@ -356,7 +356,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-03 · v38';
+const BUILD='2026-07-03 · v40';
 const SEED={
   v:9,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -612,7 +612,12 @@ async function syncPull(force=false){
   if(!r.ok){alert('Pull failed — HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
   let remote;try{remote=await r.json();}catch(e){alert('Pull failed — bad JSON');return;}
   if(!remote){alert('Nothing on server yet.');return;}
-  if(force||remote.updatedAt>=(DB.updatedAt||0)){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}
+  if(force||remote.updatedAt>=(DB.updatedAt||0)){
+    DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
+    alert('Pulled — data is up to date.');
+  } else {
+    alert('Server copy is older than this device — kept local data. Use Push to update the server.');
+  }
 }
 async function autoPull(){
   if(!DB.settings.syncUrl)return;
@@ -1028,10 +1033,12 @@ function updateWaitDisplay(){
   DB.routines.forEach(r=>{
     const c=getComp(r.id,date);if(!c||!c.steps)return;
     c.steps.forEach(step=>{
-      if(step.state==='applied'&&step.appliedAt&&step.wait){
-        const rem=step.wait*1000-(Date.now()-step.appliedAt);
-        if(rem>0){anyActive=true;minRem=Math.min(minRem,rem);}
-      }
+      if(step.state!=='applied'||!step.appliedAt)return;
+      const def=(r.steps||[]).find(x=>x.p===step.p);
+      const w=def?(def.wait||0):0;
+      if(!w)return;
+      const rem=w*1000-(Date.now()-step.appliedAt);
+      if(rem>0){anyActive=true;minRem=Math.min(minRem,rem);}
     });
   });
   const gfab=document.getElementById('fab-global');
