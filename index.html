@@ -759,7 +759,7 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v80';
+const BUILD='2026-07-05 · v81';
 const SEED={
   v:14,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1168,25 +1168,6 @@ function uncompleteRoutineDate(rid,dateStr){
 /* ══ SYNC ══ */
 let syncTimer=null;
 function schedSync(){ /* legacy KV sync retired in Stage C — Firestore handles persistence */ }
-async function syncPushSilent(){if(!DB.settings.syncUrl)return;try{await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});}catch(e){}}
-async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
-async function syncPull(force=false){
-  if(!DB.settings.syncUrl){alert('Set a sync URL in Setup first.');return;}
-  let r;try{r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});}catch(e){alert('Pull failed — network error: '+(e.message||e));return;}
-  if(!r.ok){alert('Pull failed — HTTP '+r.status+(r.status===401?' (PIN mismatch)':''));return;}
-  let remote;try{remote=await r.json();}catch(e){alert('Pull failed — bad JSON');return;}
-  if(!remote){alert('Nothing on server yet.');return;}
-  if(force||remote.updatedAt>=(DB.updatedAt||0)){
-    DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();
-    alert('Pulled — data is up to date.');
-  } else {
-    alert('Server copy is older than this device — kept local data. Use Push to update the server.');
-  }
-}
-async function autoPull(){
-  if(!DB.settings.syncUrl)return;
-  try{const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote&&remote.updatedAt>=(DB.updatedAt||0)&&!UI.modal&&UI.tab!=='today'&&UI.tab!=='runner'){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}}catch(e){}
-}
 document.addEventListener('visibilitychange',()=>{
   // Legacy KV sync retired in Stage C. Firestore's offline cache and live
   // onSnapshot listeners handle background/foreground sync automatically.
@@ -2336,7 +2317,7 @@ function vDataPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">Data</h1><p class="page-sub">Sync, backup and reset</p>
   <div class="card">
-    <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇅</div><div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◇</div><div class="menu-body"><div class="menu-title">AI connection</div><div class="menu-sub">${DB.settings.syncUrl?'Worker connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div><div class="menu-sub">Download a JSON copy of all your data</div></div></button>
     <button class="menu-item" onclick="document.getElementById('impData').click()"><div class="menu-body"><div class="menu-title">Import backup</div><div class="menu-sub">Restore from a JSON backup file</div></div></button>
     <button class="menu-item" onclick="if(window.stackSignOut){window.stackSignOut().finally(function(){location.reload();});}"><div class="menu-body"><div class="menu-title">Sign out</div><div class="menu-sub">Return to the sign-in screen</div></div></button>
@@ -2477,16 +2458,12 @@ function vRecoPage(){
 }
 function vSyncPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
-  <h1 class="page-title">Sync</h1><p class="page-sub">Cloudflare Worker + KV</p>
+  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable Facet, your AI assistant.</p>
   <div class="card pad">
     <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
     <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn sm" onclick="syncPush().then(r=>alert(r===true?'Pushed.':'Push failed: '+r))">Push now</button>
-      <button class="btn ghost sm" onclick="syncPull(true)">Pull latest</button>
-    </div>
   </div>
-  <p class="page-sub">Auto-pushes 2.5s after any change. Auto-pulls on open and foreground.</p>`;
+  <p class="page-sub">Your routines now sync automatically through your account — this connection is only used for the AI assistant.</p>`;
 }
 
 /* ══ ASSISTANT (stage 1 placeholder) ══ */
@@ -2935,7 +2912,7 @@ function recentJournal(){
 /* core call to the Worker /ai route */
 async function aiCall(system,messages,useWebSearch){
   const url=aiUrl();
-  if(!url)return{error:'Set your Worker URL in Settings → Sync first.'};
+  if(!url)return{error:'Set your Worker URL in Settings → AI connection first.'};
   try{
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin||''},body:JSON.stringify({system,messages,useWebSearch:!!useWebSearch})});
     const data=await r.json();
