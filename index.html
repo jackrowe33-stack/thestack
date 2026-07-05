@@ -515,7 +515,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v68';
+const BUILD='2026-07-05 · v69';
 const SEED={
   v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -3029,6 +3029,15 @@ function changeSummary(c){
   return{icon:'·',cls:'mv',title:'Change',sub:''};
 }
 /* apply one validated change to DB (no save here; caller saves once) */
+/* remove the given days from any other routine of the same cat+type (day-clash rule) */
+function clearClashingDays(days,cat,type,exceptId){
+  if(!days||!days.length)return;
+  DB.routines.forEach(rt=>{
+    if(rt.id!==exceptId&&rt.cat===cat&&rt.type===type&&Array.isArray(rt.days)){
+      rt.days=rt.days.filter(d=>!days.includes(d));
+    }
+  });
+}
 function applyChange(c){
   if(c.type==='update_product'){
     const p=DB.products[c.productId];if(!p)return;
@@ -3046,11 +3055,13 @@ function applyChange(c){
   if(c.type==='create_routine'){
     if(c._dupId){ // reuse existing routine of same cat/type/name; just ensure days
       const r=DB.routines.find(x=>x.id===c._dupId);
-      if(r){if(c.days&&c.days.length)r.days=c.days.slice();(UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=r.id;}
+      if(r){if(c.days&&c.days.length){clearClashingDays(c.days,r.cat,r.type,r.id);r.days=c.days.slice();}(UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=r.id;}
       return c._dupId;
     }
     const id='r'+Date.now()+Math.floor(Math.random()*1000);
-    DB.routines.push(R(id,c.cat,c.time,c.name,(c.days||[]).slice(),[]));
+    const newDays=(c.days||[]).slice();
+    clearClashingDays(newDays,c.cat,c.time,id);
+    DB.routines.push(R(id,c.cat,c.time,c.name,newDays,[]));
     (UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=id;
     return id;
   }
@@ -3105,10 +3116,7 @@ function applyChange(c){
     if(f.days){
       // honour the day-clash rule: taking a day off another routine of same cat+type
       const newDays=f.days.to.slice();
-      newDays.forEach(d=>{
-        const clash=DB.routines.find(rt=>rt.id!==r.id&&rt.cat===r.cat&&rt.type===r.type&&rt.days.includes(d));
-        if(clash)clash.days=clash.days.filter(x=>x!==d);
-      });
+      clearClashingDays(newDays,r.cat,r.type,r.id);
       r.days=newDays;
     }
     return;
