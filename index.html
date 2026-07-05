@@ -486,7 +486,7 @@ a{color:inherit}
 .tab .tab-label{max-width:0;overflow:hidden;white-space:nowrap;font-size:13px;font-weight:500;opacity:0;transition:all .25s cubic-bezier(.3,1.2,.4,1)}
 .tab.active{background:rgba(var(--cu-rgb),.14);color:var(--cu);padding-right:18px}
 .tab.active .ic{opacity:1;color:var(--cu)}
-.tab.active .tab-label{max-width:90px;opacity:1;margin-left:-4px}
+.tab.active .tab-label{max-width:120px;opacity:1;margin-left:-4px}
 /* overlay/sheet */
 .overlay{position:fixed;inset:0;background:rgba(8,8,10,.35);backdrop-filter:blur(11px) brightness(.85);-webkit-backdrop-filter:blur(11px) brightness(.85);z-index:60;display:flex;align-items:flex-end;justify-content:center}
 @keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -555,6 +555,21 @@ a{color:inherit}
 .pw-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);line-height:1.4}
 .pw-tick{color:var(--cu);font-weight:600;flex-shrink:0}
 .pw-later{display:block;width:100%;text-align:center;background:none;border:none;color:var(--ink-mid);font:inherit;font-size:13px;padding:14px 0 4px;cursor:pointer}
+/* facet teaser (F4) */
+.facet-teaser{padding:8px 22px 40px}
+.ft-glyph{width:40px;height:40px;color:var(--cu);margin:14px 0 16px}
+.ft-glyph svg{width:40px;height:40px}
+.ft-title{font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0 0 8px;line-height:1.15}
+.ft-lede{font-size:14px;color:var(--ink-mid);line-height:1.55;margin:0 0 22px}
+.ft-sample{background:var(--card);border:1px solid var(--card-edge);border-radius:16px;padding:14px;margin-bottom:22px;box-shadow:var(--card-shadow)}
+.ft-sample-label{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px}
+.ft-bubble{font-size:13px;line-height:1.5;padding:10px 13px;border-radius:14px;margin-bottom:8px;max-width:88%}
+.ft-you{background:var(--cu-btn);color:#f5f0e0;margin-left:auto;border-bottom-right-radius:4px}
+.ft-ai{background:var(--bg-raise);color:var(--ink);border:1px solid var(--card-edge);border-bottom-left-radius:4px}
+.ft-feats{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.ft-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);line-height:1.4}
+.ft-tick{color:var(--cu);font-weight:600;flex-shrink:0}
+.ft-fine{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:12px;line-height:1.4}
 </style>
 <style id="ag-style">
 #authgate{position:fixed;inset:0;z-index:9999;background:var(--bg,#121418);display:none;overflow-y:auto;-webkit-font-smoothing:antialiased}
@@ -674,7 +689,20 @@ let booted=false;
 // Expose sign-out for the app's Setup screen to call later.
 window.stackSignOut = ()=>{ return auth ? signOut(auth) : Promise.resolve(); };
 // Current user's Firebase ID token, for authenticating Worker /ai calls.
-window.stackGetToken = async ()=>{ try{ const u=auth&&auth.currentUser; return u?await u.getIdToken():null; }catch(e){ return null; } };
+window.stackGetToken = async ()=>{
+  try{
+    let u = auth && auth.currentUser;
+    // currentUser can be briefly null before auth state resolves; wait once.
+    if(!u && auth){
+      u = await new Promise(res=>{
+        const off = onAuthStateChanged(auth, usr=>{ off(); res(usr); });
+        setTimeout(()=>{ try{off();}catch(e){} res(auth.currentUser||null); }, 3000);
+      });
+    }
+    if(!u) return null;
+    return await u.getIdToken();
+  }catch(e){ console.error('stackGetToken failed', e); return null; }
+};
 
 const GLYPH=`<svg class="ag-glyph" viewBox="0 0 32 32" fill="none"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="var(--cu,#b87040)" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
 const G_SVG=`<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"/></svg>`;
@@ -773,7 +801,7 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v85';
+const BUILD='2026-07-05 · v88';
 const SEED={
   v:15,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -948,15 +976,17 @@ function gateCreate(kind){
 }
 function openPaywall(kind){ UI.modal={type:'paywall',kind:kind}; render(); }
 function paywallSheet(kind){
-  const label={routines:'routines',products:'products',supplements:'supplements'}[kind]||'items';
-  const cap=FREE_CAPS[kind];
+  const label={routines:'routines',products:'products',supplements:'supplements'}[kind];
+  const sub = label
+    ? `You've reached the free limit of ${FREE_CAPS[kind]} ${label}. Upgrade to add unlimited ${label} — and unlock The Stack AI, your personal routine assistant.`
+    : `Unlock The Stack AI, your personal routine assistant — plus unlimited routines, products and supplements.`;
   return `<div class="pw-sheet">
     <div class="pw-glyph">${FACET_SVG}</div>
     <h2 class="pw-title">Unlock The Stack</h2>
-    <p class="pw-sub">You've reached the free limit of ${cap} ${label}. Upgrade to add unlimited ${label} — and unlock Facet, your AI routine assistant.</p>
+    <p class="pw-sub">${sub}</p>
     <div class="pw-feats">
       <div class="pw-feat"><span class="pw-tick">✓</span> Unlimited routines, products &amp; supplements</div>
-      <div class="pw-feat"><span class="pw-tick">✓</span> Facet — personalised AI guidance on your routines</div>
+      <div class="pw-feat"><span class="pw-tick">✓</span> The Stack AI — personalised guidance on your routines</div>
       <div class="pw-feat"><span class="pw-tick">✓</span> Journal-aware advice &amp; product suggestions</div>
     </div>
     <button class="btn full" onclick="closeModal()">Coming soon</button>
@@ -1278,8 +1308,8 @@ function render(){
   if(UI.tab==='assistant'&&UI._view==='chat')requestAnimationFrame(syncChatViewport);
 }
 function renderTabs(){
-  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Assistant']];
-  document.getElementById('tabs').style.display=(UI.tab==='setup'||(UI.tab==='assistant'&&(!profileComplete()||UI._view==='chat')))?'none':'';
+  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'The Stack AI']];
+  document.getElementById('tabs').style.display=(UI.tab==='setup'||(UI.tab==='assistant'&&isPremium()&&(!profileComplete()||UI._view==='chat')))?'none':'';
   document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
     const active=UI.tab===k;
     return`<button class="tab ${active?'active':''}" data-call="navTab" data-args="${k}"><span class="ic">${ic}</span><span class="tab-label">${l}</span></button>`;
@@ -2523,7 +2553,7 @@ function vRecoPage(){
 }
 function vSyncPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
-  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable Facet, your AI assistant.</p>
+  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable The Stack AI.</p>
   <div class="card pad">
     <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
     <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
@@ -2693,9 +2723,39 @@ function fileToScaledB64(file,maxDim,quality){
 }
 
 function vAssistant(){
+  if(!isPremium()) return vFacetTeaser();
   if(UI._view==='chat'&&UI._assistantCat) return vAssistantChat();
   if(!profileComplete()) return vOnboard();
   return vAssistantHome();
+}
+function vFacetTeaser(){
+  return`<div class="top">
+    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">The Stack AI</h1>
+    <div class="hdr-right">
+      <div class="wordmark">The <em>Stack</em></div>
+      ${gearBtn()}
+    </div>
+  </div>
+  <div class="facet-teaser">
+    <div class="ft-glyph">${FACET_SVG}</div>
+    <h2 class="ft-title">Your routine, understood</h2>
+    <p class="ft-lede">The Stack AI reads your products, your schedule and your journal to give advice that actually fits your stack — not generic tips.</p>
+
+    <div class="ft-sample">
+      <div class="ft-sample-label">For example</div>
+      <div class="ft-bubble ft-you">Should I keep using my exfoliant this week?</div>
+      <div class="ft-bubble ft-ai">Your journal notes irritation on Tuesday after the retinol night. I'd skip the Monday exfoliation this week and let your barrier recover — your routine already has it on a light cadence, so one week off won't set you back.</div>
+    </div>
+
+    <div class="ft-feats">
+      <div class="ft-feat"><span class="ft-tick">✓</span> Advice from your real routine &amp; 14-day journal</div>
+      <div class="ft-feat"><span class="ft-tick">✓</span> Product suggestions with live web search</div>
+      <div class="ft-feat"><span class="ft-tick">✓</span> Skin, hair, scent &amp; supplement guidance</div>
+    </div>
+
+    <button class="btn full" onclick="openPaywall('facet')">Unlock The Stack AI</button>
+    <div class="ft-fine">Included with The Stack premium. Not medical advice.</div>
+  </div>`;
 }
 
 function vOnboard(){
@@ -2768,7 +2828,7 @@ function vAssistantHome(){
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
   ];
   return`<div class="top">
-    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Assistant</h1>
+    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">The Stack AI</h1>
     <div class="hdr-right">
       <div class="wordmark">The <em>Stack</em></div>
       ${gearBtn()}
@@ -2985,7 +3045,7 @@ async function aiCall(system,messages,useWebSearch){
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({system,messages,useWebSearch:!!useWebSearch})});
     let data={}; try{ data=await r.json(); }catch(e){}
     if(!r.ok){
-      if(r.status===402)return{error:'Facet is a premium feature. Upgrade to unlock the assistant.',code:'upgrade'};
+      if(r.status===402)return{error:'The Stack AI is a premium feature. Upgrade to unlock it.',code:'upgrade'};
       if(r.status===429)return{error:data.message||'Assistant limit reached — try again later.',code:'rate'};
       if(r.status===401)return{error:'Please sign in again to use the assistant.',code:'auth'};
       return{error:data.error||('HTTP '+r.status)};
@@ -3174,7 +3234,7 @@ function vAssistantChat(){
   return`<div class="chat-screen">
     <div class="chat-head">
       <button class="chat-back" data-call="assistantBack">${CHEV_SVG}</button>
-      <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · Assistant</div>
+      <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · The Stack AI</div>
       <span style="width:30px"></span>
     </div>
     <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
