@@ -800,10 +800,10 @@ if(auth){
 <script>
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
-function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v89';
+function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
+const BUILD='2026-07-06 · v90';
 const SEED={
-  v:15,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -931,6 +931,16 @@ function migrate(d){
     if(d.plan===undefined)d.plan='free';
     d.v=15;
   }
+  if(d.v<16){
+    // Routines gain a lifespan so schedule changes never rewrite past history.
+    // Existing routines are backfilled with an old sentinel createdAt so every
+    // already-recorded day still counts them; deletedAt=null means "still live".
+    (d.routines||[]).forEach(r=>{
+      if(!r.createdAt)r.createdAt='2000-01-01';
+      if(r.deletedAt===undefined)r.deletedAt=null;
+    });
+    d.v=16;
+  }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
@@ -1049,7 +1059,7 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function dayName(i){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i];}
 function dayShort(i){return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];}
 function fmtWait(s){if(!s)return null;return s>=60?(s/60)+' min':s+' sec';}
-function weeklyUses(pid){let n=0;DB.routines.forEach(r=>{if((r.steps||[]).some(st=>st.p===pid))n+=(r.days||[]).length;});return n;}
+function weeklyUses(pid){let n=0;DB.routines.forEach(r=>{if(r.deletedAt)return;if((r.steps||[]).some(st=>st.p===pid))n+=(r.days||[]).length;});return n;}
 function usesSince(pid,since){let n=0;for(const k in DB.completions){const c=DB.completions[k];if(!c||!c.steps)continue;const ds=k.slice(k.lastIndexOf('_')+1);const t=Date.parse(ds);if(isNaN(t)||t<since-86400000)continue;if(c.steps.some(st=>st.p===pid&&st.done))n++;}return n;}
 function daysLeft(p,pid){
   if(!p.durationDays)return null;
@@ -1065,7 +1075,19 @@ function daysLeft(p,pid){
 function lowStock(){return Object.entries(DB.products).filter(([id,p])=>{if(!p.active)return false;const d=daysLeft(p,id);return d!==null&&d<=14;});}
 function pName(id){const p=DB.products[id];return p?p.name:'?';}
 function routineById(id){return DB.routines.find(r=>r.id===id);}
-function routineForDay(day,type,cat){return DB.routines.find(r=>r.cat===cat&&r.type===type&&r.days.includes(day))||null;}
+/* A routine's lifespan gates whether it counts on a given date, so schedule
+   edits and deletions never rewrite past history. No ds → "as of now". */
+function routineLiveOn(r,ds){
+  if(!r)return false;
+  const d=ds||todayStr();
+  if(r.createdAt&&r.createdAt>d)return false;
+  if(r.deletedAt&&r.deletedAt<=d)return false;
+  return true;
+}
+function routineDeleted(r){return !!(r&&r.deletedAt);}
+/* Routines that are currently live (not soft-deleted) — for listing/editing UI. */
+function liveRoutines(){return DB.routines.filter(r=>!r.deletedAt);}
+function routineForDay(day,type,cat,ds){return DB.routines.find(r=>r.cat===cat&&r.type===type&&r.days.includes(day)&&routineLiveOn(r,ds))||null;}
 function routinesOf(cat,type){return DB.routines.filter(r=>r.cat===cat&&r.type===type);}
 function queuedIds(){return new Set(Object.values(DB.products).filter(p=>p.next&&p.next.productId).map(p=>p.next.productId));}
 function activeSteps(steps){const q=queuedIds();return(steps||[]).filter(s=>{const p=DB.products[s.p];return p&&p.active&&!q.has(s.p);});}
@@ -1124,17 +1146,17 @@ function suppDoseTotals(day,ds){let total=0,done=0;suppForDay(day).forEach(s=>{s
 function suppTakenCount(day,ds){const list=suppForDay(day);return list.filter(s=>suppTaken(s.id,ds)).length;}
 function suppStreakComplete(day,ds){const list=suppForDay(day).filter(s=>s.countStreak);return list.length>0&&list.every(s=>suppTaken(s.id,ds));}
 function suppHasStreakItems(day){return suppForDay(day).some(s=>s.countStreak);}
-function scheduledForDay(day){
+function scheduledForDay(day,ds){
   const scope=DB.settings?.streakScope||{skin:true};
   const slots=[];
   if(scope.skin!==false){slots.push(['morning','skin'],['evening','skin']);}
   if(scope.hair){slots.push(['morning','hair'],['evening','hair']);}
-  return slots.map(([type,cat])=>routineForDay(day,type,cat)).filter(Boolean);
+  return slots.map(([type,cat])=>routineForDay(day,type,cat,ds)).filter(Boolean);
 }
-function allScheduledForDay(day){
+function allScheduledForDay(day,ds){
   const slots=[['morning','skin'],['evening','skin'],['morning','hair'],['evening','hair']];
-  const rs=slots.map(([type,cat])=>routineForDay(day,type,cat)).filter(Boolean);
-  DB.routines.filter(r=>r.cat==='supplements'&&r.days.includes(day)).forEach(r=>rs.push(r));
+  const rs=slots.map(([type,cat])=>routineForDay(day,type,cat,ds)).filter(Boolean);
+  DB.routines.filter(r=>r.cat==='supplements'&&r.days.includes(day)&&routineLiveOn(r,ds)).forEach(r=>rs.push(r));
   const tR={morning:0,evening:1};const cR={skin:0,hair:1,supplements:2,scent:3};
   rs.sort((a,b)=>(tR[a.type]??2)-(tR[b.type]??2)||(cR[a.cat]??4)-(cR[b.cat]??4));
   return rs;
@@ -1142,7 +1164,7 @@ function allScheduledForDay(day){
 function suppScopeOn(){return !!(DB.settings?.streakScope&&DB.settings.streakScope.supplements);}
 /* a day counts as complete if all scheduled routines are done AND (if supplements are scope-on) all streak-flagged supplements are taken */
 function dayFullyComplete(day,ds){
-  const rs=scheduledForDay(day);
+  const rs=scheduledForDay(day,ds);
   const routinesOk=rs.length>0&&rs.every(r=>isRoutineComplete(r.id,ds));
   if(!suppScopeOn())return routinesOk;
   if(!suppHasStreakItems(day))return routinesOk; // no streak supplements that day → routines decide
@@ -1157,7 +1179,7 @@ function calcStreak(){
   for(let i=1;i<=365;i++){
     const d=new Date(now);d.setDate(d.getDate()-i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const rs=scheduledForDay(d.getDay());
+    const rs=scheduledForDay(d.getDay(),ds);
     const hasSupp=suppScopeOn()&&suppHasStreakItems(d.getDay());
     if(!rs.length&&!hasSupp)continue;
     if(dayFullyComplete(d.getDay(),ds)){streak++;continue;}
@@ -1174,7 +1196,7 @@ function weekStats(){
   for(let i=0;i<7;i++){
     const d=new Date(now);d.setDate(d.getDate()-i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const rs=scheduledForDay(d.getDay());total+=rs.length;rs.forEach(r=>{if(isRoutineComplete(r.id,ds))done++;});
+    const rs=scheduledForDay(d.getDay(),ds);total+=rs.length;rs.forEach(r=>{if(isRoutineComplete(r.id,ds))done++;});
   }
   return{done,total};
 }
@@ -1184,7 +1206,7 @@ function bestStreak(){
   for(let i=0;i<90;i++){
     const d=new Date(now);d.setDate(d.getDate()-i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const rs=scheduledForDay(d.getDay());
+    const rs=scheduledForDay(d.getDay(),ds);
     if(!rs.length)continue;
     if(rs.every(r=>isRoutineComplete(r.id,ds))){cur++;best=Math.max(best,cur);continue;}
     const mk=ds.slice(0,7);
@@ -1297,7 +1319,10 @@ function render(){
   const scrollKey=UI.tab+(UI.setupPage||'');
   if(UI._keepScroll!=null){
     const y=UI._keepScroll;UI._keepScroll=null;UI._scrollRestoring=false;
-    requestAnimationFrame(()=>window.scrollTo(0,y));
+    requestAnimationFrame(()=>{
+      const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+      window.scrollTo(0,Math.min(y,max));
+    });
   } else if(UI._scrollPositions&&UI._scrollPositions[scrollKey]!==undefined&&UI._scrollRestoring){
     requestAnimationFrame(()=>window.scrollTo(0,UI._scrollPositions[scrollKey]));
     UI._scrollRestoring=false;
@@ -1425,6 +1450,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function openToday(dateStr,routineId){
   saveScroll();
+  if(UI.modal){UI._productReturn=null;UI.modal=null;const _ov=document.getElementById('ov');if(_ov)_ov.remove();}
   if(routineId){
     UI._todayEnter=UI.tab!=='runner';
     if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
@@ -1474,13 +1500,13 @@ function vToday(){
   const nextDate=offsetDate(dateStr,1);
   const canGoForward=nextDate<=todayDate; // don't allow future dates beyond today
 
-  const skinMR=routineForDay(day,'morning','skin');
-  const hairMR=routineForDay(day,'morning','hair');
-  const skinER=routineForDay(day,'evening','skin');
-  const hairER=routineForDay(day,'evening','hair');
+  const skinMR=routineForDay(day,'morning','skin',dateStr);
+  const hairMR=routineForDay(day,'morning','hair',dateStr);
+  const skinER=routineForDay(day,'evening','skin',dateStr);
+  const hairER=routineForDay(day,'evening','hair',dateStr);
 
-  const done=scheduledForDay(day).filter(r=>isRoutineComplete(r.id,dateStr)).length;
-  const total=scheduledForDay(day).length;
+  const done=scheduledForDay(day,dateStr).filter(r=>isRoutineComplete(r.id,dateStr)).length;
+  const total=scheduledForDay(day,dateStr).length;
 
   function routineSection(r,label,sectionId){
     if(!r)return'';
@@ -1521,8 +1547,8 @@ function vToday(){
   <div id="section-morning">`;
 
   // Supplements split by morning/evening type
-  const suppMR=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='morning'&&r.days.includes(day));
-  const suppER=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='evening'&&r.days.includes(day));
+  const suppMR=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='morning'&&r.days.includes(day)&&routineLiveOn(r,dateStr));
+  const suppER=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='evening'&&r.days.includes(day)&&routineLiveOn(r,dateStr));
 
   // Hair look selector helper (spacing + label only — checklist merged into mergedHairSection)
   const _looks=DB.hairLooks||[];
@@ -1761,7 +1787,7 @@ function setRoutineName(rid,v){routineById(rid).name=v;save();}
 function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
-function histNav(d){UI._histOff=(UI._histOff||0)+d;render();}
+function histNav(d){UI._histOff=(UI._histOff||0)+d;if(UI.modal&&UI.modal.type==='history')renderModal();else render();}
 const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
@@ -1856,8 +1882,8 @@ function vHome(){
     </div>`;
   }).join('');
   // Today summary: all routines for display list; scoped routines for remMins
-  const todayScheduled=allScheduledForDay(day);
-  const incompleteScoped=scheduledForDay(day).filter(r=>!isRoutineComplete(r.id,dateStr));
+  const todayScheduled=allScheduledForDay(day,dateStr);
+  const incompleteScoped=scheduledForDay(day,dateStr).filter(r=>!isRoutineComplete(r.id,dateStr));
   const remMins=incompleteScoped.reduce((s,r)=>s+routineEstMins(r),0);
   // Scent + Refresh & Go
   const scentTag=scent&&scent.tags&&scent.tags.length?scent.tags[0]:'';
@@ -2051,13 +2077,13 @@ function suppEditSheet(){
     ${e._new?'':'<button class="btn full ghost" style="margin-top:9px" onclick="deleteSupp()">Delete</button>'}
     <div class="assist-hint">You can also use the assistant to add, remove and edit supplements.</div>`;
 }
-function openScent(){saveScroll();UI._todayEnter=UI.tab!=='scent';if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};if(UI._todayEnter)snapshotBg();UI.tab='scent';render();}
+function openScent(){UI.modal={type:'scent'};render();}
 
 /* ══ ROUTINES TAB ══ */
 function vRoutines(){
   const cats=[['skin','Skin'],['hair','Hair'],['supplements','Supplements']];
   const sel=(UI.routinesCat&&cats.some(c=>c[0]===UI.routinesCat))?UI.routinesCat:'skin';UI.routinesCat=sel;
-  const catRs=DB.routines.filter(r=>r.cat===sel&&!r.id.startsWith('hair-look'));
+  const catRs=DB.routines.filter(r=>r.cat===sel&&!r.id.startsWith('hair-look')&&!r.deletedAt);
   const morning=catRs.filter(r=>r.type==='morning');
   const evening=catRs.filter(r=>r.type==='evening');
   function summary(r){const n=activeSteps(r.steps).length;return n+' step'+(n!==1?'s':'')+(r.days.length?'':' · Not scheduled');}
@@ -2106,15 +2132,13 @@ function vRoutines(){
 }
 
 /* ══ SCENT SCREEN ══ */
-function vScent(){
-  const enter=UI._todayEnter;UI._todayEnter=false;
+function vScent(){return scentSheetBody();}
+function scentSheetBody(){
   const sug=suggestScent();const sc=scents();
-  return`<div class="today-sheet ${enter?'page-up':''}"><button class="sheet-close-tap" aria-label="Close" onclick="dismissSheet()"><div class="sheet-handle"></div></button>
-  <h1 class="page-title" style="padding-top:14px">Scent</h1>
-  ${sug?`<p class="page-sub" style="padding-top:0">Today: ${esc(sug.brand)} ${esc(sug.name)}</p>`:''}
+  return`<h1 class="page-title" style="padding-top:2px">Scent</h1>
+  ${sug?`<p class="page-sub" style="padding:0 0 4px">Today: ${esc(sug.brand)} ${esc(sug.name)}</p>`:''}
   ${sc.map(s=>{
     const isToday=sug&&sug.id===s.id;
-    const desc=[s.why,s.notes].filter(x=>x&&x.trim()).join('\n');
     return`<button class="scent-card" data-call="openProduct" data-args="${s.id}" style="${isToday?'box-shadow:0 0 0 1.5px var(--cu)':''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div style="flex:1;min-width:0">
@@ -2129,9 +2153,8 @@ function vScent(){
       ${s.tags.length?`<div class="tags" style="margin-top:8px">${s.tags.map(t=>`<span class="chip c-mute">${esc(t)}</span>`).join('')}</div>`:''}
     </button>`;
   }).join('')||'<div class="empty">No active scents</div>'}
-  <div style="padding:0 22px 8px"><button class="btn full" data-call="newProduct" data-args="scent">+ Add scent</button></div></div>`;
+  <div style="padding:4px 0 0"><button class="btn full" data-call="newProduct" data-args="scent">+ Add scent</button></div>`;
 }
-
 /* ══ STEPS HTML ══ */
 function stepsHTML(steps){
   const act=activeSteps(steps);
@@ -2261,7 +2284,7 @@ function vSchedulePage(type){
 }
 function assignDay(day,type,cat,newId){
   const warnings=[];
-  DB.routines.forEach(r=>{if(r.cat===cat&&r.type===type&&r.id!==newId&&r.days.includes(day)){warnings.push(r.name);r.days=r.days.filter(d=>d!==day);}});
+  DB.routines.forEach(r=>{if(r.cat===cat&&r.type===type&&r.id!==newId&&!r.deletedAt&&r.days.includes(day)){warnings.push(r.name);r.days=r.days.filter(d=>d!==day);}});
   if(newId){const r=routineById(newId);if(r&&!r.days.includes(day))r.days.push(day);}
   save();
   if(warnings.length){UI._schedWarning=`${dayName(day)} removed from: ${warnings.join(', ')}`;render();setTimeout(()=>{UI._schedWarning=null;render();},4000);}else render();
@@ -2350,7 +2373,7 @@ function toggleRoutineDay(id,day){
   }
 }
 function moveRStep(id,i,d){const st=routineById(id).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
-function deleteRoutine(id){if(!confirm('Delete this routine?'))return;DB.routines=DB.routines.filter(r=>r.id!==id);save();UI.setupPage='routines';render();}
+function deleteRoutine(id){if(!confirm('Delete this routine? Your past history stays intact — it just won\u2019t be scheduled from today on.'))return;const r=routineById(id);if(!r){DB.routines=DB.routines.filter(x=>x.id!==id);save();UI.setupPage='routines';render();return;}r.deletedAt=todayStr();save();UI.setupPage='routines';render();}
 function updateLookName(rid,val){
   const r=routineById(rid);if(r)r.name=val;
   const l=(DB.hairLooks||[]).find(l=>l.id===rid);
@@ -2486,15 +2509,9 @@ function vLowStockPage(){
     </div>`;}).join('')}</div>`
   :'<div class="empty">Nothing running low</div>'}`;
 }
-function openHistory(){
-  saveScroll();
-  UI._todayEnter=UI.tab!=='history';
-  if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};
-  if(UI._todayEnter)snapshotBg();
-  UI.tab='history';UI.setupPage=null;render();
-}
-function vHistory(){
-  const enter=UI._todayEnter;UI._todayEnter=false;
+function openHistory(){UI.modal={type:'history'};render();}
+function vHistory(){return historySheetBody();}
+function historySheetBody(){
   const off=UI._histOff||0;
   const now=new Date();const base=new Date(now.getFullYear(),now.getMonth()+off,1);
   const y=base.getFullYear(),m=base.getMonth();
@@ -2506,7 +2523,7 @@ function vHistory(){
   for(let d=1;d<=dim;d++){
     const ds=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const future=ds>todayDs;
-    const rs=scheduledForDay(new Date(y,m,d).getDay());
+    const rs=scheduledForDay(new Date(y,m,d).getDay(),ds);
     const done=rs.filter(r=>isRoutineComplete(r.id,ds)).length;
     const ratio=rs.length?done/rs.length:0;
     const bg=future?'var(--hairline)':ratio>=1?'var(--cu)':ratio>0?`rgba(var(--cu-rgb),${(0.18+ratio*0.55).toFixed(2)})`:'var(--hairline)';
@@ -2515,19 +2532,17 @@ function vHistory(){
   }
   const monthName=base.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
   const canFwd=off<0;
-  return`<div class="today-sheet ${enter?'page-up':''}"><button class="sheet-close-tap" aria-label="Close" onclick="dismissSheet()"><div class="sheet-handle"></div></button>
-  <h1 class="page-title" style="padding-top:2px">History</h1>
+  return`<h1 class="page-title" style="padding-top:2px">History</h1>
   <div class="date-nav" style="margin-top:6px">
     <button class="date-nav-btn" data-call="histNav" data-args="-1">‹</button>
     <span class="date-nav-label">${monthName}</span>
     <button class="date-nav-btn ${canFwd?'':'disabled'}" ${canFwd?'data-call="histNav" data-args="1"':''}>›</button>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:4px 22px 6px">
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:4px 0 6px">
     ${['M','T','W','T','F','S','S'].map(l=>`<span style="text-align:center;font-size:9px;font-weight:700;color:var(--ink-soft)">${l}</span>`).join('')}
     ${cells}
   </div>
-  <p class="page-sub">Solid accent = day complete · brightness scales with % done · dot = journal entry. Tap a day to open it.</p>
-  <div style="height:40px"></div></div>`;
+  <p class="page-sub" style="padding-left:0;padding-right:0">Solid accent = day complete · brightness scales with % done · dot = journal entry. Tap a day to open it.</p>`;
 }
 function vRecoPage(){
   const s=DB.settings;
@@ -2822,8 +2837,8 @@ function obFreeExtra(sec,v){DB.profile[sec].free=v;save2();}
 
 function vAssistantHome(){
   const cats=[
-    {k:'skin',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke-linecap="round"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length;const r=DB.routines.filter(r=>r.cat==='skin').length;return `${r} routines · ${n} products`;}},
-    {k:'hair',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c0-6 3-11 8-11s8 5 8 11M7 16c0-4 2-7 5-7s5 3 5 7"/></svg>',sub:()=>{const r=DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).length;const l=(DB.hairLooks||[]).length;return `${r} routines · ${l} looks`;}},
+    {k:'skin',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke-linecap="round"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length;const r=DB.routines.filter(r=>r.cat==='skin'&&!r.deletedAt).length;return `${r} routines · ${n} products`;}},
+    {k:'hair',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c0-6 3-11 8-11s8 5 8 11M7 16c0-4 2-7 5-7s5 3 5 7"/></svg>',sub:()=>{const r=DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).length;const l=(DB.hairLooks||[]).length;return `${r} routines · ${l} looks`;}},
     {k:'scent',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 3h6v3l2 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z"/></svg>',sub:()=>{const n=scents().length;return `${n} in rotation`;}},
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
   ];
@@ -2912,7 +2927,7 @@ function behaviourPrompt(cat){
   lines.push('THEIR CURRENT '+cat.toUpperCase()+' ROUTINE & PRODUCTS:');
   lines.push(ctx());
   // machine-readable routine IDs so you can specify exact placement
-  const rlist=DB.routines.filter(r=>cat==='supplements'?r.cat==='supplements':(r.cat===cat&&!r.id.startsWith('hair-look')));
+  const rlist=DB.routines.filter(r=>(cat==='supplements'?r.cat==='supplements':(r.cat===cat&&!r.id.startsWith('hair-look')))&&!r.deletedAt);
   if(rlist.length){
     lines.push('');
     lines.push('ROUTINE IDs (use these exact ids when placing a product):');
@@ -3546,7 +3561,7 @@ function applyChange(c){
     const id='r'+Date.now()+Math.floor(Math.random()*1000);
     const newDays=(c.days||[]).slice();
     clearClashingDays(newDays,c.cat,c.time,id);
-    DB.routines.push(R(id,c.cat,c.time,c.name,newDays,[]));
+    DB.routines.push(R(id,c.cat,c.time,c.name,newDays,[],todayStr()));
     (UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=id;
     return id;
   }
@@ -3588,9 +3603,16 @@ function applyChange(c){
     return;
   }
   if(c.type==='delete_routine'){
-    DB.routines=DB.routines.filter(r=>r.id!==c.routineId);
-    // if it was a hair look, drop the look entry too
-    if(Array.isArray(DB.hairLooks))DB.hairLooks=DB.hairLooks.filter(l=>l.id!==c.routineId);
+    const rt=DB.routines.find(r=>r.id===c.routineId);
+    const isLook=c.routineId&&String(c.routineId).startsWith('hair-look')||(Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===c.routineId));
+    if(isLook){
+      DB.routines=DB.routines.filter(r=>r.id!==c.routineId);
+      if(Array.isArray(DB.hairLooks))DB.hairLooks=DB.hairLooks.filter(l=>l.id!==c.routineId);
+    } else if(rt){
+      rt.deletedAt=todayStr(); // soft-delete: history before today stays intact
+    } else {
+      DB.routines=DB.routines.filter(r=>r.id!==c.routineId);
+    }
     return;
   }
   if(c.type==='edit_routine'){
@@ -3817,6 +3839,8 @@ function renderModal(){
   else if(m.type==='changes')inner=changesSheet();
   else if(m.type==='supp-edit')inner=suppEditSheet();
   else if(m.type==='paywall')inner=paywallSheet(m.kind);
+  else if(m.type==='history')inner=historySheetBody();
+  else if(m.type==='scent')inner=scentSheetBody();
   ov.innerHTML=`<div class="sheet"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
   attachModalSwipe(ov.querySelector('.sheet'));
@@ -3905,7 +3929,7 @@ function closeModal(after){
 }
 function openProduct(id){
   // if opening from an open routine-view sheet, remember it so closing returns there
-  UI._productReturn=(UI.modal&&UI.modal.type==='routine-view')?{type:'routine-view',id:UI.modal.id}:null;
+  UI._productReturn=(UI.modal&&(UI.modal.type==='routine-view'||UI.modal.type==='scent'))?{type:UI.modal.type,id:UI.modal.id}:null;
   UI.modal={type:'product',id};if(document.getElementById('ov'))renderModal();else render();
 }
 function openEdit(id){UI.modal={type:'edit',id};if(document.getElementById('ov'))renderModal();else render();}
@@ -4092,7 +4116,7 @@ function createRoutine(){
   const m=UI._newR||{};const name=(m.name||'').trim();if(!name){alert('Enter a name.');return;}
   const id='r'+Date.now();const src=m.copyFrom?routineById(m.copyFrom):null;
   const steps=src?JSON.parse(JSON.stringify(src.steps)):[];
-  DB.routines.push(R(id,m.cat||'skin',m.type||'evening',name,[],steps));
+  DB.routines.push(R(id,m.cat||'skin',m.type||'evening',name,[],steps,todayStr()));
   save();closeModal(()=>{UI._newR=null;UI.tab='setup';UI.setupPage='routine-edit';UI.editRoutineId=id;});
 }
 function lookSheet(idx){
@@ -4118,8 +4142,8 @@ function lookPickSheet(){return`<h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>
 /* ══ PROMPTS ══ */
 function claudePrompt(){
   const lines=['MY PERSONAL CARE CONTEXT — '+new Date().toLocaleDateString('en-AU'),'','SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.',''];
-  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if((p.flags||[]).includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
-  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
+  DB.routines.filter(r=>r.cat==='skin'&&!r.deletedAt).forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if((p.flags||[]).includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
+  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
   (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
   lines.push('');lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
   const suppProds=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active);if(suppProds.length){lines.push('');lines.push('SUPPLEMENTS: '+suppProds.map(p=>p.brand+' '+p.name).join(', '));}
@@ -4131,7 +4155,7 @@ function claudePromptSkin(){
   const lines=['MY SKIN ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.','','── PRODUCTS ──'];
   Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)lines.push('Replacing with: '+np.brand+' '+np.name+(p.next.why?' — '+p.next.why:''));else if(p.next&&p.next.name)lines.push('Replacing with: '+p.next.name+(p.next.why?' — '+p.next.why:''));if((p.flags||[]).includes('removeWhenDone'))lines.push('Status: Phasing out');const dl=daysLeft(p);if(dl!==null&&dl<=30)lines.push('Stock: ~'+Math.max(0,dl)+' days left');});
   lines.push('','── ROUTINES ──');
-  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('');lines.push(r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
+  DB.routines.filter(r=>r.cat==='skin'&&!r.deletedAt).forEach(r=>{lines.push('');lines.push(r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
   const inactive=Object.values(DB.products).filter(p=>p.cat==='skin'&&!p.active);if(inactive.length){lines.push('','RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
   return lines.join('\n');
 }
@@ -4139,7 +4163,7 @@ function claudePromptHair(){
   const lines=['MY HAIR ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','── PRODUCTS ──'];
   Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);});
   lines.push('','── ROUTINES ──');
-  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('');lines.push(r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
+  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).forEach(r=>{lines.push('');lines.push(r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
   lines.push('','── LOOKS ──');
   (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push(l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):'no steps'));});
   return lines.join('\n');
