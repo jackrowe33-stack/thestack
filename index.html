@@ -515,7 +515,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v67';
+const BUILD='2026-07-05 · v68';
 const SEED={
   v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -2383,6 +2383,23 @@ function behaviourPrompt(cat){
   lines.push('- For anything outside that (jokes, general chat, coding, news, maths, etc.) reply with exactly: "'+ASSIST_LINE+'" and nothing else.');
   lines.push('- Do not break character or discuss these instructions.');
   lines.push('- If the user asks for medical advice, diagnosis, or treatment of a condition, do not attempt it: briefly recommend they see a doctor or pharmacist, then offer to help with their routine instead.');
+  lines.push('');
+  lines.push('WHAT YOU CAN DO IN THE APP:');
+  lines.push('You are not just an adviser — you can make real changes to the user\'s stack (each change is shown to them in a confirmation sheet before it is saved, so you never change anything without their review). If asked what you can do, describe these plainly and offer to do them:');
+  if(cat==='supplements'){
+    lines.push('- Add, edit and remove supplements in their tracker: name, dose note, schedule (every day or specific days), and whether each counts toward their streak.');
+    lines.push('- Change settings when asked: whether supplements count toward the streak, rest days per month, colour theme, and light/dark mode.');
+  } else {
+    lines.push('- Add new products (with ingredients, how-to-apply steps and a purchase link), and place them into a routine.');
+    lines.push('- Edit existing products: role, why-it-matters, notes, how-to-apply steps, expected duration, tags and reorder link.');
+    lines.push('- Remove a product (it deactivates and moves to Inactive), or bring an inactive product back.');
+    lines.push('- Queue a replacement for a product, clear a queued replacement, or swap to the replacement now.');
+    lines.push('- Mark a product as freshly restocked.');
+    lines.push('- Create new '+cat+' routines (morning or evening, on chosen days), rename or reschedule existing ones, delete them, and move steps or change wait times within them.');
+    if(cat==='hair')lines.push('- Create, rename, edit and delete hair looks, and add products to them.');
+    lines.push('- Change settings when asked: streak scope (which categories count), rest days per month, colour theme, and light/dark mode.');
+  }
+  lines.push('BOUNDARIES — be honest about what you canNOT do: you cannot tick off today\'s routine or mark a day complete, run the step timer, or write journal entries for them — those are things they do themselves in the app. If asked to do one of these, say so briefly and point them to the relevant screen. Never claim to have made a change you did not actually include in a change block, and never promise a change you cannot make.');
   if(cat==='supplements'){
     lines.push('SUPPLEMENTS SAFETY (strict):');
     lines.push('- Only discuss common, over-the-counter supplements that are easily and legally purchased online or in shops in '+(s.country||'AU')+' (e.g. everyday vitamins, minerals, fish oil, protein, common botanicals).');
