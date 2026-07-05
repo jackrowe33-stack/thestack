@@ -337,6 +337,10 @@ a{color:inherit}
 .acat-t{font-size:16px;font-weight:600;color:var(--ink)}
 .acat-s{font-size:12.5px;color:var(--ink-mid);margin-top:2px}
 .acat-arw{margin-left:auto;color:var(--ink-soft)}
+.today-open-btn{display:inline-flex;align-items:center;gap:7px;background:var(--cu-btn);color:#f5f0e0;font-size:13px;font-weight:600;font-family:inherit;padding:9px 15px;border:0;border-radius:100px;cursor:pointer;flex-shrink:0;margin-left:12px;box-shadow:0 2px 8px rgba(var(--cu-rgb),.25)}
+.today-open-btn:active{transform:scale(.96)}
+.today-open-ic{display:inline-flex;width:16px;height:16px}
+.today-open-ic svg{width:16px;height:16px}
 /* assistant chat */
 .chat-head{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;border-bottom:1px solid var(--hairline);background:var(--bg);flex:0 0 auto}
 .chat-back{width:30px;height:30px;border-radius:50%;border:1px solid var(--card-edge);background:var(--bg-raise);color:var(--ink-mid);display:flex;align-items:center;justify-content:center}
@@ -448,7 +452,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v51';
+const BUILD='2026-07-05 · v53';
 const SEED={
   v:11,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -813,7 +817,7 @@ function render(){
   updateWaitDisplay();
 }
 function renderTabs(){
-  const ts=[['home',HOME_SVG,'Home'],['today',TODAY_SVG,'Today'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Assistant']];
+  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Assistant']];
   document.getElementById('tabs').style.display=(UI.tab==='setup'||(UI.tab==='assistant'&&(!profileComplete()||UI._view==='chat')))?'none':'';
   document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
     const active=UI.tab===k;
@@ -1399,7 +1403,10 @@ function vHome(){
         ${ringHtml}
         <span style="font-size:13px;font-weight:500;color:${todayComplete?'var(--cu)':'var(--ink)'}">${todayComplete?'All done for today ✓':'Today isn\'t done yet'}</span>
       </div>
-      <button style="font-size:13px;color:var(--cu);font-weight:600;background:none;border:none;cursor:pointer;padding:0;font-family:inherit;flex-shrink:0;margin-left:12px" data-call="openToday" data-args="">Open Today →</button>
+      <button class="today-open-btn" data-call="openToday" data-args="">
+        <span class="today-open-ic">${TODAY_SVG}</span>
+        <span>Open Today</span>
+      </button>
     </div>
     ${todayScheduled.map(r=>{
       const isDone=isRoutineComplete(r.id,dateStr);
@@ -2126,8 +2133,14 @@ function vAssistantHome(){
     {k:'scent',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 3h6v3l2 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z"/></svg>',sub:()=>{const n=scents().length;return `${n} in rotation`;}},
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
   ];
-  return`<div class="ob-top" style="padding-bottom:0"><div style="font-family:'Fraunces',serif;font-size:26px;color:var(--ink)">How can I help?</div></div>
-    <div class="ob-hint" style="padding-top:6px">Pick an area. I'll use your routine, your notes and what you've told me.</div>
+  return`<div class="top">
+    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Assistant</h1>
+    <div class="hdr-right">
+      <div class="wordmark">The <em>Stack</em></div>
+      ${gearBtn()}
+    </div>
+  </div>
+    <div class="ob-hint" style="padding-top:14px">How can I help? Pick an area and I'll use your routine, your notes and what you've told me.</div>
     <div class="ob-body" style="padding-top:6px">
       ${cats.map(c=>`<div class="acat" data-call="assistantPick" data-args="${c.k}">
         <div class="acat-ic">${c.ic}</div>
