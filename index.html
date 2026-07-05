@@ -399,6 +399,22 @@ a{color:inherit}
 .chg-f{display:flex;flex-direction:column;gap:4px}
 .chg-f span{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
 .chg-f input,.chg-f textarea{font-size:13px;padding:9px 11px;border-radius:9px;background:var(--bg-raise);border:1px solid var(--card-edge);color:var(--ink);width:100%}
+/* supplements */
+.sup-wrap{padding:0 22px 40px}
+.sup-item{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:13px 15px;margin-bottom:8px;box-shadow:var(--card-shadow)}
+.sup-item.sup-dim{opacity:.55;box-shadow:none}
+.sup-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--card-edge);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;font-size:14px;font-weight:700;background:none;cursor:pointer;padding:0}
+.sup-check.on{background:var(--cu);border-color:var(--cu);color:#f5f0e0}
+.sup-body{flex:1;min-width:0}
+.sup-name{font-size:14.5px;font-weight:600;color:var(--ink)}
+.sup-name.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--card-edge)}
+.sup-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.sheet-h{font-family:'Fraunces',serif;font-size:21px;font-weight:400;color:var(--ink);margin:0 0 16px}
+.daypick{display:flex;gap:7px;margin:0 0 16px;flex-wrap:wrap}
+.daypick .dp{width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;background:var(--bg-raise);border:1.5px solid var(--card-edge);color:var(--ink-soft);cursor:pointer}
+.daypick .dp.on{background:rgba(var(--cu-rgb),.16);border-color:var(--cu);color:var(--cu)}
+.assist-hint{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-soft);background:rgba(var(--cu-rgb),.06);border:1px solid rgba(var(--cu-rgb),.18);border-radius:11px;padding:10px 13px;margin:14px 0 4px;line-height:1.45}
+.assist-hint::before{content:'';flex:0 0 auto;width:14px;height:14px;background:var(--cu);-webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 4c1.5 2.5 3.5 4.5 6 6c-2.5 1.5-4.5 3.5-6 6c-1.5-2.5-3.5-4.5-6-6c2.5-1.5 4.5-3.5 6-6z'/></svg>") center/contain no-repeat;mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 4c1.5 2.5 3.5 4.5 6 6c-2.5 1.5-4.5 3.5-6 6c-1.5-2.5-3.5-4.5-6-6c2.5-1.5 4.5-3.5 6-6z'/></svg>") center/contain no-repeat}
 .chg-body{flex:1;min-width:0}
 .chg-t{font-size:14px;font-weight:600;color:var(--ink)}
 .chg-s{font-size:12px;color:var(--ink-mid);margin-top:1px}
@@ -488,9 +504,9 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v59';
+const BUILD='2026-07-05 · v61';
 const SEED={
-  v:11,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -595,6 +611,10 @@ function migrate(d){
     }
     d.v=11;
   }
+  if(d.v<12){
+    if(!Array.isArray(d.supplements))d.supplements=[];
+    d.v=12;
+  }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
@@ -666,6 +686,15 @@ function celebrateDay(){
 function compKey(rid,date){return rid+'_'+(date||todayStr());}
 function getComp(rid,date){return DB.completions[compKey(rid,date)]||null;}
 function isRoutineComplete(rid,date){const c=getComp(rid,date);return!!(c&&c.completedAt);}
+/* ── supplements (lightweight model) ── */
+function supplements(){return (DB.supplements||[]).filter(s=>s.active!==false);}
+function suppForDay(day){return supplements().filter(s=>s.everyday||(Array.isArray(s.days)&&s.days.includes(day)));}
+function suppKey(id,date){return 'supp_'+id+'_'+(date||todayStr());}
+function suppTaken(id,date){return !!DB.completions[suppKey(id,date)];}
+function toggleSupp(id,date){const k=suppKey(id,date||todayStr());if(DB.completions[k])delete DB.completions[k];else DB.completions[k]={completedAt:Date.now()};save();render();}
+function suppTakenCount(day,ds){const list=suppForDay(day);return list.filter(s=>suppTaken(s.id,ds)).length;}
+function suppStreakComplete(day,ds){const list=suppForDay(day).filter(s=>s.countStreak);return list.length>0&&list.every(s=>suppTaken(s.id,ds));}
+function suppHasStreakItems(day){return suppForDay(day).some(s=>s.countStreak);}
 function scheduledForDay(day){
   const scope=DB.settings?.streakScope||{skin:true};
   const slots=[];
@@ -681,7 +710,18 @@ function allScheduledForDay(day){
   rs.sort((a,b)=>(tR[a.type]??2)-(tR[b.type]??2)||(cR[a.cat]??4)-(cR[b.cat]??4));
   return rs;
 }
-function dayComplete(day,ds){const rs=scheduledForDay(day);return rs.length>0&&rs.every(r=>isRoutineComplete(r.id,ds));}
+function suppScopeOn(){return !!(DB.settings?.streakScope&&DB.settings.streakScope.supplements);}
+/* a day counts as complete if all scheduled routines are done AND (if supplements are scope-on) all streak-flagged supplements are taken */
+function dayFullyComplete(day,ds){
+  const rs=scheduledForDay(day);
+  const routinesOk=rs.length>0&&rs.every(r=>isRoutineComplete(r.id,ds));
+  if(!suppScopeOn())return routinesOk;
+  if(!suppHasStreakItems(day))return routinesOk; // no streak supplements that day → routines decide
+  const suppOk=suppStreakComplete(day,ds);
+  if(!rs.length)return suppOk; // supplements-only day
+  return routinesOk&&suppOk;
+}
+function dayComplete(day,ds){return dayFullyComplete(day,ds);}
 function calcStreak(){
   const now=new Date();let streak=0;
   const allow=DB.settings?.graceDaysPerMonth??1;const used={};
@@ -689,8 +729,9 @@ function calcStreak(){
     const d=new Date(now);d.setDate(d.getDate()-i);
     const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const rs=scheduledForDay(d.getDay());
-    if(!rs.length)continue;
-    if(rs.every(r=>isRoutineComplete(r.id,ds))){streak++;continue;}
+    const hasSupp=suppScopeOn()&&suppHasStreakItems(d.getDay());
+    if(!rs.length&&!hasSupp)continue;
+    if(dayFullyComplete(d.getDay(),ds)){streak++;continue;}
     const mk=ds.slice(0,7);
     if((used[mk]||0)<allow){used[mk]=(used[mk]||0)+1;continue;}
     break;
@@ -832,11 +873,12 @@ function render(){
   else if(UI.tab==='scent')app.innerHTML=vScent();
   else if(UI.tab==='history')app.innerHTML=vHistory();
   else if(UI.tab==='assistant')app.innerHTML=vAssistant();
+  else if(UI.tab==='supplements')app.innerHTML=vSupplements();
   else app.innerHTML=vHome();
   app.classList.remove('tab-fade');
   if(UI._tabFade){void app.offsetWidth;app.classList.add('tab-fade');UI._tabFade=false;}
   renderTabs();renderModal();
-  if(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history')attachSheetSwipe();
+  if(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history'||UI.tab==='supplements')attachSheetSwipe();
   // Wake lock follows the checklist views
   if(UI.tab==='today'||UI.tab==='runner')acquireWakeLock();else releaseWakeLock();
   // Scroll handling: exact-restore (mid-checklist re-render) > evening auto-scroll > per-tab restore > top
@@ -1308,7 +1350,7 @@ function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
 function histNav(d){UI._histOff=(UI._histOff||0)+d;render();}
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
 function parseArgs(a){return (a||'').split('|').filter(x=>x!=='').map(t=>/^-?\d{1,4}$/.test(t)?parseInt(t):t);}
@@ -1412,6 +1454,14 @@ function vHome(){
   const lowFirst=lowSorted.length?lowSorted[0][1]:null;
   const lowFirstId=lowSorted.length?lowSorted[0][0]:null;
   const cardBorder=todayComplete?'box-shadow:0 0 0 1.5px rgba(var(--cu-rgb),.45)':'';
+  // supplements today (lightweight)
+  const suppList=suppForDay(day);
+  const suppTakenN=suppTakenCount(day,dateStr);
+  const suppNext=suppList.find(s=>!suppTaken(s.id,dateStr));
+  const _sR=13,_sSz=34,_sCirc=2*Math.PI*_sR;
+  const _sDash=(suppList.length?(suppTakenN/suppList.length)*_sCirc:0).toFixed(2);
+  const suppDone=suppList.length>0&&suppTakenN===suppList.length;
+  const suppRing=suppList.length?`<svg width="${_sSz}" height="${_sSz}" style="flex-shrink:0" viewBox="0 0 ${_sSz} ${_sSz}"><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--hairline)" stroke-width="2.5"/><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--cu)" stroke-width="2.5" stroke-dasharray="${_sDash} ${(_sCirc-parseFloat(_sDash)).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 17 17)"/><text x="17" y="17" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="700" fill="${suppDone?'var(--cu)':'var(--ink-mid)'}">${suppDone?'✓':suppTakenN+'/'+suppList.length}</text></svg>`:'';
   const _rR=13,_rC=17,_rSz=34,_rCirc=2*Math.PI*_rR;
   const _rDash=(total>0?(done/total)*_rCirc:0).toFixed(2);
   const _rGap=(_rCirc-parseFloat(_rDash)).toFixed(2);
@@ -1472,6 +1522,15 @@ function vHome(){
     </div>
     <span style="color:var(--ink-soft);font-size:16px">›</span>
   </button>`:''}
+  ${suppList.length?`<button class="row" onclick="openSupplements()">
+    <div class="row-icon" style="flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg></div>
+    <div class="row-body">
+      <div style="font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px">Supplements</div>
+      <div class="row-title">${suppDone?'All taken today':suppTakenN+' of '+suppList.length+' taken today'}</div>
+      ${!suppDone&&suppNext?`<div class="row-sub">${esc(suppNext.name)} still to take</div>`:''}
+    </div>
+    ${suppRing}
+  </button>`:''}
   ${low.length?`<button style="margin:0 22px 8px;display:flex;align-items:center;gap:9px;width:calc(100% - 44px);background:none;border:none;padding:6px 4px;cursor:pointer;text-align:left" onclick="openLowStock()">
     <span style="width:6px;height:6px;border-radius:50%;background:rgba(var(--cu-rgb),.55);flex-shrink:0"></span>
     <span style="font-size:12.5px;color:var(--ink-mid);flex:1">${lowFirst?`${esc(lowFirst.name)} ${daysLeft(lowFirst,lowFirstId)<=0?'likely empty':'running low'}${low.length>1?` · ${low.length-1} more`:''}`:''}</span>
@@ -1481,6 +1540,84 @@ function vHome(){
 }
 function openRefresh(){
   openToday(null,'skin-refresh');
+}
+function openSupplements(){saveScroll();UI._todayEnter=UI.tab!=='supplements';if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='supplements'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};if(UI._todayEnter)snapshotBg();UI.tab='supplements';UI._suppEdit=null;render();}
+function vSupplements(){
+  const day=new Date().getDay();const ds=todayStr();
+  const enter=UI._todayEnter;UI._todayEnter=false;
+  const all=supplements();
+  const today=suppForDay(day);
+  const todayIds=new Set(today.map(s=>s.id));
+  const other=all.filter(s=>!todayIds.has(s.id));
+  const takenN=suppTakenCount(day,ds);
+  const item=(s,scheduled)=>{
+    const taken=suppTaken(s.id,ds);
+    const daysTxt=s.everyday?'Every day':(s.days||[]).slice().sort().map(d=>dayShort(d)).join(', ');
+    return`<div class="sup-item${scheduled?'':' sup-dim'}">
+      ${scheduled?`<button class="sup-check ${taken?'on':''}" data-call="toggleSupp" data-args="${s.id}">${taken?'✓':''}</button>`
+        :`<span class="sup-check" style="border-style:dashed;cursor:default"></span>`}
+      <button class="sup-body" data-call="editSupp" data-args="${s.id}" style="text-align:left;background:none;border:0;padding:0;cursor:pointer">
+        <div class="sup-name ${taken&&scheduled?'done':''}">${esc(s.name)}</div>
+        <div class="sup-meta">${s.dose?esc(s.dose)+' · ':''}${daysTxt}</div>
+      </button>
+    </div>`;
+  };
+  return`<div class="today-sheet ${enter?'page-up':''}">
+    <button class="sheet-close-tap" aria-label="Close" onclick="dismissSheet()"><div class="sheet-handle"></div></button>
+    <h1 class="page-title" style="padding-top:14px">Supplements</h1>
+    <p class="page-sub" style="padding-top:0">${dayName(day)} ${new Date().getDate()} ${new Date().toLocaleString('en-AU',{month:'long'})}${today.length?' · '+takenN+' of '+today.length+' taken':''}</p>
+    <div style="padding:0 22px">
+      ${today.length?today.map(s=>item(s,true)).join(''):`<div class="empty" style="padding:20px 0">Nothing scheduled today.</div>`}
+      ${other.length?`<div class="sec-label" style="margin:20px 0 10px">Not scheduled today</div>${other.map(s=>item(s,false)).join('')}`:''}
+      <button class="btn full" style="margin-top:14px" data-call="editSupp" data-args="new">+ Add a supplement</button>
+      <div class="assist-hint">You can also use the assistant to add, remove and edit supplements.</div>
+      <div class="chat-disclaimer" style="padding:14px 10px 0;position:static">This is not medical advice. Check with your doctor before taking supplements.</div>
+    </div>
+  </div>`;
+}
+function editSupp(id){
+  if(id==='new'){UI._suppEdit={id:'s'+Date.now(),name:'',dose:'',everyday:true,days:[1,2,3,4,5,6,0],countStreak:false,active:true,_new:true};}
+  else{const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return;UI._suppEdit=JSON.parse(JSON.stringify(s));}
+  UI.modal={type:'supp-edit'};render();
+}
+function suppEditField(field,v){if(!UI._suppEdit)return;UI._suppEdit[field]=v;}
+function suppEditEveryday(on){if(!UI._suppEdit)return;UI._suppEdit.everyday=on;if(on)UI._suppEdit.days=[1,2,3,4,5,6,0];renderModal();}
+function suppEditToggleDay(d){if(!UI._suppEdit)return;const days=UI._suppEdit.days||[];const i=days.indexOf(d);if(i>=0)days.splice(i,1);else days.push(d);UI._suppEdit.days=days;UI._suppEdit.everyday=(days.length===7);renderModal();}
+function suppEditStreak(on){if(!UI._suppEdit)return;UI._suppEdit.countStreak=on;renderModal();}
+function saveSupp(){
+  const e=UI._suppEdit;if(!e)return;
+  const nameEl=document.getElementById('suppName');const doseEl=document.getElementById('suppDose');
+  if(nameEl)e.name=nameEl.value.trim();if(doseEl)e.dose=doseEl.value.trim();
+  if(!e.name){alert('Give it a name first.');return;}
+  if(!e.everyday&&(!e.days||!e.days.length)){alert('Pick at least one day, or choose Every day.');return;}
+  if(!Array.isArray(DB.supplements))DB.supplements=[];
+  const idx=DB.supplements.findIndex(x=>x.id===e.id);
+  const rec={id:e.id,name:e.name,dose:e.dose||'',everyday:!!e.everyday,days:e.everyday?[0,1,2,3,4,5,6]:e.days.slice(),countStreak:!!e.countStreak,active:true};
+  if(idx>=0)DB.supplements[idx]=rec;else DB.supplements.push(rec);
+  UI._suppEdit=null;save();closeModal(()=>render());
+}
+function deleteSupp(){
+  const e=UI._suppEdit;if(!e)return;
+  if(!confirm('Delete '+e.name+'?'))return;
+  DB.supplements=(DB.supplements||[]).filter(x=>x.id!==e.id);
+  // clear its completion keys
+  Object.keys(DB.completions).forEach(k=>{if(k.startsWith('supp_'+e.id+'_'))delete DB.completions[k];});
+  UI._suppEdit=null;save();closeModal(()=>render());
+}
+function suppEditSheet(){
+  const e=UI._suppEdit;if(!e)return'';
+  const days=[['1','M'],['2','T'],['3','W'],['4','T'],['5','F'],['6','S'],['0','S']];
+  return`<h2 class="sheet-h">${e._new?'Add supplement':'Edit supplement'}</h2>
+    <div class="field"><label>Name</label><input id="suppName" value="${esc(e.name)}" placeholder="e.g. Vitamin D"></div>
+    <div class="field"><label>Dose / note (optional)</label><input id="suppDose" value="${esc(e.dose)}" placeholder="e.g. 1000 IU · morning"></div>
+    <div class="sec-label" style="margin:8px 0 8px">Schedule</div>
+    <div class="seg" style="margin:0 0 14px;width:100%"><button class="${e.everyday?'on':''}" onclick="suppEditEveryday(true)">Every day</button><button class="${e.everyday?'':'on'}" onclick="suppEditEveryday(false)">Specific days</button></div>
+    ${!e.everyday?`<div class="daypick">${days.map(([d,l])=>`<button class="dp ${(e.days||[]).includes(+d)?'on':''}" onclick="suppEditToggleDay(${d})">${l}</button>`).join('')}</div>`:''}
+    <div class="sec-label" style="margin:8px 0 8px">Count toward streak?</div>
+    <div class="seg" style="margin:0 0 16px;width:100%"><button class="${e.countStreak?'':'on'}" onclick="suppEditStreak(false)">No</button><button class="${e.countStreak?'on':''}" onclick="suppEditStreak(true)">Yes</button></div>
+    <button class="btn full" onclick="saveSupp()">Save supplement</button>
+    ${e._new?'':'<button class="btn full ghost" style="margin-top:9px" onclick="deleteSupp()">Delete</button>'}
+    <div class="assist-hint">You can also use the assistant to add, remove and edit supplements.</div>`;
 }
 function openScent(){saveScroll();UI._todayEnter=UI.tab!=='scent';if(UI._todayEnter&&!(UI.tab==='today'||UI.tab==='runner'))UI._sheetReturn={tab:UI.tab,setupPage:UI.setupPage};if(UI._todayEnter)snapshotBg();UI.tab='scent';render();}
 
@@ -1649,6 +1786,7 @@ function vSetupMenu(){
   <div class="card">
     <button class="menu-item" onclick="UI.setupPage='streak';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◈</div><div class="menu-body"><div class="menu-title">Streak</div><div class="menu-sub" style="text-transform:capitalize">${['skin','hair','scent','supplements'].filter(c=>c==='skin'?(DB.settings?.streakScope?.[c]!==false):!!(DB.settings?.streakScope?.[c])).join(', ')||'Nothing counted'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='appearance';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="openSupplements()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⬡</div><div class="menu-body"><div class="menu-title">Supplements</div><div class="menu-sub">${(DB.supplements||[]).filter(s=>s.active!==false).length} tracked</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='reco';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◎</div><div class="menu-body"><div class="menu-title">Recommendations</div><div class="menu-sub">${DB.settings.country||'AU'} · ${({online:'Online',instore:'In-store',both:'Online & in-store'})[DB.settings.shopMethod||'both']}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇅</div><div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='prompt';render()"><div class="menu-icon" style="background:rgba(160,139,192,.1)">✦</div><div class="menu-body"><div class="menu-title">Claude Prompt</div><div class="menu-sub">Copy full routine context</div></div><span class="menu-arrow">›</span></button>
@@ -1766,7 +1904,8 @@ function vRoutineEditPage(){
   <div style="padding:0 22px 8px;display:flex;gap:8px">
     <button class="btn" data-call="openAddStep" data-args="${r.id}">+ Add step</button>
     <button class="btn danger" data-call="deleteRoutine" data-args="${r.id}">Delete</button>
-  </div>`;
+  </div>
+  <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
 function toggleRoutineDay(id,day){
   const r=routineById(id);if(!r)return;
@@ -1815,7 +1954,8 @@ function vInventoryPage(){
     <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
     <div class="step-note">${p.active?(dl!==null?(dl<=0?'Likely empty':'~'+dl+' days left'):'No estimate'):p.cat+' · inactive'}</div></div>
     ${p.active&&dl!==null&&dl<=14?'<span class="chip c-cu">Low</span>':''}<span class="step-arrow">›</span></button>`;}).join('')||'<div class="empty">Nothing here</div>'}</div>
-  <div style="padding:0 22px 8px"><button class="btn full" data-call="newProduct" data-args="${cat==='inactive'?'skin':cat}">+ Add product</button></div>`;
+  <div style="padding:0 22px 8px"><button class="btn full" data-call="newProduct" data-args="${cat==='inactive'?'skin':cat}">+ Add product</button></div>
+  <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
 
 function vAppearancePage(){
@@ -2218,7 +2358,8 @@ function behaviourPrompt(cat){
   lines.push('- ALWAYS emphasise ingredients: name the key actives/ingredients and why they suit the user, for every product you suggest.');
   lines.push('- Respect their stated concerns, budget and satisfaction. Do not recommend replacing products they are happy with.');
   lines.push('- Be concise and practical. This is a small mobile chat: keep replies short, ideally 2-4 sentences. Lead with the direct answer.');
-  lines.push('- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. Only use a short bullet list when comparing 2-4 specific products, and keep bullets to one line each. No blank filler lines.');
+  lines.push('- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. When you recommend or compare products, present them as a short bullet list (one product per bullet, each with its key ingredient and one-line reason) rather than a paragraph, so it is quick to scan. Keep each bullet to one line. No blank filler lines.');
+  lines.push('- After recommending, briefly offer to go deeper (e.g. "Want me to compare these or explain any in more detail?") rather than dumping everything at once.');
   lines.push('');
   // profile block
   const pc=prof[cat==='supplements'?'skin':cat];
@@ -2740,6 +2881,7 @@ function renderModal(){
   else if(m.type==='lookpick')inner=lookPickSheet();
   else if(m.type==='new-routine')inner=newRoutineSheet();
   else if(m.type==='changes')inner=changesSheet();
+  else if(m.type==='supp-edit')inner=suppEditSheet();
   ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
   attachModalSwipe(ov.querySelector('.sheet'));
@@ -2893,7 +3035,8 @@ function productEdit(id){
   <div style="display:flex;gap:8px">
     <button class="btn full" data-call="backToProduct" data-args="${id}">Save & view</button>
     <button class="btn ghost full" onclick="closeEdit()">Close</button>
-  </div>`;
+  </div>
+  <div class="assist-hint">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
 function upd(id,k,v){if(k==='link')v=safeUrl(v);if(k==='durationDays')v=parseInt(v)||0;DB.products[id][k]=v;save();}
 function toggleStreakScope(cat){if(!DB.settings.streakScope)DB.settings.streakScope={skin:true,hair:false,scent:false,supplements:false};DB.settings.streakScope[cat]=!DB.settings.streakScope[cat];save();render();}
