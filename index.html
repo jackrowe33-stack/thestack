@@ -386,9 +386,9 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-03 · v47';
+const BUILD='2026-07-05 · v48';
 const SEED={
-  v:9,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false}},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:10,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:[],whyLike:'',imageToProject:'',free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -461,6 +461,22 @@ function migrate(d){
     if(!d.settings)d.settings={};
     if(d.settings.graceDaysPerMonth===undefined)d.settings.graceDaysPerMonth=1;
     d.v=9;
+  }
+  if(d.v<10){
+    if(!d.settings)d.settings={};
+    if(d.settings.country===undefined)d.settings.country='AU';
+    if(d.settings.shopMethod===undefined)d.settings.shopMethod='both';
+    if(d.settings.preferredRetailer===undefined)d.settings.preferredRetailer='';
+    if(!Array.isArray(d.settings.preferredBrands))d.settings.preferredBrands=[];
+    const blankSec=()=>({concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false});
+    if(!d.profile)d.profile={};
+    if(!d.profile.skin)d.profile.skin=blankSec();
+    if(!d.profile.hair)d.profile.hair=blankSec();
+    if(!d.profile.scent)d.profile.scent={current:[],whyLike:'',imageToProject:'',free:'',done:false,skipped:false};
+    if(!d.profile.looks)d.profile.looks={goals:'',free:'',done:false,skipped:false};
+    if(!d.onboarding)d.onboarding={section:null,step:0};
+    if(!d.aiMemory)d.aiMemory={};
+    d.v=10;
   }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
@@ -698,6 +714,7 @@ function render(){
   else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
   else if(UI.tab==='scent')app.innerHTML=vScent();
   else if(UI.tab==='history')app.innerHTML=vHistory();
+  else if(UI.tab==='assistant')app.innerHTML=vAssistant();
   else app.innerHTML=vHome();
   app.classList.remove('tab-fade');
   if(UI._tabFade){void app.offsetWidth;app.classList.add('tab-fade');UI._tabFade=false;}
@@ -719,7 +736,7 @@ function render(){
   updateWaitDisplay();
 }
 function renderTabs(){
-  const ts=[['home',HOME_SVG,'Home'],['today',TODAY_SVG,'Today'],['routines',LIST_SVG,'Routines']];
+  const ts=[['home',HOME_SVG,'Home'],['today',TODAY_SVG,'Today'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Assistant']];
   document.getElementById('tabs').style.display=UI.tab==='setup'?'none':'';
   document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
     const active=UI.tab===k;
@@ -813,6 +830,7 @@ const GEAR_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strok
 const HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>';
 const TODAY_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M12 12m-2.6 0a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0" fill="currentColor" stroke="none"/></svg>';
 const LIST_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M5 6h.01"/><path d="M5 12h.01"/><path d="M5 18h.01"/></svg>';
+const FACET_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c1.5 2.5 3.5 4.5 6 6c-2.5 1.5-4.5 3.5-6 6c-1.5-2.5-3.5-4.5-6-6c2.5-1.5 4.5-3.5 6-6z"/></svg>';
 const CHEV_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6l6 6"/></svg>';
 function gearBtn(){return`<button class="hdr-gear" aria-label="Setup" onclick="openSetup()">${GEAR_SVG}</button>`;}
 
@@ -1798,6 +1816,26 @@ function vSyncPage(){
     </div>
   </div>
   <p class="page-sub">Auto-pushes 2.5s after any change. Auto-pulls on open and foreground.</p>`;
+}
+
+/* ══ ASSISTANT (stage 1 placeholder) ══ */
+function profileComplete(){
+  const p=DB.profile||{};
+  return ['skin','hair','scent','looks'].every(k=>p[k]&&(p[k].done||p[k].skipped));
+}
+function vAssistant(){
+  const needsOnboard=!profileComplete();
+  return`<div class="hdr" style="display:flex;align-items:center;justify-content:space-between;padding:0 22px 6px">
+    <span class="wordmark" style="font-size:19px;font-weight:600;letter-spacing:-.01em">Assistant</span>
+  </div>
+  <div style="padding:8px 22px 120px">
+    <h1 class="page-title">How can I help?</h1>
+    <p class="page-sub">${needsOnboard?'First, let me learn a little about your routines so my advice actually fits you.':'Pick an area and I\'ll use your routine, your notes and what you\'ve told me.'}</p>
+    <div class="empty" style="margin-top:40px;color:var(--ink-soft);text-align:center;font-size:13px;line-height:1.6">
+      ${needsOnboard?'Onboarding flow lands in the next stage.':'Category picker and chat land in the next stage.'}<br>
+      <span style="opacity:.6">Stage 1 verified: nav pill, Facet glyph, schema v10.</span>
+    </div>
+  </div>`;
 }
 
 /* ══ PROMPT PAGE ══ */
