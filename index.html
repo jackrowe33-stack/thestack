@@ -555,7 +555,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v76';
+const BUILD='2026-07-05 · v77';
 const SEED={
   v:14,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1671,10 +1671,11 @@ function editSupp(id){
   UI.modal={type:'supp-edit'};render();
 }
 function suppEditField(field,v){if(!UI._suppEdit)return;UI._suppEdit[field]=v;}
-function suppEditToggleSlot(slot){if(!UI._suppEdit)return;const e=UI._suppEdit;const sl=Array.isArray(e.slots)?e.slots:['morning'];const i=sl.indexOf(slot);if(i>=0){if(sl.length>1)sl.splice(i,1);}else sl.push(slot);e.slots=sl;renderModal();}
-function suppEditEveryday(on){if(!UI._suppEdit)return;UI._suppEdit.everyday=on;if(on)UI._suppEdit.days=[1,2,3,4,5,6,0];renderModal();}
-function suppEditToggleDay(d){if(!UI._suppEdit)return;const days=UI._suppEdit.days||[];const i=days.indexOf(d);if(i>=0)days.splice(i,1);else days.push(d);UI._suppEdit.days=days;UI._suppEdit.everyday=(days.length===7);renderModal();}
-function suppEditStreak(on){if(!UI._suppEdit)return;UI._suppEdit.countStreak=on;renderModal();}
+function suppEditCapture(){if(!UI._suppEdit)return;const n=document.getElementById('suppName');const d=document.getElementById('suppDose');if(n)UI._suppEdit.name=n.value;if(d)UI._suppEdit.dose=d.value;}
+function suppEditToggleSlot(slot){if(!UI._suppEdit)return;suppEditCapture();const e=UI._suppEdit;const sl=Array.isArray(e.slots)?e.slots:['morning'];const i=sl.indexOf(slot);if(i>=0){if(sl.length>1)sl.splice(i,1);}else sl.push(slot);e.slots=sl;renderModal();}
+function suppEditEveryday(on){if(!UI._suppEdit)return;suppEditCapture();UI._suppEdit.everyday=on;if(on)UI._suppEdit.days=[1,2,3,4,5,6,0];renderModal();}
+function suppEditToggleDay(d){if(!UI._suppEdit)return;suppEditCapture();const days=UI._suppEdit.days||[];const i=days.indexOf(d);if(i>=0)days.splice(i,1);else days.push(d);UI._suppEdit.days=days;UI._suppEdit.everyday=(days.length===7);renderModal();}
+function suppEditStreak(on){if(!UI._suppEdit)return;suppEditCapture();UI._suppEdit.countStreak=on;renderModal();}
 function saveSupp(){
   const e=UI._suppEdit;if(!e)return;
   const nameEl=document.getElementById('suppName');const doseEl=document.getElementById('suppDose');
