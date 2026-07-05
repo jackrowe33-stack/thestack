@@ -586,6 +586,10 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
   sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import {
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+  doc, getDoc, setDoc, collection, getDocs, onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAH0DLSAC3XdmLSU38UF0c_ADbgmaMR10I",
@@ -595,9 +599,61 @@ const firebaseConfig = {
   messagingSenderId: "1069568516086",
   appId: "1:1069568516086:web:6694285bee2b10946ef1d7"
 };
-let auth;
-try{ auth = getAuth(initializeApp(firebaseConfig)); }
-catch(e){ console.error('Firebase init failed',e); }
+let auth, db;
+try{
+  const fbApp = initializeApp(firebaseConfig);
+  auth = getAuth(fbApp);
+  // Offline-first: IndexedDB cache, multi-tab safe.
+  db = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+}catch(e){ console.error('Firebase init failed',e); }
+
+/* ── Firestore persistence API, exposed to the classic app script ──
+   Layout:  users/{uid}/core/current
+            users/{uid}/journal/{YYYY-MM-DD}
+            users/{uid}/completions/{YYYY-MM-DD}
+   The app keeps flat DB.journal[ds] / DB.completions[key]; this layer
+   translates to/from the split docs. */
+window.stackFS = (function(){
+  let uid=null;
+  function setUid(u){ uid=u; }
+  // date extractor: journal keys ARE dates; completion keys end in _YYYY-MM-DD(_slot)
+  function dateOfCompKey(k){
+    const m=k.match(/(\d{4}-\d{2}-\d{2})/);
+    return m?m[1]:null;
+  }
+  async function loadAll(){
+    if(!db||!uid) return null;
+    const out={ core:null, journal:{}, completions:{} };
+    // core
+    try{ const cs=await getDoc(doc(db,'users',uid,'core','current')); if(cs.exists()) out.core=cs.data(); }catch(e){ console.warn('core load',e); }
+    // journal docs
+    try{ const js=await getDocs(collection(db,'users',uid,'journal')); js.forEach(d=>{ const v=d.data(); if(v&&typeof v.text==='string') out.journal[d.id]=v.text; }); }catch(e){ console.warn('journal load',e); }
+    // completions docs (each doc = one date, holding a map of keys->entry)
+    try{ const cs=await getDocs(collection(db,'users',uid,'completions')); cs.forEach(d=>{ const v=d.data(); if(v&&v.entries){ Object.assign(out.completions, v.entries); } }); }catch(e){ console.warn('completions load',e); }
+    return out;
+  }
+  async function saveCore(coreObj){
+    if(!db||!uid) return;
+    try{ await setDoc(doc(db,'users',uid,'core','current'), coreObj); }catch(e){ console.warn('core save',e); }
+  }
+  async function saveJournalDay(ds,text){
+    if(!db||!uid) return;
+    try{ await setDoc(doc(db,'users',uid,'journal',ds), { text, updatedAt: Date.now() }); }catch(e){ console.warn('journal save',e); }
+  }
+  async function saveCompletionDay(ds,entriesForDay){
+    if(!db||!uid) return;
+    try{ await setDoc(doc(db,'users',uid,'completions',ds), { entries: entriesForDay, updatedAt: Date.now() }); }catch(e){ console.warn('completion save',e); }
+  }
+  function subscribe(onChange){
+    if(!db||!uid) return ()=>{};
+    const unsubs=[];
+    unsubs.push(onSnapshot(doc(db,'users',uid,'core','current'), s=>{ if(s.exists()&&!s.metadata.hasPendingWrites) onChange('core', s.data()); }, e=>console.warn('core sub',e)));
+    unsubs.push(onSnapshot(collection(db,'users',uid,'journal'), qs=>{ if(!qs.metadata.hasPendingWrites){ const j={}; qs.forEach(d=>{const v=d.data(); if(v&&typeof v.text==='string')j[d.id]=v.text;}); onChange('journal', j); } }, e=>console.warn('journal sub',e)));
+    unsubs.push(onSnapshot(collection(db,'users',uid,'completions'), qs=>{ if(!qs.metadata.hasPendingWrites){ const c={}; qs.forEach(d=>{const v=d.data(); if(v&&v.entries)Object.assign(c,v.entries);}); onChange('completions', c); } }, e=>console.warn('completion sub',e)));
+    return ()=>unsubs.forEach(u=>{try{u();}catch(e){}});
+  }
+  return { setUid, loadAll, saveCore, saveJournalDay, saveCompletionDay, subscribe, dateOfCompKey };
+})();
 
 const gate = document.getElementById('authgate');
 let mode='signin';
@@ -678,10 +734,11 @@ if(auth){
   onAuthStateChanged(auth,user=>{
     window.__authReady=true;
     if(user){
+      window.stackFS.setUid(user.uid);
       hideGate();
       if(!booted){ booted=true; if(window.bootApp) window.bootApp(); }
     }else{
-      // If app already booted this session, a sign-out returns to the gate.
+      window.stackFS.setUid(null);
       showGate();
     }
   });
@@ -702,7 +759,7 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v79';
+const BUILD='2026-07-05 · v80';
 const SEED={
   v:14,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -838,7 +895,61 @@ let UI={tab:'home',setupPage:null,editRoutineId:null,invCat:'skin',routinesCat:'
 let timerStart=null,timerInt=null;
 
 /* ══ HELPERS ══ */
-function save(){DB.updatedAt=Date.now();localStorage.setItem('stack_v1',JSON.stringify(DB));schedSync();}
+/* ══ PERSISTENCE (Stage C: Firestore + offline cache) ══ */
+let _fsShadow={ journal:{}, completions:{} };  // last-persisted snapshot for dirty-diff
+let _fsCoreTimer=null, _fsDirtyTimer=null;
+let _fsReady=false;   // true once Firestore has hydrated DB (or determined it's a fresh account)
+let _fsSuspend=false; // true while applying a remote snapshot, to avoid echo-saves
+
+const CORE_KEYS=['v','updatedAt','supplements','settings','profile','onboarding','aiMemory','lookByContext','products','routines','hairLooks'];
+function _coreSlice(){ const o={}; CORE_KEYS.forEach(k=>{ if(DB[k]!==undefined)o[k]=DB[k]; }); return o; }
+
+function _snapshotShadow(){
+  _fsShadow.journal=Object.assign({},DB.journal||{});
+  _fsShadow.completions=Object.assign({},DB.completions||{});
+}
+function _dirtyJournalDays(){
+  const days=new Set(), cur=DB.journal||{}, old=_fsShadow.journal;
+  for(const ds in cur){ if(cur[ds]!==old[ds]) days.add(ds); }
+  for(const ds in old){ if(!(ds in cur)) days.add(ds); }  // deletions
+  return days;
+}
+function _dirtyCompletionDays(){
+  const days=new Set(), cur=DB.completions||{}, old=_fsShadow.completions;
+  const fs=window.stackFS;
+  for(const k in cur){ if(JSON.stringify(cur[k])!==JSON.stringify(old[k])){ const d=fs.dateOfCompKey(k); if(d)days.add(d); } }
+  for(const k in old){ if(!(k in cur)){ const d=fs.dateOfCompKey(k); if(d)days.add(d); } }
+  return days;
+}
+function _entriesForDate(ds){
+  const fs=window.stackFS, out={};
+  for(const k in (DB.completions||{})){ if(fs.dateOfCompKey(k)===ds) out[k]=DB.completions[k]; }
+  return out;
+}
+
+function _flushFirestore(){
+  if(!_fsReady||_fsSuspend||!window.stackFS) return;
+  // core doc
+  window.stackFS.saveCore(_coreSlice());
+  // dirty journal days
+  _dirtyJournalDays().forEach(ds=>{
+    const t=(DB.journal||{})[ds];
+    window.stackFS.saveJournalDay(ds, t===undefined?'':t);
+  });
+  // dirty completion days (write the whole day's entry-map)
+  _dirtyCompletionDays().forEach(ds=>{
+    window.stackFS.saveCompletionDay(ds, _entriesForDate(ds));
+  });
+  _snapshotShadow();
+}
+
+function save(){
+  DB.updatedAt=Date.now();
+  // belt-and-braces local cache (immediate)
+  try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
+  // debounced cloud persist (~2.5s)
+  if(_fsReady){ clearTimeout(_fsDirtyTimer); _fsDirtyTimer=setTimeout(_flushFirestore,2500); }
+}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function dayName(i){return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i];}
 function dayShort(i){return['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i];}
@@ -1056,7 +1167,7 @@ function uncompleteRoutineDate(rid,dateStr){
 
 /* ══ SYNC ══ */
 let syncTimer=null;
-function schedSync(){if(!DB.settings.syncUrl)return;clearTimeout(syncTimer);syncTimer=setTimeout(syncPushSilent,2500);}
+function schedSync(){ /* legacy KV sync retired in Stage C — Firestore handles persistence */ }
 async function syncPushSilent(){if(!DB.settings.syncUrl)return;try{await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});}catch(e){}}
 async function syncPush(){if(!DB.settings.syncUrl)return false;try{const r=await fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB)});return r.ok?true:'HTTP '+r.status;}catch(e){return 'network error';}}
 async function syncPull(force=false){
@@ -1077,8 +1188,10 @@ async function autoPull(){
   try{const r=await fetch(DB.settings.syncUrl,{headers:{'X-Pin':DB.settings.pin},cache:'no-store'});if(!r.ok)return;const remote=await r.json();if(remote&&remote.updatedAt>=(DB.updatedAt||0)&&!UI.modal&&UI.tab!=='today'&&UI.tab!=='runner'){DB=migrate(remote);localStorage.setItem('stack_v1',JSON.stringify(DB));render();}}catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'){autoPull();}
-  else{clearTimeout(syncTimer);syncTimer=null;if(DB.settings.syncUrl){try{fetch(DB.settings.syncUrl,{method:'PUT',headers:{'Content-Type':'application/json','X-Pin':DB.settings.pin},body:JSON.stringify(DB),keepalive:true});}catch(e){}}}
+  // Legacy KV sync retired in Stage C. Firestore's offline cache and live
+  // onSnapshot listeners handle background/foreground sync automatically.
+  // On hide, flush any pending debounced write immediately so nothing is lost.
+  if(document.visibilityState!=='visible'){ if(_fsReady){ clearTimeout(_fsDirtyTimer); _flushFirestore(); } }
 });
 
 /* ══ RENDER ══ */
@@ -3960,18 +4073,74 @@ claudePrompt=function(){return _cpFull()+journalBlock();};
 claudePromptSkin=function(){return _cpSkin()+journalBlock();};
 
 /* ══ BOOT ══ */
-function bootApp(){
+async function bootApp(){
   if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
+  // Paint immediately from local cache so there's no blank wait; Firestore hydrates next.
   applyTheme();
   render();
-  autoPull();
+  await hydrateFromFirestore();
 }
 window.bootApp=bootApp;
-/* Boot is now triggered by the auth gate (see auth module in <head>).
-   Fallback: if the auth module never loads (e.g. offline SDK fetch fail),
-   boot after a short delay so the app is never permanently blank. */
+
+async function hydrateFromFirestore(){
+  const fs=window.stackFS;
+  if(!fs){ _fsReady=true; _snapshotShadow(); return; }
+  try{
+    const remote=await fs.loadAll();
+    if(remote && remote.core){
+      // Existing cloud account: rebuild flat DB from split docs, then migrate.
+      const rebuilt=Object.assign({},remote.core);
+      rebuilt.journal=remote.journal||{};
+      rebuilt.completions=remote.completions||{};
+      DB=migrate(rebuilt);
+      try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
+    }else{
+      // Fresh cloud account (no core doc yet). Keep whatever DB we booted with
+      // (SEED for a brand-new user). Stage D migration will handle existing
+      // localStorage users; for now, seed the cloud from current DB.
+      _fsReady=true; _snapshotShadow();
+      _flushFirestore();  // write initial SEED/local state up to the cloud
+      render();
+      startLiveSync();
+      return;
+    }
+  }catch(e){ console.warn('hydrate failed, staying on local cache',e); }
+  _fsReady=true;
+  _snapshotShadow();
+  render();
+  startLiveSync();
+}
+
+let _liveSyncUnsub=null;
+function startLiveSync(){
+  const fs=window.stackFS;
+  if(!fs||_liveSyncUnsub) return;
+  _liveSyncUnsub=fs.subscribe((kind,data)=>{
+    // Don't clobber an in-progress edit (mirrors old autoPull guard).
+    if(UI.modal||UI.tab==='today'||UI.tab==='runner') return;
+    _fsSuspend=true;
+    try{
+      if(kind==='core'){
+        const merged=Object.assign({},data);
+        merged.journal=DB.journal; merged.completions=DB.completions;
+        DB=migrate(merged);
+      }else if(kind==='journal'){
+        DB.journal=data||{};
+      }else if(kind==='completions'){
+        DB.completions=data||{};
+      }
+      try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
+      _snapshotShadow();
+      render();
+    }finally{ _fsSuspend=false; }
+  });
+}
+
+/* Boot is triggered by the auth gate (see auth module in <head>).
+   Fallback: if the auth module never loads (offline SDK fetch fail),
+   boot on local cache so the app is never permanently blank. */
 window.__authReady=false;
-setTimeout(function(){if(!window.__authReady){bootApp();}},4000);
+setTimeout(function(){if(!window.__authReady){ _fsReady=true; _snapshotShadow(); bootApp(); }},4000);
 </script>
 </body>
 </html>
