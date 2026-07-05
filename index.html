@@ -801,7 +801,7 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v88';
+const BUILD='2026-07-05 · v89';
 const SEED={
   v:15,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -978,15 +978,15 @@ function openPaywall(kind){ UI.modal={type:'paywall',kind:kind}; render(); }
 function paywallSheet(kind){
   const label={routines:'routines',products:'products',supplements:'supplements'}[kind];
   const sub = label
-    ? `You've reached the free limit of ${FREE_CAPS[kind]} ${label}. Upgrade to add unlimited ${label} — and unlock The Stack AI, your personal routine assistant.`
-    : `Unlock The Stack AI, your personal routine assistant — plus unlimited routines, products and supplements.`;
+    ? `You've reached the free limit of ${FREE_CAPS[kind]} ${label}. Upgrade to add unlimited ${label} — and unlock Loop, the AI that closes the gap between you and your routine.`
+    : `Unlock Loop — the AI that closes the gap between you and your routine — plus unlimited routines, products and supplements.`;
   return `<div class="pw-sheet">
     <div class="pw-glyph">${FACET_SVG}</div>
     <h2 class="pw-title">Unlock The Stack</h2>
     <p class="pw-sub">${sub}</p>
     <div class="pw-feats">
       <div class="pw-feat"><span class="pw-tick">✓</span> Unlimited routines, products &amp; supplements</div>
-      <div class="pw-feat"><span class="pw-tick">✓</span> The Stack AI — personalised guidance on your routines</div>
+      <div class="pw-feat"><span class="pw-tick">✓</span> Loop — personalised guidance from your real routine</div>
       <div class="pw-feat"><span class="pw-tick">✓</span> Journal-aware advice &amp; product suggestions</div>
     </div>
     <button class="btn full" onclick="closeModal()">Coming soon</button>
@@ -1308,7 +1308,7 @@ function render(){
   if(UI.tab==='assistant'&&UI._view==='chat')requestAnimationFrame(syncChatViewport);
 }
 function renderTabs(){
-  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'The Stack AI']];
+  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Loop']];
   document.getElementById('tabs').style.display=(UI.tab==='setup'||(UI.tab==='assistant'&&isPremium()&&(!profileComplete()||UI._view==='chat')))?'none':'';
   document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
     const active=UI.tab===k;
@@ -2553,7 +2553,7 @@ function vRecoPage(){
 }
 function vSyncPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
-  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable The Stack AI.</p>
+  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable Loop, your AI assistant.</p>
   <div class="card pad">
     <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
     <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
@@ -2730,7 +2730,7 @@ function vAssistant(){
 }
 function vFacetTeaser(){
   return`<div class="top">
-    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">The Stack AI</h1>
+    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Loop</h1>
     <div class="hdr-right">
       <div class="wordmark">The <em>Stack</em></div>
       ${gearBtn()}
@@ -2739,7 +2739,7 @@ function vFacetTeaser(){
   <div class="facet-teaser">
     <div class="ft-glyph">${FACET_SVG}</div>
     <h2 class="ft-title">Your routine, understood</h2>
-    <p class="ft-lede">The Stack AI reads your products, your schedule and your journal to give advice that actually fits your stack — not generic tips.</p>
+    <p class="ft-lede">Loop reads your products, your schedule and your journal to give advice that actually fits your stack — not generic tips. It closes the loop between you and your routine.</p>
 
     <div class="ft-sample">
       <div class="ft-sample-label">For example</div>
@@ -2753,7 +2753,7 @@ function vFacetTeaser(){
       <div class="ft-feat"><span class="ft-tick">✓</span> Skin, hair, scent &amp; supplement guidance</div>
     </div>
 
-    <button class="btn full" onclick="openPaywall('facet')">Unlock The Stack AI</button>
+    <button class="btn full" onclick="openPaywall('facet')">Unlock Loop</button>
     <div class="ft-fine">Included with The Stack premium. Not medical advice.</div>
   </div>`;
 }
@@ -2828,7 +2828,7 @@ function vAssistantHome(){
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
   ];
   return`<div class="top">
-    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">The Stack AI</h1>
+    <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Loop</h1>
     <div class="hdr-right">
       <div class="wordmark">The <em>Stack</em></div>
       ${gearBtn()}
@@ -3045,7 +3045,7 @@ async function aiCall(system,messages,useWebSearch){
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({system,messages,useWebSearch:!!useWebSearch})});
     let data={}; try{ data=await r.json(); }catch(e){}
     if(!r.ok){
-      if(r.status===402)return{error:'The Stack AI is a premium feature. Upgrade to unlock it.',code:'upgrade'};
+      if(r.status===402)return{error:'Loop is a premium feature. Upgrade to unlock it.',code:'upgrade'};
       if(r.status===429)return{error:data.message||'Assistant limit reached — try again later.',code:'rate'};
       if(r.status===401)return{error:'Please sign in again to use the assistant.',code:'auth'};
       return{error:data.error||('HTTP '+r.status)};
@@ -3234,7 +3234,7 @@ function vAssistantChat(){
   return`<div class="chat-screen">
     <div class="chat-head">
       <button class="chat-back" data-call="assistantBack">${CHEV_SVG}</button>
-      <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · The Stack AI</div>
+      <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · Loop</div>
       <span style="width:30px"></span>
     </div>
     <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
