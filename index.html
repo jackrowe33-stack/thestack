@@ -369,6 +369,23 @@ a{color:inherit}
 .chat-send{width:44px;height:44px;border-radius:50%;background:var(--cu-btn);border:0;color:#f5f0e0;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .chat-send:disabled{opacity:.45}
 .chat-send svg{width:18px;height:18px}
+/* write-back confirm sheet */
+.chg-head{padding:6px 4px 14px}
+.chg-title{font-family:'Fraunces',serif;font-size:21px;color:var(--ink)}
+.chg-sub{font-size:13px;color:var(--ink-mid);margin-top:3px}
+.chg-scroll{max-height:52vh;overflow-y:auto}
+.chg-group{margin-bottom:18px}
+.chg-gh{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:0 2px 9px}
+.chg-line{display:flex;gap:12px;background:var(--card);border:1px solid var(--card-edge);border-radius:13px;padding:12px 13px;margin-bottom:8px}
+.chg-dot{width:26px;height:26px;border-radius:8px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.chg-dot.add{background:rgba(92,156,106,.16);color:#5c9c6a}
+.chg-dot.mv{background:rgba(var(--cu-rgb),.16);color:var(--cu)}
+.chg-body{flex:1;min-width:0}
+.chg-t{font-size:14px;font-weight:600;color:var(--ink)}
+.chg-s{font-size:12px;color:var(--ink-mid);margin-top:1px}
+.chg-meta{font-size:11.5px;color:var(--ink-mid);margin-top:6px;line-height:1.45}
+.chg-foot{display:flex;gap:11px;padding-top:14px}
+.chg-foot .btn{flex:1;justify-content:center;padding:14px}
 .edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
 .edit-step:last-child{border-bottom:none}
 .edit-step input{flex:1;min-width:0;padding:6px 10px;font-size:13px;border-radius:8px;border:1px solid var(--card-edge);background:var(--bg-raise);color:var(--ink)}
@@ -452,7 +469,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v53';
+const BUILD='2026-07-05 · v54';
 const SEED={
   v:11,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -2190,6 +2207,33 @@ function behaviourPrompt(cat){
   const ctx=({skin:claudePromptSkin,hair:claudePromptHair,scent:claudePromptScent,supplements:claudePrompt})[cat]||claudePrompt;
   lines.push('THEIR CURRENT '+cat.toUpperCase()+' ROUTINE & PRODUCTS:');
   lines.push(ctx());
+  // machine-readable routine IDs so you can specify exact placement
+  const rlist=DB.routines.filter(r=>cat==='supplements'?r.cat==='supplements':(r.cat===cat&&!r.id.startsWith('hair-look')));
+  if(rlist.length){
+    lines.push('');
+    lines.push('ROUTINE IDs (use these exact ids when placing a product):');
+    rlist.forEach(r=>{
+      const steps=activeSteps(r.steps).map((s,i)=>(i+1)+'='+((DB.products[s.p]||{}).name||s.p)).join(', ');
+      lines.push('- '+r.id+' ("'+r.name+'", '+r.type+'): '+(steps||'empty'));
+    });
+  }
+  // change-set contract
+  lines.push('');
+  lines.push('MAKING CHANGES:');
+  lines.push('If, and only if, the user clearly agrees to add a product or change a routine, append a fenced JSON block at the very end of your reply, after your prose, in this exact form:');
+  lines.push('```stackchanges');
+  lines.push('{"changes":[ ... ]}');
+  lines.push('```');
+  lines.push('Change object types:');
+  lines.push('1. Add a product (and optionally place it in a routine):');
+  lines.push('   {"type":"add_product","cat":"'+cat+'","brand":"","name":"","role":"short role","why":"1 sentence incl key ingredients","durationDays":90,"tags":[],"applicationSteps":["step 1","step 2"],"link":"verified product or retailer URL or empty","place":{"routineId":"exact-id","index":2,"wait":0}}');
+  lines.push('   - "place" is optional; omit it to add to inventory only. index is 1-based position within that routine. wait is seconds before the NEXT step.');
+  lines.push('   - applicationSteps: 2-3 short how-to-apply notes.');
+  lines.push('2. Move an existing step within a routine:');
+  lines.push('   {"type":"move_step","routineId":"exact-id","productName":"name as shown","toIndex":3}');
+  lines.push('3. Change a step\'s wait time:');
+  lines.push('   {"type":"set_wait","routineId":"exact-id","productName":"name as shown","wait":300}');
+  lines.push('Rules for changes: only include changes the user agreed to; never invent a routineId (use one from the list above); keep prose above the JSON natural and do NOT mention the JSON. If no change is agreed, do not include any block.');
   return lines.join('\n');
 }
 
@@ -2259,9 +2303,14 @@ async function assistantSend(){
   const wantsReco=/recommend|suggest|alternative|instead|replace|buy|product|better|swap|try/i.test(text);
   const res=await aiCall(sys,msgs,wantsReco);
   UI._chatBusy=false;
-  if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});}
-  else{UI._chat.push({role:'assistant',content:res.text||''});}
+  if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});renderChat();return;}
+  const {prose,changes}=extractChanges(res.text||'');
+  UI._chat.push({role:'assistant',content:prose||res.text||''});
   renderChat();
+  if(changes){
+    const valid=validateChanges(cat,changes);
+    if(valid.length)openChanges(valid);
+  }
 }
 
 function assistantBack(){UI._view=null;UI._assistantCat=null;UI._chat=null;render();}
@@ -2326,6 +2375,141 @@ function vAssistantChat(){
 function chatGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
 const SEND_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>';
 
+/* ══ WRITE-BACK (stage 4) ══ */
+/* split an AI reply into {prose, changes[]} — extracts a ```stackchanges fenced JSON block */
+function extractChanges(text){
+  const re=/```stackchanges\s*([\s\S]*?)```/i;
+  const m=(text||'').match(re);
+  if(!m)return{prose:text||'',changes:null};
+  const prose=(text.slice(0,m.index)+text.slice(m.index+m[0].length)).trim();
+  let parsed=null;
+  try{const obj=JSON.parse(m[1].trim());if(obj&&Array.isArray(obj.changes))parsed=obj.changes;}catch(e){parsed=null;}
+  return{prose,changes:parsed};
+}
+/* validate + normalise a raw change list against real data. Returns only safe changes. */
+function validateChanges(cat,raw){
+  if(!Array.isArray(raw))return[];
+  const out=[];
+  const rId=id=>DB.routines.find(r=>r.id===id);
+  const findStepByName=(r,nm)=>{if(!r)return -1;const low=(nm||'').toLowerCase();return activeSteps(r.steps).findIndex(s=>{const p=DB.products[s.p];return p&&((p.name+' '+p.brand).toLowerCase().includes(low)||(p.brand+' '+p.name).toLowerCase().includes(low)||p.name.toLowerCase()===low);});};
+  for(const c of raw){
+    if(!c||typeof c!=='object')continue;
+    if(c.type==='add_product'){
+      const name=(c.name||'').trim();if(!name)continue;
+      const ch={type:'add_product',cat:(['skin','hair','scent','supplements'].includes(c.cat)?c.cat:cat),
+        brand:(c.brand||'').trim(),name,role:(c.role||'').trim(),why:(c.why||'').trim(),
+        durationDays:(Number.isFinite(+c.durationDays)&&+c.durationDays>0)?Math.round(+c.durationDays):90,
+        tags:Array.isArray(c.tags)?c.tags.map(t=>String(t).trim()).filter(Boolean).slice(0,6):[],
+        applicationSteps:Array.isArray(c.applicationSteps)?c.applicationSteps.map(t=>String(t).trim()).filter(Boolean).slice(0,4):[],
+        link:(typeof c.link==='string'&&/^https?:\/\//i.test(c.link.trim()))?c.link.trim():''};
+      // validate placement against a real routine
+      if(c.place&&c.place.routineId){
+        const r=rId(c.place.routineId);
+        if(r){
+          const len=(r.steps||[]).length;
+          let idx=Number.isFinite(+c.place.index)?Math.round(+c.place.index):len+1;
+          idx=Math.max(1,Math.min(idx,len+1));
+          const wait=(Number.isFinite(+c.place.wait)&&+c.place.wait>=0)?Math.round(+c.place.wait):0;
+          ch.place={routineId:r.id,routineName:r.name,index:idx,wait};
+        }
+      }
+      out.push(ch);
+    } else if(c.type==='move_step'){
+      const r=rId(c.routineId);if(!r)continue;
+      const from=findStepByName(r,c.productName);if(from<0)continue;
+      const len=activeSteps(r.steps).length;
+      let to=Number.isFinite(+c.toIndex)?Math.round(+c.toIndex):from+1;to=Math.max(1,Math.min(to,len));
+      if(to-1===from)continue;
+      out.push({type:'move_step',routineId:r.id,routineName:r.name,productName:c.productName,from,to});
+    } else if(c.type==='set_wait'){
+      const r=rId(c.routineId);if(!r)continue;
+      const idx=findStepByName(r,c.productName);if(idx<0)continue;
+      const wait=(Number.isFinite(+c.wait)&&+c.wait>=0)?Math.round(+c.wait):0;
+      out.push({type:'set_wait',routineId:r.id,routineName:r.name,productName:c.productName,idx,wait});
+    }
+  }
+  return out;
+}
+/* human summary line for a change */
+function changeSummary(c){
+  if(c.type==='add_product'){
+    const nm=(c.brand?c.brand+' ':'')+c.name;
+    const place=c.place?(' → '+c.place.routineName+', step '+c.place.index+(c.place.wait?', wait '+fmtWait(c.place.wait):'')):' → inventory only';
+    return{icon:'＋',cls:'add',title:nm,sub:(c.role||c.cat)+place};
+  }
+  if(c.type==='move_step')return{icon:'↕',cls:'mv',title:c.productName,sub:'Move to step '+c.to+' in '+c.routineName};
+  if(c.type==='set_wait')return{icon:'⏱',cls:'mv',title:c.productName,sub:'Wait '+fmtWait(c.wait)+' in '+c.routineName};
+  return{icon:'·',cls:'mv',title:'Change',sub:''};
+}
+/* apply one validated change to DB (no save here; caller saves once) */
+function applyChange(c){
+  if(c.type==='add_product'){
+    const id='p'+Date.now()+Math.floor(Math.random()*1000);
+    DB.products[id]=P(c.cat,c.name,c.brand,c.role,c.why,{
+      durationDays:c.durationDays,tags:c.tags,link:c.link||'',
+      steps:(c.applicationSteps||[]).map(t=>({text:t}))
+    });
+    if(c.place){
+      const r=DB.routines.find(x=>x.id===c.place.routineId);
+      if(r){if(!Array.isArray(r.steps))r.steps=[];const at=Math.max(0,Math.min(c.place.index-1,r.steps.length));r.steps.splice(at,0,{p:id,wait:c.place.wait||0});}
+    }
+    return id;
+  }
+  if(c.type==='move_step'){
+    const r=DB.routines.find(x=>x.id===c.routineId);if(!r)return;
+    // map active index to real index
+    const act=activeSteps(r.steps);const step=act[c.from];if(!step)return;
+    const realFrom=r.steps.indexOf(step);if(realFrom<0)return;
+    const [moved]=r.steps.splice(realFrom,1);
+    const target=act[c.to-1];let realTo=target?r.steps.indexOf(target):r.steps.length;if(realTo<0)realTo=r.steps.length;
+    r.steps.splice(realTo,0,moved);
+    return;
+  }
+  if(c.type==='set_wait'){
+    const r=DB.routines.find(x=>x.id===c.routineId);if(!r)return;
+    const act=activeSteps(r.steps);const step=act[c.idx];if(step)step.wait=c.wait;
+    return;
+  }
+}
+/* open the confirm sheet with a validated change list */
+function openChanges(changes){
+  UI._pendingChanges=changes;
+  UI.modal={type:'changes'};
+  render();
+}
+function acceptAllChanges(){
+  const list=UI._pendingChanges||[];
+  list.forEach(applyChange);
+  save();
+  UI._pendingChanges=null;
+  closeModal(()=>{ UI._chat.push({role:'assistant',content:'Done. '+list.length+' change'+(list.length!==1?'s':'')+' saved to your stack.'}); if(UI._view==='chat')renderChat(); });
+}
+function rejectChanges(){UI._pendingChanges=null;closeModal();}
+function changesSheet(){
+  const list=UI._pendingChanges||[];
+  if(!list.length)return`<div class="empty">No changes to apply.</div>`;
+  const adds=list.filter(c=>c.type==='add_product');
+  const moves=list.filter(c=>c.type!=='add_product');
+  const single=list.length===1;
+  const rowHtml=(c,i)=>{const s=changeSummary(c);return`<div class="chg-line">
+      <div class="chg-dot ${s.cls}">${s.icon}</div>
+      <div class="chg-body"><div class="chg-t">${esc(s.title)}</div><div class="chg-s">${esc(s.sub)}</div>
+        ${c.type==='add_product'?`<div class="chg-meta">${c.why?esc(c.why):''}${c.link?` · <a href="${esc(c.link)}" target="_blank" rel="noopener" style="color:var(--cu)">link</a>`:' · <span style="color:var(--ink-soft)">no link found</span>'}</div>`:''}
+      </div></div>`;};
+  return`<div class="chg-head">
+      <div class="chg-title">${single?'Add this to your stack?':'Review changes'}</div>
+      <div class="chg-sub">${single?'Nothing is saved until you accept.':list.length+' changes · nothing saved until you accept.'}</div>
+    </div>
+    <div class="chg-scroll">
+      ${adds.length?`<div class="chg-group">${single?'':'<div class="chg-gh">Adding '+adds.length+' product'+(adds.length!==1?'s':'')+'</div>'}${adds.map(rowHtml).join('')}</div>`:''}
+      ${moves.length?`<div class="chg-group"><div class="chg-gh">Arranging routines</div>${moves.map(rowHtml).join('')}</div>`:''}
+    </div>
+    <div class="chg-foot">
+      <button class="btn ghost" onclick="rejectChanges()">Not now</button>
+      <button class="btn" onclick="acceptAllChanges()">${single?'Save to stack':'Accept all'}</button>
+    </div>`;
+}
+
 /* ══ PROMPT PAGE ══ */
 function vPromptPage(){
   const prompts=[{key:'full',label:'Full',fn:claudePrompt},{key:'skin',label:'Skin',fn:claudePromptSkin},{key:'hair',label:'Hair',fn:claudePromptHair},{key:'scent',label:'Scent',fn:claudePromptScent}];
@@ -2359,6 +2543,7 @@ function renderModal(){
   else if(m.type==='look')inner=lookSheet(m.idx);
   else if(m.type==='lookpick')inner=lookPickSheet();
   else if(m.type==='new-routine')inner=newRoutineSheet();
+  else if(m.type==='changes')inner=changesSheet();
   ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
   attachModalSwipe(ov.querySelector('.sheet'));
