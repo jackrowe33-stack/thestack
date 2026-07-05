@@ -515,9 +515,9 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v69';
+const BUILD='2026-07-05 · v71';
 const SEED={
-  v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:13,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -625,6 +625,15 @@ function migrate(d){
   if(d.v<12){
     if(!Array.isArray(d.supplements))d.supplements=[];
     d.v=12;
+  }
+  if(d.v<13){
+    // backfill array fields that older products (or some create paths) may be missing
+    Object.values(d.products||{}).forEach(p=>{
+      if(!Array.isArray(p.flags))p.flags=[];
+      if(!Array.isArray(p.tags))p.tags=[];
+      if(!Array.isArray(p.steps))p.steps=[];
+    });
+    d.v=13;
   }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
@@ -1726,7 +1735,7 @@ function stepsHTML(steps){
         <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
         <div class="step-note">${esc(p.role)}</div>
         ${nName?`<span class="swap-pill">→ ${esc(nName)} queued</span>`:''}
-        ${p.flags.includes('removeWhenDone')?`<div class="note-flag">Remove when finished</div>`:''}
+        ${(p.flags||[]).includes('removeWhenDone')?`<div class="note-flag">Remove when finished</div>`:''}
         ${dl!==null&&dl<=14?`<div class="note-flag" style="color:var(--cu)">~${Math.max(0,dl)} days left</div>`:''}
       </div><span class="step-arrow">›</span></button>`;
     if(s.wait&&i<act.length-1)h+=`<div class="wait"><span>wait ${fmtWait(s.wait)}</span></div>`;
@@ -1870,6 +1879,7 @@ function vRoutinesPage(){
 function vRoutineEditPage(){
   const r=routineById(UI.editRoutineId);
   if(!r)return`<button class="back-btn" data-call="navTab" data-args="routines">${CHEV_SVG}</button><div class="empty">Not found</div>`;
+  if(!Array.isArray(r.steps))r.steps=[];
   const lookEntry=(DB.hairLooks||[]).find(l=>l.id===r.id);
   const isLook=!!lookEntry;
   const stepsHTML=r.steps.map((s,i)=>{const p=DB.products[s.p];
@@ -3436,7 +3446,7 @@ function productDetailSheet(id){
 function openProductDetail(rid,productId,dateStr){UI.modal={type:'product-detail',id:productId,rid,dateStr};renderModal();}
 
 function productView(id){
-  const p=DB.products[id];if(!p)return'';const dl=daysLeft(p,id);
+  const p=DB.products[id];if(!p)return`<div class="sheet-handle"></div><h3>Product unavailable</h3><div class="empty" style="padding:20px 0">This product is no longer in your stack. It may have been removed or replaced.</div><div style="padding:0 0 8px"><button class="btn ghost full" onclick="closeModal()">Close</button></div>`;const dl=daysLeft(p,id);
   const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;
   const nName=np?np.brand+' '+np.name:(p.next?p.next.name||'':'');
   const nWhy=p.next?.why||(np?np.why:'');const nLink=p.next?.link||(np?np.link:'');
@@ -3446,7 +3456,7 @@ function productView(id){
   ${p.cat==='scent'&&p.tags.length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-cu">${esc(t)}</span>`).join('')}</div></div>`:''}
   ${p.next&&nName?`<div class="desc-block" style="border-color:rgba(var(--cu-rgb),.3)"><b style="color:var(--cu)">Next up · ${esc(nName)}</b>${esc(nWhy)}
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-call="swapProduct" data-args="${id}">I've run out — swap now</button>${nLink?`<a class="btn ghost sm" href="${esc(nLink)}" target="_blank" style="text-decoration:none">Order →</a>`:''}</div></div>`:''}
-  ${p.flags.includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.3)"><b style="color:var(--danger)">Phasing out</b>Use until finished.<div style="margin-top:10px"><button class="btn danger sm" data-call="deactivate" data-args="${id}">Finished — deactivate now</button></div></div>`:''}
+  ${(p.flags||[]).includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.3)"><b style="color:var(--danger)">Phasing out</b>Use until finished.<div style="margin-top:10px"><button class="btn danger sm" data-call="deactivate" data-args="${id}">Finished — deactivate now</button></div></div>`:''}
   <div class="card pad" style="margin:0 0 14px">
     <div class="kv"><span class="k">Stock estimate</span><span class="v">${dl!==null?(dl<=0?'Likely empty':'~'+Math.max(0,dl)+' days left'):'—'}</span></div>
     <div class="kv"><span class="k">Lasts about</span><span class="v">${p.durationDays||'—'} days</span></div>
@@ -3620,7 +3630,7 @@ function lookPickSheet(){return`<div class="sheet-handle"></div><h3>Pick a look<
 /* ══ PROMPTS ══ */
 function claudePrompt(){
   const lines=['MY PERSONAL CARE CONTEXT — '+new Date().toLocaleDateString('en-AU'),'','SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.',''];
-  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if(p.flags.includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
+  DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if((p.flags||[]).includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
   DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
   (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
   lines.push('');lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
@@ -3631,7 +3641,7 @@ function claudePrompt(){
 }
 function claudePromptSkin(){
   const lines=['MY SKIN ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.','','── PRODUCTS ──'];
-  Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)lines.push('Replacing with: '+np.brand+' '+np.name+(p.next.why?' — '+p.next.why:''));else if(p.next&&p.next.name)lines.push('Replacing with: '+p.next.name+(p.next.why?' — '+p.next.why:''));if(p.flags.includes('removeWhenDone'))lines.push('Status: Phasing out');const dl=daysLeft(p);if(dl!==null&&dl<=30)lines.push('Stock: ~'+Math.max(0,dl)+' days left');});
+  Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)lines.push('Replacing with: '+np.brand+' '+np.name+(p.next.why?' — '+p.next.why:''));else if(p.next&&p.next.name)lines.push('Replacing with: '+p.next.name+(p.next.why?' — '+p.next.why:''));if((p.flags||[]).includes('removeWhenDone'))lines.push('Status: Phasing out');const dl=daysLeft(p);if(dl!==null&&dl<=30)lines.push('Stock: ~'+Math.max(0,dl)+' days left');});
   lines.push('','── ROUTINES ──');
   DB.routines.filter(r=>r.cat==='skin').forEach(r=>{lines.push('');lines.push(r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
   const inactive=Object.values(DB.products).filter(p=>p.cat==='skin'&&!p.active);if(inactive.length){lines.push('','RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
