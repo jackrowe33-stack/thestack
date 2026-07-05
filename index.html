@@ -321,6 +321,10 @@ a{color:inherit}
 .oc{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}
 .oc-chip{padding:11px 15px;border-radius:100px;border:1.5px solid var(--card-edge);background:var(--bg-raise);color:var(--ink);font-size:14px;cursor:pointer;transition:.12s}
 .oc-chip.on{background:rgba(var(--cu-rgb),.16);border-color:var(--cu);color:var(--cu);font-weight:500}
+.oc-chip.has-desc{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;border-radius:14px;padding:11px 14px;flex:1 1 calc(50% - 5px);min-width:0}
+.oc-chip.has-desc .oc-lbl{font-size:14px;font-weight:600}
+.oc-chip.has-desc .oc-desc{font-size:11.5px;line-height:1.35;color:var(--ink-soft);font-weight:400}
+.oc-chip.has-desc.on .oc-desc{color:var(--cu)}
 .ob-free{width:100%;min-height:64px;font-size:14px;margin-top:2px}
 .ob-known{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px 16px;margin-bottom:16px}
 .ob-known .k-h{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px}
@@ -365,6 +369,10 @@ a{color:inherit}
 .msg.ai h1,.msg.ai h2,.msg.ai h3{font-size:14px;font-weight:600;margin:8px 0 4px}
 .msg.ai h1:first-child,.msg.ai h2:first-child,.msg.ai h3:first-child{margin-top:0}
 .msg.ai code{background:var(--bg-raise);padding:1px 5px;border-radius:5px;font-size:12.5px}
+.msg.ai a{color:var(--cu);text-decoration:underline;word-break:break-word}
+.chat-choices{display:flex;flex-wrap:wrap;gap:8px;align-self:flex-start;margin:-2px 0 4px;max-width:88%}
+.choice-chip{background:var(--bg-raise);border:1.5px solid var(--cu);color:var(--cu);font-size:13.5px;font-weight:500;font-family:inherit;padding:9px 15px;border-radius:100px;cursor:pointer;transition:.12s}
+.choice-chip:active{transform:scale(.96);background:rgba(var(--cu-rgb),.16)}
 .msg.typing{display:flex;gap:4px;align-items:center}
 .msg.typing span{width:6px;height:6px;border-radius:50%;background:var(--ink-soft);animation:blink 1.2s infinite}
 .msg.typing span:nth-child(2){animation-delay:.2s}.msg.typing span:nth-child(3){animation-delay:.4s}
@@ -504,7 +512,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v61';
+const BUILD='2026-07-05 · v64';
 const SEED={
   v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1350,7 +1358,7 @@ function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
 function histNav(d){UI._histOff=(UI._histOff||0)+d;render();}
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
 function parseArgs(a){return (a||'').split('|').filter(x=>x!=='').map(t=>/^-?\d{1,4}$/.test(t)?parseInt(t):t);}
@@ -2121,8 +2129,26 @@ function obQuestions(sec){
   if(sec==='skin'||sec==='hair'){
     const known=catHasProducts(sec);
     const concernOpts=sec==='skin'
-      ? ['Dryness','Sensitivity','Fine lines','Dullness','Redness','Texture','Breakouts','Dark spots']
-      : ['Dryness','Frizz','Damage','Thinning','Oiliness','Scalp','Colour care','Volume'];
+      ? [
+        {label:'Dryness',desc:'Tight, flaky or rough-feeling skin'},
+        {label:'Sensitivity',desc:'Reacts, stings or goes red easily'},
+        {label:'Fine lines',desc:'Early wrinkles and loss of firmness'},
+        {label:'Dullness',desc:'Lacks glow, looks tired or uneven'},
+        {label:'Redness',desc:'Persistent flushing or blotchy patches'},
+        {label:'Texture',desc:'Bumpy or uneven surface'},
+        {label:'Breakouts',desc:'Spots, congestion or clogged pores'},
+        {label:'Dark spots',desc:'Pigmentation or post-spot marks'}
+      ]
+      : [
+        {label:'Dryness',desc:'Straw-like, thirsty or brittle hair'},
+        {label:'Frizz',desc:'Flyaways and puffiness, hard to smooth'},
+        {label:'Damage',desc:'Breakage or split ends from heat/colour'},
+        {label:'Thinning',desc:'Less density or noticeable shedding'},
+        {label:'Oiliness',desc:'Greasy roots soon after washing'},
+        {label:'Scalp',desc:'Itchiness, flaking or irritation'},
+        {label:'Colour care',desc:'Protecting dyed or treated hair'},
+        {label:'Volume',desc:'Wanting more body and fullness'}
+      ];
     const qs=[
       {sec,id:'concerns',q:`What are your main ${sec} concerns?`,hint:'Pick any that apply, and add your own.',type:'multi',options:concernOpts,save:'concerns'},
       {sec,id:'budget',q:'What\'s your budget level?',hint:'This shapes what I recommend.',type:'single',options:['Budget friendly','Mid range','Premium','Whatever works best'],save:'budget'},
@@ -2136,7 +2162,16 @@ function obQuestions(sec){
   if(sec==='scent') return [
     {sec,id:'current',q:'What scents do you wear now?',hint:'List what\'s in your rotation, or leave blank.',type:'text',save:'current'},
     {sec,id:'whyLike',q:'What do you like about them?',hint:'Notes, mood, how they make you feel.',type:'text',save:'whyLike'},
-    {sec,id:'image',q:'What do you want your scent to project?',hint:'Pick a direction, and add nuance below.',type:'multi',options:['Understated','Confident','Warm','Fresh','Sophisticated','Approachable','Mysterious','Clean'],save:'imageToProject'},
+    {sec,id:'image',q:'What do you want your scent to project?',hint:'Pick a direction, and add nuance below.',type:'multi',options:[
+      {label:'Understated',desc:'Subtle, close to the skin'},
+      {label:'Confident',desc:'Bold and noticeable'},
+      {label:'Warm',desc:'Cosy, spicy or ambery'},
+      {label:'Fresh',desc:'Clean, citrus or aquatic'},
+      {label:'Sophisticated',desc:'Polished and refined'},
+      {label:'Approachable',desc:'Easy-going and friendly'},
+      {label:'Mysterious',desc:'Dark, smoky or intriguing'},
+      {label:'Clean',desc:'Soapy, laundered, minimal'}
+    ],save:'imageToProject'},
   ];
   // looks
   return [
@@ -2255,13 +2290,15 @@ function vOnboard(){
   const pct=Math.round((doneCount/Math.max(1,total))*100);
   const P=DB.profile[sec];
   let bodyInner='';
+  const optLabel=o=>typeof o==='string'?o:o.label;
+  const optDesc=o=>typeof o==='string'?'':(o.desc||'');
   if(q.type==='multi'){
     const cur=Array.isArray(P[q.save])?P[q.save]:[];
-    bodyInner=`<div class="oc">${q.options.map(o=>`<span class="oc-chip ${cur.includes(o)?'on':''}" data-call="obToggle" data-args="${sec}|${q.save}|${esc(o)}">${esc(o)}</span>`).join('')}</div>
+    bodyInner=`<div class="oc">${q.options.map(o=>{const lbl=optLabel(o),d=optDesc(o);return`<span class="oc-chip ${d?'has-desc':''} ${cur.includes(lbl)?'on':''}" data-call="obToggle" data-args="${sec}|${q.save}|${esc(lbl)}"><span class="oc-lbl">${esc(lbl)}</span>${d?`<span class="oc-desc">${esc(d)}</span>`:''}</span>`;}).join('')}</div>
       <textarea class="ob-free" placeholder="Anything else, in your words" data-chg="obFreeExtra" data-args="${sec}">${esc(P.free||'')}</textarea>`;
   } else if(q.type==='single'){
     const cur=P[q.save];
-    bodyInner=`<div class="oc">${q.options.map(o=>`<span class="oc-chip ${cur===o?'on':''}" data-call="obPick" data-args="${sec}|${q.save}|${esc(o)}">${esc(o)}</span>`).join('')}</div>`;
+    bodyInner=`<div class="oc">${q.options.map(o=>{const lbl=optLabel(o),d=optDesc(o);return`<span class="oc-chip ${d?'has-desc':''} ${cur===lbl?'on':''}" data-call="obPick" data-args="${sec}|${q.save}|${esc(lbl)}"><span class="oc-lbl">${esc(lbl)}</span>${d?`<span class="oc-desc">${esc(d)}</span>`:''}</span>`;}).join('')}</div>`;
   } else if(q.type==='text'){
     const tv=P[q.save];const tstr=Array.isArray(tv)?tv.join(', '):(tv||'');
     bodyInner=`<textarea class="ob-free" style="min-height:120px" placeholder="Type here" data-chg="obFree" data-args="${sec}|${q.save}">${esc(tstr)}</textarea>`;
@@ -2360,6 +2397,7 @@ function behaviourPrompt(cat){
   lines.push('- Be concise and practical. This is a small mobile chat: keep replies short, ideally 2-4 sentences. Lead with the direct answer.');
   lines.push('- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. When you recommend or compare products, present them as a short bullet list (one product per bullet, each with its key ingredient and one-line reason) rather than a paragraph, so it is quick to scan. Keep each bullet to one line. No blank filler lines.');
   lines.push('- After recommending, briefly offer to go deeper (e.g. "Want me to compare these or explain any in more detail?") rather than dumping everything at once.');
+  lines.push('- When you suggest adding a specific product to a routine, include a purchase link in your reply next to that product (a verified product page, or the retailer\'s search URL for it) so they can buy it, then ask if they\'d like you to add it. If you genuinely cannot find a link, say so briefly rather than inventing one. Prefer '+(s.preferredRetailer?s.preferredRetailer:'a major retailer in '+(s.country||'AU'))+'.');
   lines.push('');
   // profile block
   const pc=prof[cat==='supplements'?'skin':cat];
@@ -2417,6 +2455,13 @@ function behaviourPrompt(cat){
   lines.push('4. Change a step\'s wait time:');
   lines.push('   {"type":"set_wait","routineId":"exact-id","productName":"name as shown","wait":300}');
   lines.push('Rules for changes: only include changes the user agreed to; never invent a routineId or productId (use ones from the lists above); keep prose above the JSON natural and do NOT mention the JSON. If no change is agreed, do not include any block.');
+  lines.push('');
+  lines.push('TAPPABLE REPLIES:');
+  lines.push('When your message ends with a clear yes/no question, or asks the user to pick from a short list (e.g. which product to explore, or "add it?"), offer tappable options by appending a fenced block:');
+  lines.push('```stackchoices');
+  lines.push('{"choices":["Yes, add it","No thanks"]}');
+  lines.push('```');
+  lines.push('Use 2-6 short options (a few words each). For product choices, use the product names plus a "Something else" option. Do not mention this block in your prose; just ask the question naturally above it. Omit the block if the answer is open-ended (needs free text).');
   return lines.join('\n');
 }
 
@@ -2467,52 +2512,80 @@ async function runRecall(cat){
   const res=await aiCall(sys,[{role:'user',content:opener}],false);
   UI._chatBusy=false;UI._recallDone=true;stopThinking();
   if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});}
-  else{UI._chat.push({role:'assistant',content:res.text||('Hi — what would you like help with for your '+cat+'?')});}
+  else{const c=extractChoices(extractChanges(res.text||'').prose);UI._chat.push({role:'assistant',content:c.prose||('Hi — what would you like help with for your '+cat+'?'),choices:c.choices});}
   renderChat();
 }
 
-async function assistantSend(){
+async function assistantSend(explicit){
   const inp=document.getElementById('chatInput');
-  if(!inp)return;const text=(inp.value||'').trim();
+  const text=(typeof explicit==='string'?explicit:(inp?inp.value:'')||'').trim();
   if(!text||UI._chatBusy)return;
-  inp.value='';inp.style.height='auto';
+  if(inp){inp.value='';inp.style.height='auto';}
+  // clear chips from any previous message (they've been answered)
+  (UI._chat||[]).forEach(m=>{if(m.choices)m.choices=null;});
   UI._chat.push({role:'user',content:text});
   UI._chatBusy=true;startThinking();renderChat();
   const cat=UI._assistantCat;
   const sys=behaviourPrompt(cat);
   // send full conversation history
   const msgs=UI._chat.map(m=>({role:m.role,content:m.content}));
-  // enable web search when the user seems to want a product recommendation
-  const wantsReco=/recommend|suggest|alternative|instead|replace|buy|product|better|swap|try/i.test(text);
+  // enable web search when a recommendation (and its purchase link) is likely relevant
+  const recoRe=/recommend|suggest|alternative|instead|replace|buy|purchase|link|product|brand|better|swap|try|add (it|this|that)|which one/i;
+  const affirmRe=/^(yes|yep|yeah|sure|ok|okay|go ahead|do it|add it|please do|sounds good|the first|the second|that one|this one)\b/i;
+  const recentAI=[...UI._chat].reverse().find(m=>m.role==='assistant');
+  const midReco=recentAI&&/\b(add|routine|recommend|option|link|buy|instead|alternative)\b/i.test(recentAI.content||'');
+  const wantsReco=recoRe.test(text)||affirmRe.test(text.trim())||!!midReco;
   const res=await aiCall(sys,msgs,wantsReco);
   UI._chatBusy=false;stopThinking();
   if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});renderChat();return;}
-  const {prose,changes}=extractChanges(res.text||'');
-  UI._chat.push({role:'assistant',content:prose||res.text||''});
+  // extract changes, then choices, from what remains
+  const c1=extractChanges(res.text||'');
+  const c2=extractChoices(c1.prose);
+  UI._chat.push({role:'assistant',content:c2.prose||c1.prose||'',choices:c2.choices});
   renderChat();
-  if(changes){
-    const valid=validateChanges(cat,changes);
+  if(c1.changes){
+    const valid=validateChanges(cat,c1.changes);
     if(valid.length)openChanges(valid);
   }
 }
 
 function assistantBack(){stopThinking();UI._view=null;UI._assistantCat=null;UI._chat=null;render();}
 
+function scrollChatBottom(){
+  const wrap=document.getElementById('chatWrap');
+  if(!wrap)return;
+  wrap.scrollTop=wrap.scrollHeight;
+  // run again after layout/paint in case content height grew (long messages, chips, wrapped links)
+  requestAnimationFrame(()=>{const w=document.getElementById('chatWrap');if(w)w.scrollTop=w.scrollHeight;});
+  setTimeout(()=>{const w=document.getElementById('chatWrap');if(w)w.scrollTop=w.scrollHeight;},80);
+}
 function renderChat(){
   const wrap=document.getElementById('chatWrap');
   if(!wrap){render();return;}
   wrap.innerHTML=chatMessagesHtml();
-  wrap.scrollTop=wrap.scrollHeight;
+  scrollChatBottom();
   const send=document.getElementById('chatSend');
   if(send)send.disabled=UI._chatBusy;
 }
 function chatMessagesHtml(){
-  const msgs=(UI._chat||[]).map(m=>{
+  const chat=UI._chat||[];
+  const lastIdx=chat.length-1;
+  const msgs=chat.map((m,i)=>{
     if(m.role==='user')return`<div class="msg me">${esc(m.content)}</div>`;
-    return`<div class="msg ai">${mdToHtml(m.content)}</div>`;
+    let html=`<div class="msg ai">${mdToHtml(m.content)}</div>`;
+    // chips only on the most recent AI message, when not busy and not yet answered
+    if(m.choices&&m.choices.length&&i===lastIdx&&!UI._chatBusy){
+      html+=`<div class="chat-choices">${m.choices.map(c=>`<button class="choice-chip" data-call="chatChoose" data-args="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
+    }
+    return html;
   }).join('');
   const typing=UI._chatBusy?`<div class="msg ai thinking"><span class="think-dot"></span><span class="think-txt">${esc(UI._thinkLine||thinkLine())}</span></div>`:'';
   return msgs+typing;
+}
+/* tapping a choice chip sends it as the user's reply */
+function chatChoose(val){
+  if(UI._chatBusy)return;
+  assistantSend(val);
 }
 /* dry, faintly sarcastic 'working on it' lines */
 const THINK_LINES={
@@ -2565,6 +2638,10 @@ function mdToHtml(src){
   let s=esc(src||'');
   // code spans
   s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  // markdown links [text](url) — only http(s)
+  s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // bare urls not already inside an anchor
+  s=s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,(m,pre,url)=>pre+'<a href="'+url+'" target="_blank" rel="noopener">'+url.replace(/^https?:\/\//,'').replace(/\/$/,'')+'</a>');
   // bold then italic
   s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
   s=s.replace(/(^|[^*])\*([^*]+)\*/g,'$1<em>$2</em>');
@@ -2629,6 +2706,17 @@ function extractChanges(text){
   let parsed=null;
   try{const obj=JSON.parse(m[1].trim());if(obj&&Array.isArray(obj.changes))parsed=obj.changes;}catch(e){parsed=null;}
   return{prose,changes:parsed};
+}
+/* extract a ```stackchoices block → array of short option strings (tappable chips) */
+function extractChoices(text){
+  const re=/```stackchoices\s*([\s\S]*?)```/i;
+  const m=(text||'').match(re);
+  if(!m)return{prose:text||'',choices:null};
+  const prose=(text.slice(0,m.index)+text.slice(m.index+m[0].length)).trim();
+  let choices=null;
+  try{const obj=JSON.parse(m[1].trim());const arr=Array.isArray(obj)?obj:(Array.isArray(obj.choices)?obj.choices:null);
+    if(arr)choices=arr.map(x=>String(x).trim()).filter(Boolean).slice(0,6);}catch(e){choices=null;}
+  return{prose,choices:(choices&&choices.length)?choices:null};
 }
 /* validate + normalise a raw change list against real data. Returns only safe changes. */
 function validateChanges(cat,raw){
