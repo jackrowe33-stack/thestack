@@ -515,7 +515,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v71';
+const BUILD='2026-07-05 · v73';
 const SEED={
   v:13,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -3339,7 +3339,7 @@ function renderModal(){
   else if(m.type==='new-routine')inner=newRoutineSheet();
   else if(m.type==='changes')inner=changesSheet();
   else if(m.type==='supp-edit')inner=suppEditSheet();
-  ov.innerHTML=`<div class="sheet" onclick="event.stopPropagation()"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
+  ov.innerHTML=`<div class="sheet"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
   attachModalSwipe(ov.querySelector('.sheet'));
   const sheet=ov.querySelector('.sheet');
@@ -3358,7 +3358,7 @@ function routineViewSheet(id){
   const days=fmtDays(r.days);
   const catCap=r.cat.charAt(0).toUpperCase()+r.cat.slice(1);
   const typeCap=r.type==='morning'?'Morning':(r.type==='evening'?'Evening':r.type);
-  return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3>
+  return`<h3>${esc(r.name)}</h3>
   <div class="brand">${catCap} · ${typeCap}</div>
   <div class="rv-days">${esc(days)}</div>
   <div style="margin:0 -22px">${stepsWithInventoryHTML(r.steps)}</div>
@@ -3427,7 +3427,7 @@ function productDetailSheet(id){
   const dl=daysLeft(p);
   const psteps=(p.steps||[]).filter(s=>s.text);
   const showStock=dl!==null||p.durationDays;
-  return`<div class="sheet-handle"></div>
+  return`
   <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute">${p.cat}</span></div>
   ${(p.why||p.role)?`<div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>`:''}
   ${psteps.length?`<div class="sec-label" style="margin-left:0;margin-top:8px">How to apply</div>
@@ -3446,14 +3446,14 @@ function productDetailSheet(id){
 function openProductDetail(rid,productId,dateStr){UI.modal={type:'product-detail',id:productId,rid,dateStr};renderModal();}
 
 function productView(id){
-  const p=DB.products[id];if(!p)return`<div class="sheet-handle"></div><h3>Product unavailable</h3><div class="empty" style="padding:20px 0">This product is no longer in your stack. It may have been removed or replaced.</div><div style="padding:0 0 8px"><button class="btn ghost full" onclick="closeModal()">Close</button></div>`;const dl=daysLeft(p,id);
+  const p=DB.products[id];if(!p)return`<h3>Product unavailable</h3><div class="empty" style="padding:20px 0">This product is no longer in your stack. It may have been removed or replaced.</div><div style="padding:0 0 8px"><button class="btn ghost full" onclick="closeModal()">Close</button></div>`;const dl=daysLeft(p,id);
   const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;
   const nName=np?np.brand+' '+np.name:(p.next?p.next.name||'':'');
   const nWhy=p.next?.why||(np?np.why:'');const nLink=p.next?.link||(np?np.link:'');
-  return`<div class="sheet-handle"></div>
+  return`
   <h3>${esc(p.name)}</h3><div class="brand">${esc(p.brand)} · <span class="chip c-mute" style="text-transform:capitalize">${p.cat}</span>${!p.active?' <span class="chip c-danger">Inactive</span>':''}</div>
   <div class="desc-block"><b>${p.cat==='scent'?'About':'Why this step'}</b>${esc(p.why||p.role)}</div>
-  ${p.cat==='scent'&&p.tags.length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-cu">${esc(t)}</span>`).join('')}</div></div>`:''}
+  ${p.cat==='scent'&&(p.tags||[]).length?`<div class="field"><label>When to wear</label><div class="tags">${p.tags.map(t=>`<span class="chip c-cu">${esc(t)}</span>`).join('')}</div></div>`:''}
   ${p.next&&nName?`<div class="desc-block" style="border-color:rgba(var(--cu-rgb),.3)"><b style="color:var(--cu)">Next up · ${esc(nName)}</b>${esc(nWhy)}
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-call="swapProduct" data-args="${id}">I've run out — swap now</button>${nLink?`<a class="btn ghost sm" href="${esc(nLink)}" target="_blank" style="text-decoration:none">Order →</a>`:''}</div></div>`:''}
   ${(p.flags||[]).includes('removeWhenDone')?`<div class="desc-block" style="border-color:rgba(201,123,110,.3)"><b style="color:var(--danger)">Phasing out</b>Use until finished.<div style="margin-top:10px"><button class="btn danger sm" data-call="deactivate" data-args="${id}">Finished — deactivate now</button></div></div>`:''}
@@ -3471,7 +3471,7 @@ function productEdit(id){
   const p=DB.products[id];if(!p)return'';
   const allTags=['weekday','weekend','daily','office','casual','evening','occasion','winter','summer','home','signature'];
   const candidates=Object.entries(DB.products).filter(([oid,op])=>oid!==id&&op.cat===p.cat&&op.active);
-  return`<div class="sheet-handle"></div>
+  return`
   <h3>Edit — ${esc(p.name)||'New product'}</h3><div class="brand">${esc(p.brand)}</div>
   <div class="field"><label>Name</label><input value="${esc(p.name)}" data-chg="upd" data-args="${id}|name"></div>
   <div class="field"><label>Brand</label><input value="${esc(p.brand)}" data-chg="upd" data-args="${id}|brand"></div>
@@ -3585,7 +3585,7 @@ function stepSearch(v,routineId){
   if(el)el.innerHTML=stepSearchResults(routineId);
 }
 function addStepSheet(routineId){
-  return`<div class="sheet-handle"></div><h3>Add step</h3>
+  return`<h3>Add step</h3>
   <input placeholder="Search…" value="${esc(UI._stepSearch||'')}" data-inp="stepSearchQ" data-args="${routineId}" style="margin-bottom:10px">
   <div id="step-results">${stepSearchResults(routineId)}</div>
   <button class="btn ghost full" onclick="UI._stepSearch=null;closeModal()">Done</button>`;
@@ -3593,7 +3593,7 @@ function addStepSheet(routineId){
 function newRoutineSheet(){
   const m=UI._newR||{cat:'skin',type:'evening',name:'',copyFrom:''};UI._newR=m;
   const copyOpts=DB.routines.filter(r=>r.cat===m.cat&&r.type===m.type);
-  return`<div class="sheet-handle"></div><h3>New Routine</h3>
+  return`<h3>New Routine</h3>
   <div class="field"><label>Name</label><input value="${esc(m.name)}" placeholder="e.g. Evening A — Recovery" oninput="UI._newR.name=this.value"></div>
   <div class="field"><label>Category</label><select onchange="UI._newR.cat=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="skin" ${m.cat==='skin'?'selected':''}>Skin</option><option value="hair" ${m.cat==='hair'?'selected':''}>Hair</option><option value="scent" ${m.cat==='scent'?'selected':''}>Scent</option><option value="supplements" ${m.cat==='supplements'?'selected':''}>Supplements</option></select></div>
   <div class="field"><label>Type</label><select onchange="UI._newR.type=this.value;UI._newR.copyFrom='';UI.modal={type:'new-routine'};render()"><option value="morning" ${m.type==='morning'?'selected':''}>Morning</option><option value="evening" ${m.type==='evening'?'selected':''}>Evening</option></select></div>
@@ -3609,7 +3609,7 @@ function createRoutine(){
 }
 function lookSheet(idx){
   const l=(DB.hairLooks||[])[idx];if(!l)return'';const r=routineById(l.id)||{steps:[]};
-  return`<div class="sheet-handle"></div><h3>Edit look</h3>
+  return`<h3>Edit look</h3>
   <div class="field"><label>Name</label><input value="${esc(l.name)}" data-chg="lkName" data-args="${idx}"></div>
   <div class="field"><label>Description</label><input value="${esc(l.desc)}" data-chg="lkDesc" data-args="${idx}"></div>
   <div class="sec-label" style="margin-left:0">Steps</div>
@@ -3625,7 +3625,7 @@ function lkMove(idx,i,d){const r=routineById((DB.hairLooks||[])[idx]?.id);if(!r)
 function lkAdd(idx){const l=(DB.hairLooks||[])[idx];if(!l)return;let r=routineById(l.id);if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);save();}UI.modal={type:'addstep',routineId:l.id};render();}
 function deleteLook(idx){if(!confirm('Delete this look?'))return;const l=DB.hairLooks[idx];DB.routines=DB.routines.filter(r=>r.id!==l.id);DB.hairLooks.splice(idx,1);save();closeModal();}
 function newLook(){const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:''});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
-function lookPickSheet(){return`<div class="sheet-handle"></div><h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" data-call="pickHairLook" data-args="${l.id}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;}
+function lookPickSheet(){return`<h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" data-call="pickHairLook" data-args="${l.id}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;}
 
 /* ══ PROMPTS ══ */
 function claudePrompt(){
