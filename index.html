@@ -325,6 +325,7 @@ a{color:inherit}
 .oc-chip.has-desc .oc-lbl{font-size:14px;font-weight:600}
 .oc-chip.has-desc .oc-desc{font-size:11.5px;line-height:1.35;color:var(--ink-soft);font-weight:400}
 .oc-chip.has-desc.on .oc-desc{color:var(--cu)}
+.rv-days{font-size:12px;color:var(--ink-soft);margin:-8px 0 10px;letter-spacing:.02em}
 .ob-free{width:100%;min-height:64px;font-size:14px;margin-top:2px}
 .ob-known{background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:14px 16px;margin-bottom:16px}
 .ob-known .k-h{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:9px}
@@ -399,6 +400,8 @@ a{color:inherit}
 .chg-dot.add{background:rgba(var(--cu-rgb),.16);color:var(--cu)}
 .chg-dot.mv{background:rgba(var(--cu-rgb),.16);color:var(--cu)}
 .chg-dot.upd{background:rgba(var(--cu-rgb),.16);color:var(--cu)}
+.chg-dot.del{background:rgba(201,123,110,.16);color:var(--danger)}
+.chg-gh-del{color:var(--danger)}
 .chg-off{opacity:.42}
 .chg-actions{display:flex;gap:14px;margin-top:9px}
 .chg-actions button{background:none;border:0;color:var(--cu);font-size:12.5px;font-weight:600;font-family:inherit;padding:0;cursor:pointer}
@@ -512,7 +515,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v64';
+const BUILD='2026-07-05 · v67';
 const SEED={
   v:12,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -2434,6 +2437,31 @@ function behaviourPrompt(cat){
       lines.push('- '+id+': '+p.brand+' '+p.name+(nsteps?(' ['+nsteps+' application steps]'):' [no application steps]'));
     });
   }
+  // supplement IDs (supplements category) for edit/delete
+  if(cat==='supplements'&&(DB.supplements||[]).length){
+    lines.push('');
+    lines.push('SUPPLEMENT IDs (use these exact ids to update or delete a supplement):');
+    (DB.supplements||[]).filter(s=>s.active!==false).forEach(s=>{
+      const sched=s.everyday?'every day':(s.days||[]).map(d=>dayShort(d)).join(', ');
+      lines.push('- '+s.id+': '+s.name+(s.dose?' ('+s.dose+')':'')+' · '+sched+(s.countStreak?' · counts toward streak':''));
+    });
+  }
+  // hair look names for edit/delete
+  if(cat==='hair'&&(DB.hairLooks||[]).length){
+    lines.push('');
+    lines.push('HAIR LOOKS (reference by exact name to edit or delete):');
+    (DB.hairLooks||[]).forEach(l=>{
+      const r=routineById(l.id);const prods=r?activeSteps(r.steps).map(s=>(DB.products[s.p]||{}).name||'').filter(Boolean).join(', '):'';
+      lines.push('- "'+l.name+'"'+(l.desc?' — '+l.desc:'')+(prods?' ['+prods+']':' [empty]'));
+    });
+  }
+  // inactive products (this category) for reactivation
+  const inactiveList=Object.entries(DB.products).filter(([id,p])=>p.cat===cat&&p.active===false);
+  if(inactiveList.length){
+    lines.push('');
+    lines.push('INACTIVE '+cat.toUpperCase()+' PRODUCT IDs (use to reactivate):');
+    inactiveList.forEach(([id,p])=>lines.push('- '+id+': '+p.brand+' '+p.name));
+  }
   // change-set contract
   lines.push('');
   lines.push('MAKING CHANGES:');
@@ -2454,7 +2482,45 @@ function behaviourPrompt(cat){
   lines.push('   {"type":"move_step","routineId":"exact-id","productName":"name as shown","toIndex":3}');
   lines.push('4. Change a step\'s wait time:');
   lines.push('   {"type":"set_wait","routineId":"exact-id","productName":"name as shown","wait":300}');
-  lines.push('Rules for changes: only include changes the user agreed to; never invent a routineId or productId (use ones from the lists above); keep prose above the JSON natural and do NOT mention the JSON. If no change is agreed, do not include any block.');
+  lines.push('5. Create a NEW routine (only when the user wants a routine that does not exist yet):');
+  lines.push('   {"type":"create_routine","cat":"'+cat+'","time":"morning","name":"Short routine name","days":[1,3,5]}');
+  lines.push('   - time is "morning" or "evening". days is an array 0-6 (0=Sun … 6=Sat); [] means unscheduled. Only for '+cat+' routines.');
+  lines.push('   - After creating, you may add products to it with add_product using "place":{"routineName":"the name you just used","index":1}. Use routineName (not routineId) for a routine being created in the same change set.');
+  lines.push('6. Remove a product (deactivates it and takes it out of all routines; it moves to Inactive, not gone forever):');
+  lines.push('   {"type":"delete_product","productId":"exact-id"}');
+  lines.push('7. Delete a routine entirely:');
+  lines.push('   {"type":"delete_routine","routineId":"exact-id"}');
+  lines.push('8. Edit an existing routine\'s name, time, or scheduled days (NOT its products — use move_step/add_product for those):');
+  lines.push('   {"type":"edit_routine","routineId":"exact-id","name":"New name","time":"morning","days":[1,3,5]}');
+  lines.push('   - Include only the fields you are changing. days replaces the whole schedule. Claiming a day another routine of the same category+time already has will move it off that other routine.');
+  lines.push('9. Queue a replacement for a product (the "next" product, shown until you swap):');
+  lines.push('   {"type":"queue_replacement","productId":"exact-id","replacementId":"exact-id-from-inventory","why":"why the swap","link":"url or empty"}');
+  lines.push('   - OR queue a brand-new product as the replacement instead of replacementId: {"type":"queue_replacement","productId":"exact-id","newReplacement":{"brand":"","name":"","role":"","why":"","link":""}}');
+  lines.push('10. Clear a queued replacement: {"type":"clear_replacement","productId":"exact-id"}');
+  lines.push('11. Swap now — activate the queued replacement and retire the current product across all routines: {"type":"swap_now","productId":"exact-id"}');
+  lines.push('12. Bring an inactive product back: {"type":"reactivate_product","productId":"exact-id"}');
+  lines.push('13. Mark a product as freshly restocked/repurchased (resets its "days left"): {"type":"restock_product","productId":"exact-id"}');
+  if(cat==='hair'){
+    lines.push('14. Create a hair look (a named styling combination): {"type":"create_look","name":"Beachy waves","desc":"short description"}');
+    lines.push('    - After creating, add products to it with add_product using "place":{"lookName":"the name you used","index":1}.');
+    lines.push('15. Edit a look\'s name or description: {"type":"edit_look","lookName":"existing look name","name":"New name","desc":"new desc"}');
+    lines.push('16. Delete a look: {"type":"delete_look","lookName":"existing look name"}');
+  }
+  lines.push('SETTINGS (only when the user explicitly asks to change a setting):');
+  lines.push('- Streak scope (which categories count toward the streak): {"type":"set_streak_scope","category":"skin|hair|scent|supplements","on":true}');
+  lines.push('- Rest days per month allowed before a streak breaks: {"type":"set_grace_days","days":2}');
+  lines.push('- Theme: {"type":"set_theme","theme":"copper|sage|heather|blush"}  ·  Mode: {"type":"set_mode","mode":"system|light|dark"}');
+  if(cat==='supplements'){
+    lines.push('9. Add a supplement:');
+    lines.push('   {"type":"add_supplement","name":"Vitamin D","dose":"1000 IU, morning","everyday":true,"days":[],"countStreak":false}');
+    lines.push('   - everyday true means daily; if false, provide days (0-6). countStreak true makes it count toward the streak. Keep dose brief.');
+    lines.push('10. Update a supplement (use the exact supplement id; include only changed fields):');
+    lines.push('   {"type":"update_supplement","supplementId":"exact-id","name":"","dose":"","everyday":true,"days":[],"countStreak":false}');
+    lines.push('11. Remove a supplement:');
+    lines.push('   {"type":"delete_supplement","supplementId":"exact-id"}');
+    lines.push('   - Reminder: you can help track supplements, but never give medical advice; suggest checking with a doctor for anything health-related.');
+  }
+  lines.push('Rules for changes: only include changes the user agreed to; never invent a routineId, productId or supplementId (use ones from the lists above); keep prose above the JSON natural and do NOT mention the JSON. For any deletion, make sure the user clearly agreed to remove that specific item. If no change is agreed, do not include any block.');
   lines.push('');
   lines.push('TAPPABLE REPLIES:');
   lines.push('When your message ends with a clear yes/no question, or asks the user to pick from a short list (e.g. which product to explore, or "add it?"), offer tappable options by appending a fenced block:');
@@ -2734,7 +2800,7 @@ function validateChanges(cat,raw){
         tags:Array.isArray(c.tags)?c.tags.map(t=>String(t).trim()).filter(Boolean).slice(0,6):[],
         applicationSteps:Array.isArray(c.applicationSteps)?c.applicationSteps.map(t=>String(t).trim()).filter(Boolean).slice(0,4):[],
         link:(typeof c.link==='string'&&/^https?:\/\//i.test(c.link.trim()))?c.link.trim():''};
-      // validate placement against a real routine
+      // validate placement against a real routine, or a routine being created in this same set (by name)
       if(c.place&&c.place.routineId){
         const r=rId(c.place.routineId);
         if(r){
@@ -2744,9 +2810,32 @@ function validateChanges(cat,raw){
           const wait=(Number.isFinite(+c.place.wait)&&+c.place.wait>=0)?Math.round(+c.place.wait):0;
           ch.place={routineId:r.id,routineName:r.name,index:idx,wait};
         }
+      } else if(c.place&&c.place.routineName){
+        // deferred placement into a routine created earlier in this same change set
+        const pending=out.find(x=>x.type==='create_routine'&&x.name.toLowerCase()===String(c.place.routineName).trim().toLowerCase());
+        if(pending){
+          const idx=Number.isFinite(+c.place.index)&&+c.place.index>0?Math.round(+c.place.index):1;
+          const wait=(Number.isFinite(+c.place.wait)&&+c.place.wait>=0)?Math.round(+c.place.wait):0;
+          ch.place={newRoutineName:pending.name,index:idx,wait};
+        }
+      } else if(c.place&&c.place.lookName){
+        // placement into a look (existing or created in this set)
+        const existing=(DB.hairLooks||[]).find(l=>l.name.toLowerCase()===String(c.place.lookName).trim().toLowerCase());
+        const pendingLook=out.find(x=>x.type==='create_look'&&x.name.toLowerCase()===String(c.place.lookName).trim().toLowerCase());
+        if(existing||pendingLook){
+          const idx=Number.isFinite(+c.place.index)&&+c.place.index>0?Math.round(+c.place.index):1;
+          ch.place={lookName:(existing?existing.name:pendingLook.name),lookId:existing?existing.id:null,index:idx,wait:0};
+        }
       }
       out.push(ch);
-    } else if(c.type==='update_product'){
+    } else if(c.type==='create_routine'){
+      const name=(c.name||'').trim();if(!name)continue;
+      const rcat=['skin','hair','scent','supplements'].includes(c.cat)?c.cat:cat;
+      const time=(c.time==='evening'||c.type==='evening')?'evening':'morning';
+      const days=Array.isArray(c.days)?[...new Set(c.days.map(d=>parseInt(d)).filter(d=>d>=0&&d<=6))].sort((a,b)=>a-b):[];
+      // avoid duplicate against an existing routine of same cat/type/name
+      const dup=DB.routines.find(r=>r.cat===rcat&&r.type===time&&r.name.toLowerCase()===name.toLowerCase());
+      out.push({type:'create_routine',cat:rcat,time,name,days,_dupId:dup?dup.id:null});
       const p=DB.products[c.productId];if(!p)continue;
       const ch={type:'update_product',productId:c.productId,pName:(p.brand+' '+p.name).trim(),fields:{}};
       // whitelist: only descriptive/instructional fields; never active/next/flags/restockedAt/cat
@@ -2773,6 +2862,93 @@ function validateChanges(cat,raw){
       const idx=findStepByName(r,c.productName);if(idx<0)continue;
       const wait=(Number.isFinite(+c.wait)&&+c.wait>=0)?Math.round(+c.wait):0;
       out.push({type:'set_wait',routineId:r.id,routineName:r.name,productName:c.productName,idx,wait});
+    } else if(c.type==='delete_product'){
+      const p=DB.products[c.productId];if(!p)continue;
+      out.push({type:'delete_product',productId:c.productId,pName:(p.brand+' '+p.name).trim()});
+    } else if(c.type==='delete_routine'){
+      const r=rId(c.routineId);if(!r)continue;
+      out.push({type:'delete_routine',routineId:r.id,routineName:r.name});
+    } else if(c.type==='edit_routine'){
+      const r=rId(c.routineId);if(!r)continue;
+      const ch={type:'edit_routine',routineId:r.id,routineName:r.name,fields:{}};
+      if(typeof c.name==='string'&&c.name.trim()&&c.name.trim()!==r.name)ch.fields.name={from:r.name,to:c.name.trim()};
+      if((c.time==='morning'||c.time==='evening')&&c.time!==r.type)ch.fields.time={from:r.type,to:c.time};
+      if(Array.isArray(c.days)){
+        const nd=[...new Set(c.days.map(d=>parseInt(d)).filter(d=>d>=0&&d<=6))].sort((a,b)=>a-b);
+        if(JSON.stringify(nd)!==JSON.stringify([...r.days].sort((a,b)=>a-b)))ch.fields.days={from:r.days.slice(),to:nd};
+      }
+      if(Object.keys(ch.fields).length)out.push(ch);
+    } else if(c.type==='add_supplement'){
+      const name=(c.name||'').trim();if(!name)continue;
+      const everyday=c.everyday!==false&&(!Array.isArray(c.days)||c.days.length===0||c.days.length===7);
+      const days=everyday?[0,1,2,3,4,5,6]:[...new Set((c.days||[]).map(d=>parseInt(d)).filter(d=>d>=0&&d<=6))].sort((a,b)=>a-b);
+      if(!everyday&&!days.length)continue;
+      out.push({type:'add_supplement',name,dose:(c.dose||'').trim(),everyday,days,countStreak:!!c.countStreak});
+    } else if(c.type==='update_supplement'){
+      const s=(DB.supplements||[]).find(x=>x.id===c.supplementId);if(!s)continue;
+      const ch={type:'update_supplement',supplementId:s.id,sName:s.name,fields:{}};
+      if(typeof c.name==='string'&&c.name.trim()&&c.name.trim()!==s.name)ch.fields.name={from:s.name,to:c.name.trim()};
+      if(typeof c.dose==='string'&&c.dose.trim()!==(s.dose||''))ch.fields.dose={from:s.dose||'',to:c.dose.trim()};
+      if(typeof c.countStreak==='boolean'&&c.countStreak!==!!s.countStreak)ch.fields.countStreak={from:!!s.countStreak,to:c.countStreak};
+      if(c.everyday!==undefined||Array.isArray(c.days)){
+        const everyday=c.everyday!==false&&(!Array.isArray(c.days)||c.days.length===0||c.days.length===7);
+        const days=everyday?[0,1,2,3,4,5,6]:[...new Set((c.days||[]).map(d=>parseInt(d)).filter(d=>d>=0&&d<=6))].sort((a,b)=>a-b);
+        const curKey=JSON.stringify([...(s.days||[])].sort((a,b)=>a-b))+s.everyday;
+        if(JSON.stringify(days)+everyday!==curKey&&(everyday||days.length))ch.fields.schedule={from:{everyday:!!s.everyday,days:(s.days||[]).slice()},to:{everyday,days}};
+      }
+      if(Object.keys(ch.fields).length)out.push(ch);
+    } else if(c.type==='delete_supplement'){
+      const s=(DB.supplements||[]).find(x=>x.id===c.supplementId);if(!s)continue;
+      out.push({type:'delete_supplement',supplementId:s.id,sName:s.name});
+    } else if(c.type==='queue_replacement'){
+      const p=DB.products[c.productId];if(!p)continue;
+      if(c.replacementId&&DB.products[c.replacementId]){
+        const np=DB.products[c.replacementId];
+        out.push({type:'queue_replacement',productId:c.productId,pName:(p.brand+' '+p.name).trim(),replacementId:c.replacementId,repName:(np.brand+' '+np.name).trim(),why:(c.why||'').trim(),link:(typeof c.link==='string'&&/^https?:\/\//i.test(c.link.trim()))?c.link.trim():''});
+      } else if(c.newReplacement&&(c.newReplacement.name||'').trim()){
+        const nr=c.newReplacement;
+        out.push({type:'queue_replacement',productId:c.productId,pName:(p.brand+' '+p.name).trim(),newReplacement:{brand:(nr.brand||'').trim(),name:(nr.name||'').trim(),role:(nr.role||'').trim(),why:(nr.why||'').trim(),link:(typeof nr.link==='string'&&/^https?:\/\//i.test(nr.link.trim()))?nr.link.trim():''},repName:((nr.brand||'')+' '+(nr.name||'')).trim(),why:(c.why||nr.why||'').trim()});
+      }
+    } else if(c.type==='clear_replacement'){
+      const p=DB.products[c.productId];if(!p||!p.next)continue;
+      out.push({type:'clear_replacement',productId:c.productId,pName:(p.brand+' '+p.name).trim()});
+    } else if(c.type==='swap_now'){
+      const p=DB.products[c.productId];if(!p||!p.next)continue;
+      const np=p.next.productId?DB.products[p.next.productId]:null;
+      out.push({type:'swap_now',productId:c.productId,pName:(p.brand+' '+p.name).trim(),repName:np?(np.brand+' '+np.name).trim():(p.next.name||'the replacement')});
+    } else if(c.type==='reactivate_product'){
+      const p=DB.products[c.productId];if(!p||p.active!==false)continue;
+      out.push({type:'reactivate_product',productId:c.productId,pName:(p.brand+' '+p.name).trim()});
+    } else if(c.type==='restock_product'){
+      const p=DB.products[c.productId];if(!p)continue;
+      out.push({type:'restock_product',productId:c.productId,pName:(p.brand+' '+p.name).trim()});
+    } else if(c.type==='create_look'){
+      const name=(c.name||'').trim();if(!name)continue;
+      const dup=(DB.hairLooks||[]).find(l=>l.name.toLowerCase()===name.toLowerCase());
+      out.push({type:'create_look',name,desc:(c.desc||'').trim(),_dupId:dup?dup.id:null});
+    } else if(c.type==='edit_look'){
+      const l=(DB.hairLooks||[]).find(x=>x.name.toLowerCase()===String(c.lookName||'').trim().toLowerCase());if(!l)continue;
+      const ch={type:'edit_look',lookId:l.id,lookName:l.name,fields:{}};
+      if(typeof c.name==='string'&&c.name.trim()&&c.name.trim()!==l.name)ch.fields.name={from:l.name,to:c.name.trim()};
+      if(typeof c.desc==='string'&&c.desc.trim()!==(l.desc||''))ch.fields.desc={from:l.desc||'',to:c.desc.trim()};
+      if(Object.keys(ch.fields).length)out.push(ch);
+    } else if(c.type==='delete_look'){
+      const l=(DB.hairLooks||[]).find(x=>x.name.toLowerCase()===String(c.lookName||'').trim().toLowerCase());if(!l)continue;
+      out.push({type:'delete_look',lookId:l.id,lookName:l.name});
+    } else if(c.type==='set_streak_scope'){
+      if(!['skin','hair','scent','supplements'].includes(c.category)||typeof c.on!=='boolean')continue;
+      const cur=c.category==='skin'?(DB.settings?.streakScope?.skin!==false):!!(DB.settings?.streakScope?.[c.category]);
+      if(cur===c.on)continue;
+      out.push({type:'set_streak_scope',category:c.category,on:c.on});
+    } else if(c.type==='set_grace_days'){
+      const n=parseInt(c.days);if(!Number.isFinite(n)||n<0||n>10||n===DB.settings?.graceDaysPerMonth)continue;
+      out.push({type:'set_grace_days',days:n,from:DB.settings?.graceDaysPerMonth??1});
+    } else if(c.type==='set_theme'){
+      if(!['copper','sage','heather','blush'].includes(c.theme)||c.theme===DB.settings?.theme)continue;
+      out.push({type:'set_theme',theme:c.theme});
+    } else if(c.type==='set_mode'){
+      if(!['system','light','dark'].includes(c.mode)||c.mode===DB.settings?.mode)continue;
+      out.push({type:'set_mode',mode:c.mode});
     }
   }
   return out;
@@ -2781,8 +2957,14 @@ function validateChanges(cat,raw){
 function changeSummary(c){
   if(c.type==='add_product'){
     const nm=(c.brand?c.brand+' ':'')+c.name;
-    const place=c.place?(' → '+c.place.routineName+', step '+c.place.index+(c.place.wait?', wait '+fmtWait(c.place.wait):'')):' → inventory only';
+    const placeName=c.place?(c.place.routineName||c.place.newRoutineName):null;
+    const place=placeName?(' → '+placeName+', step '+c.place.index+(c.place.wait?', wait '+fmtWait(c.place.wait):'')):' → inventory only';
     return{icon:'＋',cls:'add',title:nm,sub:(c.role||c.cat)+place};
+  }
+  if(c.type==='create_routine'){
+    const dayTxt=c.days&&c.days.length?fmtDays(c.days):'unscheduled';
+    const t=c.time==='evening'?'Evening':'Morning';
+    return{icon:'✦',cls:'add',title:c.name,sub:'New '+c.cat+' routine · '+t+' · '+dayTxt+(c._dupId?' (already exists — will reuse)':'')};
   }
   if(c.type==='move_step')return{icon:'↕',cls:'mv',title:c.productName,sub:'Move to step '+c.to+' in '+c.routineName};
   if(c.type==='set_wait')return{icon:'⏱',cls:'mv',title:c.productName,sub:'Wait '+fmtWait(c.wait)+' in '+c.routineName};
@@ -2791,6 +2973,42 @@ function changeSummary(c){
     const nice={role:'role',why:'why',notes:'notes',durationDays:'duration',tags:'tags',link:'link',applicationSteps:'steps'};
     return{icon:'✎',cls:'upd',title:c.pName,sub:'Update '+keys.map(k=>nice[k]||k).join(', ')};
   }
+  if(c.type==='delete_product')return{icon:'✕',cls:'del',title:c.pName,sub:'Remove from routines → moves to Inactive'};
+  if(c.type==='delete_routine')return{icon:'✕',cls:'del',title:c.routineName,sub:'Delete this routine'};
+  if(c.type==='delete_supplement')return{icon:'✕',cls:'del',title:c.sName,sub:'Remove this supplement'};
+  if(c.type==='edit_routine'){
+    const parts=[];
+    if(c.fields.name)parts.push('rename to "'+c.fields.name.to+'"');
+    if(c.fields.time)parts.push('move to '+c.fields.time);
+    if(c.fields.days)parts.push('days → '+fmtDays(c.fields.days.to));
+    return{icon:'✎',cls:'upd',title:c.routineName,sub:parts.join(' · ')||'Edit routine'};
+  }
+  if(c.type==='add_supplement'){
+    return{icon:'＋',cls:'add',title:c.name,sub:'New supplement'+(c.dose?' · '+c.dose:'')+' · '+(c.everyday?'every day':fmtDays(c.days))};
+  }
+  if(c.type==='update_supplement'){
+    const parts=[];
+    if(c.fields.name)parts.push('rename');
+    if(c.fields.dose)parts.push('dose');
+    if(c.fields.schedule)parts.push('schedule');
+    if(c.fields.countStreak)parts.push('streak');
+    return{icon:'✎',cls:'upd',title:c.sName,sub:'Update '+parts.join(', ')};
+  }
+  if(c.type==='queue_replacement')return{icon:'⇄',cls:'upd',title:c.pName,sub:'Queue replacement → '+c.repName};
+  if(c.type==='clear_replacement')return{icon:'⇄',cls:'upd',title:c.pName,sub:'Clear queued replacement'};
+  if(c.type==='swap_now')return{icon:'⇄',cls:'upd',title:c.pName,sub:'Swap now → '+c.repName+' (retires current)'};
+  if(c.type==='reactivate_product')return{icon:'↺',cls:'add',title:c.pName,sub:'Bring back from Inactive'};
+  if(c.type==='restock_product')return{icon:'↻',cls:'upd',title:c.pName,sub:'Mark restocked (resets days left)'};
+  if(c.type==='create_look')return{icon:'✦',cls:'add',title:c.name,sub:'New hair look'+(c.desc?' · '+c.desc:'')+(c._dupId?' (exists — will reuse)':'')};
+  if(c.type==='edit_look'){
+    const parts=[];if(c.fields.name)parts.push('rename to "'+c.fields.name.to+'"');if(c.fields.desc)parts.push('description');
+    return{icon:'✎',cls:'upd',title:c.lookName,sub:'Look · '+parts.join(' · ')};
+  }
+  if(c.type==='delete_look')return{icon:'✕',cls:'del',title:c.lookName,sub:'Delete this hair look'};
+  if(c.type==='set_streak_scope')return{icon:'◈',cls:'upd',title:'Streak',sub:(c.category.charAt(0).toUpperCase()+c.category.slice(1))+' → '+(c.on?'counts':'off')};
+  if(c.type==='set_grace_days')return{icon:'◈',cls:'upd',title:'Rest days',sub:c.days+' per month'};
+  if(c.type==='set_theme')return{icon:'◈',cls:'upd',title:'Theme',sub:c.theme.charAt(0).toUpperCase()+c.theme.slice(1)};
+  if(c.type==='set_mode')return{icon:'◈',cls:'upd',title:'Mode',sub:c.mode.charAt(0).toUpperCase()+c.mode.slice(1)};
   return{icon:'·',cls:'mv',title:'Change',sub:''};
 }
 /* apply one validated change to DB (no save here; caller saves once) */
@@ -2808,6 +3026,17 @@ function applyChange(c){
     // active, next, flags, restockedAt deliberately untouched
     return;
   }
+  if(c.type==='create_routine'){
+    if(c._dupId){ // reuse existing routine of same cat/type/name; just ensure days
+      const r=DB.routines.find(x=>x.id===c._dupId);
+      if(r){if(c.days&&c.days.length)r.days=c.days.slice();(UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=r.id;}
+      return c._dupId;
+    }
+    const id='r'+Date.now()+Math.floor(Math.random()*1000);
+    DB.routines.push(R(id,c.cat,c.time,c.name,(c.days||[]).slice(),[]));
+    (UI._newRoutineMap||(UI._newRoutineMap={}))[c.name.toLowerCase()]=id;
+    return id;
+  }
   if(c.type==='add_product'){
     const id='p'+Date.now()+Math.floor(Math.random()*1000);
     DB.products[id]=P(c.cat,c.name,c.brand,c.role,c.why,{
@@ -2815,7 +3044,10 @@ function applyChange(c){
       steps:(c.applicationSteps||[]).map(t=>({text:t}))
     });
     if(c.place){
-      const r=DB.routines.find(x=>x.id===c.place.routineId);
+      let r=null;
+      if(c.place.routineId)r=DB.routines.find(x=>x.id===c.place.routineId);
+      else if(c.place.newRoutineName){const rid=(UI._newRoutineMap||{})[c.place.newRoutineName.toLowerCase()];r=rid?DB.routines.find(x=>x.id===rid):null;}
+      else if(c.place.lookName){const lid=c.place.lookId||(UI._newLookMap||{})[c.place.lookName.toLowerCase()];r=lid?DB.routines.find(x=>x.id===lid):null;}
       if(r){if(!Array.isArray(r.steps))r.steps=[];const at=Math.max(0,Math.min(c.place.index-1,r.steps.length));r.steps.splice(at,0,{p:id,wait:c.place.wait||0});}
     }
     return id;
@@ -2835,6 +3067,99 @@ function applyChange(c){
     const act=activeSteps(r.steps);const step=act[c.idx];if(step)step.wait=c.wait;
     return;
   }
+  if(c.type==='delete_product'){
+    const p=DB.products[c.productId];if(!p)return;
+    // mirror manual deactivate + remove from routines (soft delete → Inactive)
+    DB.routines.forEach(r=>{if(Array.isArray(r.steps))r.steps=r.steps.filter(s=>s.p!==c.productId);});
+    p.active=false;
+    return;
+  }
+  if(c.type==='delete_routine'){
+    DB.routines=DB.routines.filter(r=>r.id!==c.routineId);
+    // if it was a hair look, drop the look entry too
+    if(Array.isArray(DB.hairLooks))DB.hairLooks=DB.hairLooks.filter(l=>l.id!==c.routineId);
+    return;
+  }
+  if(c.type==='edit_routine'){
+    const r=DB.routines.find(x=>x.id===c.routineId);if(!r)return;
+    const f=c.fields;
+    if(f.name)r.name=f.name.to;
+    if(f.time)r.type=f.time.to;
+    if(f.days){
+      // honour the day-clash rule: taking a day off another routine of same cat+type
+      const newDays=f.days.to.slice();
+      newDays.forEach(d=>{
+        const clash=DB.routines.find(rt=>rt.id!==r.id&&rt.cat===r.cat&&rt.type===r.type&&rt.days.includes(d));
+        if(clash)clash.days=clash.days.filter(x=>x!==d);
+      });
+      r.days=newDays;
+    }
+    return;
+  }
+  if(c.type==='add_supplement'){
+    if(!Array.isArray(DB.supplements))DB.supplements=[];
+    DB.supplements.push({id:'s'+Date.now()+Math.floor(Math.random()*1000),name:c.name,dose:c.dose||'',everyday:!!c.everyday,days:c.everyday?[0,1,2,3,4,5,6]:c.days.slice(),countStreak:!!c.countStreak,active:true});
+    return;
+  }
+  if(c.type==='update_supplement'){
+    const s=(DB.supplements||[]).find(x=>x.id===c.supplementId);if(!s)return;
+    const f=c.fields;
+    if(f.name)s.name=f.name.to;
+    if(f.dose)s.dose=f.dose.to;
+    if(f.countStreak)s.countStreak=f.countStreak.to;
+    if(f.schedule){s.everyday=f.schedule.to.everyday;s.days=f.schedule.to.everyday?[0,1,2,3,4,5,6]:f.schedule.to.days.slice();}
+    return;
+  }
+  if(c.type==='delete_supplement'){
+    DB.supplements=(DB.supplements||[]).filter(x=>x.id!==c.supplementId);
+    Object.keys(DB.completions).forEach(k=>{if(k.startsWith('supp_'+c.supplementId+'_'))delete DB.completions[k];});
+    return;
+  }
+  if(c.type==='queue_replacement'){
+    const p=DB.products[c.productId];if(!p)return;
+    let repId=c.replacementId;
+    if(!repId&&c.newReplacement){repId='p'+Date.now()+Math.floor(Math.random()*1000);DB.products[repId]=P(p.cat,c.newReplacement.name,c.newReplacement.brand,c.newReplacement.role,c.newReplacement.why,{link:c.newReplacement.link||'',active:true});}
+    if(repId)p.next={productId:repId,why:c.why||'',link:c.link||''};
+    return;
+  }
+  if(c.type==='clear_replacement'){const p=DB.products[c.productId];if(p)p.next=null;return;}
+  if(c.type==='swap_now'){
+    const p=DB.products[c.productId];if(!p||!p.next)return;
+    const np=p.next.productId?DB.products[p.next.productId]:null;
+    if(np){DB.routines.forEach(r=>{r.steps.forEach(s=>{if(s.p===c.productId)s.p=p.next.productId;});});p.active=false;p.next=null;np.active=true;}
+    else{Object.assign(p,{name:p.next.name||p.name,brand:p.next.brand||p.brand,role:p.next.role||p.role,why:p.next.why||p.why,link:p.next.link||'',notes:'',restockedAt:Date.now(),next:null});}
+    return;
+  }
+  if(c.type==='reactivate_product'){const p=DB.products[c.productId];if(p)p.active=true;return;}
+  if(c.type==='restock_product'){const p=DB.products[c.productId];if(p)p.restockedAt=Date.now();return;}
+  if(c.type==='create_look'){
+    if(c._dupId){(UI._newLookMap||(UI._newLookMap={}))[c.name.toLowerCase()]=c._dupId;return c._dupId;}
+    const id='look-'+Date.now()+Math.floor(Math.random()*1000);
+    if(!Array.isArray(DB.hairLooks))DB.hairLooks=[];
+    DB.hairLooks.push({id,name:c.name,desc:c.desc||''});
+    DB.routines.push(R(id,'hair','morning',c.name,[],[]));
+    (UI._newLookMap||(UI._newLookMap={}))[c.name.toLowerCase()]=id;
+    return id;
+  }
+  if(c.type==='edit_look'){
+    const l=(DB.hairLooks||[]).find(x=>x.id===c.lookId);if(!l)return;
+    if(c.fields.name){l.name=c.fields.name.to;const r=DB.routines.find(x=>x.id===c.lookId);if(r)r.name=c.fields.name.to;}
+    if(c.fields.desc)l.desc=c.fields.desc.to;
+    return;
+  }
+  if(c.type==='delete_look'){
+    DB.routines=DB.routines.filter(r=>r.id!==c.lookId);
+    DB.hairLooks=(DB.hairLooks||[]).filter(l=>l.id!==c.lookId);
+    return;
+  }
+  if(c.type==='set_streak_scope'){
+    if(!DB.settings.streakScope)DB.settings.streakScope={skin:true,hair:false,scent:false,supplements:false};
+    DB.settings.streakScope[c.category]=c.on;
+    return;
+  }
+  if(c.type==='set_grace_days'){DB.settings.graceDaysPerMonth=c.days;return;}
+  if(c.type==='set_theme'){DB.settings.theme=c.theme;applyTheme&&applyTheme();return;}
+  if(c.type==='set_mode'){DB.settings.mode=c.mode;applyTheme&&applyTheme();return;}
 }
 /* open the confirm sheet with a validated change list */
 function openChanges(changes){
@@ -2844,7 +3169,12 @@ function openChanges(changes){
 }
 function acceptAllChanges(){
   const list=(UI._pendingChanges||[]).filter(c=>!c._removed);
-  list.forEach(applyChange);
+  // create_routine must run before add_product that places into a new routine
+  const order={create_routine:0,create_look:1,edit_routine:2,edit_look:3,add_product:4,update_product:5,queue_replacement:6,clear_replacement:7,restock_product:8,reactivate_product:9,move_step:10,set_wait:11,add_supplement:12,update_supplement:13,swap_now:14,set_streak_scope:15,set_grace_days:16,set_theme:17,set_mode:18,delete_product:19,delete_routine:20,delete_look:21,delete_supplement:22};
+  const sorted=[...list].sort((a,b)=>(order[a.type]??9)-(order[b.type]??9));
+  UI._newRoutineMap={};
+  sorted.forEach(applyChange);
+  UI._newRoutineMap=null;
   save();
   UI._pendingChanges=null;UI._editIdx=null;
   closeModal(()=>{ if(UI._chat){UI._chat.push({role:'assistant',content:'Done. '+list.length+' change'+(list.length!==1?'s':'')+' saved to your stack.'}); if(UI._view==='chat')renderChat();} });
@@ -2907,26 +3237,30 @@ function changesSheet(){
         <div class="chg-t">${esc(s.title)}</div><div class="chg-s">${esc(s.sub)}</div>
         ${metaAdd}${stepPreview}${detail}
         ${!rm?`<div class="chg-actions">
-          <button data-call="chgToggleEdit" data-args="${i}">${editing?'Done':'Edit'}</button>
+          ${(c.type==='add_product'||c.type==='update_product')?`<button data-call="chgToggleEdit" data-args="${i}">${editing?'Done':'Edit'}</button>`:''}
           <button data-call="chgRemove" data-args="${i}">Remove</button>
         </div>`:`<div class="chg-actions"><button data-call="chgRemove" data-args="${i}">Undo remove</button></div>`}
       </div></div>`;
   };
-  const adds=list.filter(c=>c.type==='add_product');
-  const updates=list.filter(c=>c.type==='update_product');
+  const adds=list.filter(c=>['add_product','create_routine','add_supplement','create_look','reactivate_product'].includes(c.type));
+  const updates=list.filter(c=>['update_product','edit_routine','update_supplement','edit_look','queue_replacement','clear_replacement','swap_now','restock_product'].includes(c.type));
   const arr=list.filter(c=>c.type==='move_step'||c.type==='set_wait');
+  const settings=list.filter(c=>['set_streak_scope','set_grace_days','set_theme','set_mode'].includes(c.type));
+  const dels=list.filter(c=>['delete_product','delete_routine','delete_supplement','delete_look'].includes(c.type));
   return`<div class="chg-head">
-      <div class="chg-title">${single?'Add this to your stack?':'Review changes'}</div>
+      <div class="chg-title">${single?(dels.length?'Remove this?':'Add this to your stack?'):'Review changes'}</div>
       <div class="chg-sub">${single?'Tap Edit to adjust. Nothing is saved until you accept.':active.length+' change'+(active.length!==1?'s':'')+' · tap Edit to adjust · nothing saved until you accept.'}</div>
     </div>
     <div class="chg-scroll">
-      ${adds.length?`<div class="chg-group">${single?'':'<div class="chg-gh">Adding '+adds.length+' product'+(adds.length!==1?'s':'')+'</div>'}${adds.map(cardHtml).join('')}</div>`:''}
-      ${updates.length?`<div class="chg-group"><div class="chg-gh">Updating ${updates.length} product${updates.length!==1?'s':''}</div>${updates.map(cardHtml).join('')}</div>`:''}
+      ${adds.length?`<div class="chg-group">${single?'':'<div class="chg-gh">Adding '+adds.length+' item'+(adds.length!==1?'s':'')+'</div>'}${adds.map(cardHtml).join('')}</div>`:''}
+      ${updates.length?`<div class="chg-group">${single?'':'<div class="chg-gh">Updating</div>'}${updates.map(cardHtml).join('')}</div>`:''}
       ${arr.length?`<div class="chg-group"><div class="chg-gh">Arranging routines</div>${arr.map(cardHtml).join('')}</div>`:''}
+      ${settings.length?`<div class="chg-group"><div class="chg-gh">Settings</div>${settings.map(cardHtml).join('')}</div>`:''}
+      ${dels.length?`<div class="chg-group">${single?'':'<div class="chg-gh chg-gh-del">Removing '+dels.length+' item'+(dels.length!==1?'s':'')+'</div>'}${dels.map(cardHtml).join('')}</div>`:''}
     </div>
     <div class="chg-foot">
       <button class="btn ghost" onclick="rejectChanges()">Not now</button>
-      <button class="btn" onclick="acceptAllChanges()" ${active.length?'':'disabled'}>${single?'Save to stack':'Accept '+active.length}</button>
+      <button class="btn ${dels.length&&!adds.length&&!updates.length&&!arr.length&&!settings.length?'danger':''}" onclick="acceptAllChanges()" ${active.length?'':'disabled'}>${single?(dels.length?'Remove':'Save to stack'):'Accept '+active.length}</button>
     </div>`;
 }
 /* change-handlers for editable cards */
@@ -2986,13 +3320,27 @@ function renderModal(){
 
 function routineViewSheet(id){
   const r=routineById(id);if(!r)return'';
-  const days=r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'Not scheduled';
-  return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3><div class="brand">${r.cat} · ${r.type} · ${days}</div>
+  const days=fmtDays(r.days);
+  const catCap=r.cat.charAt(0).toUpperCase()+r.cat.slice(1);
+  const typeCap=r.type==='morning'?'Morning':(r.type==='evening'?'Evening':r.type);
+  return`<div class="sheet-handle"></div><h3>${esc(r.name)}</h3>
+  <div class="brand">${catCap} · ${typeCap}</div>
+  <div class="rv-days">${esc(days)}</div>
   <div style="margin:0 -22px">${stepsWithInventoryHTML(r.steps)}</div>
   <div style="display:flex;gap:8px;margin-top:4px">
     <button class="btn full" data-call="editFromSheet" data-args="${r.id}">Edit</button>
     <button class="btn ghost full" onclick="closeModal()">Close</button>
   </div>`;
+}
+/* compact day summary: Every day / Weekdays / Weekends / short list */
+function fmtDays(days){
+  if(!days||!days.length)return'Not scheduled';
+  const set=[...days].sort((a,b)=>a-b);
+  const key=set.join(',');
+  if(key==='0,1,2,3,4,5,6')return'Every day';
+  if(key==='1,2,3,4,5')return'Weekdays';
+  if(key==='0,6')return'Weekends';
+  return set.map(d=>dayShort(d)).join(' · ');
 }
 function attachModalSwipe(sheetEl){
   let sx=0,sy=0,armed=false,dragging=false,dead=false,dy=0,lastY=0,lastT=0,vel=0;
@@ -3036,8 +3384,8 @@ function closeModal(after){
   ov.classList.add('closing');
   setTimeout(()=>{ov.remove();if(after)after();render();},430);
 }
-function openProduct(id){UI.modal={type:'product',id};render();}
-function openEdit(id){UI.modal={type:'edit',id};render();}
+function openProduct(id){UI.modal={type:'product',id};if(document.getElementById('ov'))renderModal();else render();}
+function openEdit(id){UI.modal={type:'edit',id};if(document.getElementById('ov'))renderModal();else render();}
 function closeEdit(){if(UI._afterNewProduct){const rid=UI._afterNewProduct.returnToEdit;UI._afterNewProduct=null;UI.modal={type:'edit',id:rid};render();}else closeModal();}
 function productDetailSheet(id){
   const p=DB.products[id];if(!p)return'';
