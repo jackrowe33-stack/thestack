@@ -338,21 +338,31 @@ a{color:inherit}
 .acat-s{font-size:12.5px;color:var(--ink-mid);margin-top:2px}
 .acat-arw{margin-left:auto;color:var(--ink-soft)}
 /* assistant chat */
-.chat-head{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;border-bottom:1px solid var(--hairline);position:sticky;top:0;background:var(--bg);z-index:5}
+.chat-head{display:flex;align-items:center;justify-content:space-between;padding:52px 16px 10px;border-bottom:1px solid var(--hairline);background:var(--bg);flex:0 0 auto}
 .chat-back{width:30px;height:30px;border-radius:50%;border:1px solid var(--card-edge);background:var(--bg-raise);color:var(--ink-mid);display:flex;align-items:center;justify-content:center}
 .chat-back svg{width:16px;height:16px}
 .chat-title{font-size:15px;font-weight:600;color:var(--ink)}
-.chat-wrap{position:fixed;top:96px;bottom:78px;left:0;right:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:82%;padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-wrap:break-word}
+.chat-screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);z-index:40}
+.chat-wrap{flex:1 1 auto;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.msg{max-width:84%;padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-wrap:break-word;overflow-wrap:anywhere}
 .msg.ai{background:var(--card);border:1px solid var(--card-edge);border-bottom-left-radius:5px;align-self:flex-start;color:var(--ink)}
-.msg.me{background:var(--cu-btn);color:#f5f0e0;border-bottom-right-radius:5px;align-self:flex-end}
+.msg.me{background:var(--cu-btn);color:#f5f0e0;border-bottom-right-radius:5px;align-self:flex-end;white-space:pre-wrap}
+/* markdown inside AI messages, kept tight */
+.msg.ai p{margin:0 0 8px}
+.msg.ai p:last-child{margin-bottom:0}
+.msg.ai ul,.msg.ai ol{margin:4px 0;padding-left:20px}
+.msg.ai li{margin:2px 0}
+.msg.ai strong{font-weight:600;color:var(--ink)}
+.msg.ai h1,.msg.ai h2,.msg.ai h3{font-size:14px;font-weight:600;margin:8px 0 4px}
+.msg.ai h1:first-child,.msg.ai h2:first-child,.msg.ai h3:first-child{margin-top:0}
+.msg.ai code{background:var(--bg-raise);padding:1px 5px;border-radius:5px;font-size:12.5px}
 .msg.typing{display:flex;gap:4px;align-items:center}
 .msg.typing span{width:6px;height:6px;border-radius:50%;background:var(--ink-soft);animation:blink 1.2s infinite}
 .msg.typing span:nth-child(2){animation-delay:.2s}.msg.typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
-.chat-composer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:9px;align-items:center;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--hairline);z-index:6}
-.chat-composer input{flex:1;border-radius:22px;padding:12px 16px}
-.chat-send{width:42px;height:42px;border-radius:50%;background:var(--cu-btn);border:0;color:#f5f0e0;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.chat-composer{flex:0 0 auto;display:flex;gap:9px;align-items:flex-end;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--hairline)}
+.chat-composer textarea{flex:1;border-radius:20px;padding:11px 16px;min-height:44px;max-height:140px;resize:none;line-height:1.4;overflow-y:auto}
+.chat-send{width:44px;height:44px;border-radius:50%;background:var(--cu-btn);border:0;color:#f5f0e0;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .chat-send:disabled{opacity:.45}
 .chat-send svg{width:18px;height:18px}
 .edit-step{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--hairline)}
@@ -438,7 +448,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v50';
+const BUILD='2026-07-05 · v51';
 const SEED={
   v:11,updatedAt:0,journal:{},settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -2149,7 +2159,8 @@ function behaviourPrompt(cat){
   if((s.preferredBrands||[]).length)lines.push('- Preferred brands: '+s.preferredBrands.join(', ')+'.');
   lines.push('- ALWAYS emphasise ingredients: name the key actives/ingredients and why they suit the user, for every product you suggest.');
   lines.push('- Respect their stated concerns, budget and satisfaction. Do not recommend replacing products they are happy with.');
-  lines.push('- Be concise and practical. This is a mobile chat.');
+  lines.push('- Be concise and practical. This is a small mobile chat: keep replies short, ideally 2-4 sentences. Lead with the direct answer.');
+  lines.push('- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. Only use a short bullet list when comparing 2-4 specific products, and keep bullets to one line each. No blank filler lines.');
   lines.push('');
   // profile block
   const pc=prof[cat==='supplements'?'skin':cat];
@@ -2224,7 +2235,7 @@ async function assistantSend(){
   const inp=document.getElementById('chatInput');
   if(!inp)return;const text=(inp.value||'').trim();
   if(!text||UI._chatBusy)return;
-  inp.value='';
+  inp.value='';inp.style.height='auto';
   UI._chat.push({role:'user',content:text});
   UI._chatBusy=true;renderChat();
   const cat=UI._assistantCat;
@@ -2251,24 +2262,55 @@ function renderChat(){
   if(send)send.disabled=UI._chatBusy;
 }
 function chatMessagesHtml(){
-  const msgs=(UI._chat||[]).map(m=>`<div class="msg ${m.role==='user'?'me':'ai'}">${esc(m.content).replace(/\n/g,'<br>')}</div>`).join('');
+  const msgs=(UI._chat||[]).map(m=>{
+    if(m.role==='user')return`<div class="msg me">${esc(m.content)}</div>`;
+    return`<div class="msg ai">${mdToHtml(m.content)}</div>`;
+  }).join('');
   const typing=UI._chatBusy?`<div class="msg ai typing"><span></span><span></span><span></span></div>`:'';
   return msgs+typing;
 }
+/* minimal, safe markdown -> html (escape first, then apply inline + block formatting) */
+function mdToHtml(src){
+  let s=esc(src||'');
+  // code spans
+  s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  // bold then italic
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/(^|[^*])\*([^*]+)\*/g,'$1<em>$2</em>');
+  const lines=s.split('\n');
+  let html='',listType=null,para=[];
+  const flushPara=()=>{if(para.length){html+='<p>'+para.join('<br>')+'</p>';para=[];}};
+  const closeList=()=>{if(listType){html+='</'+listType+'>';listType=null;}};
+  for(let raw of lines){
+    const line=raw.trim();
+    if(!line){flushPara();closeList();continue;}
+    let m;
+    if((m=line.match(/^#{1,6}\s+(.*)$/))){flushPara();closeList();html+='<h3>'+m[1]+'</h3>';continue;}
+    if((m=line.match(/^[-*]\s+(.*)$/))){flushPara();if(listType!=='ul'){closeList();html+='<ul>';listType='ul';}html+='<li>'+m[1]+'</li>';continue;}
+    if((m=line.match(/^\d+\.\s+(.*)$/))){flushPara();if(listType!=='ol'){closeList();html+='<ol>';listType='ol';}html+='<li>'+m[1]+'</li>';continue;}
+    closeList();para.push(line);
+  }
+  flushPara();closeList();
+  return html||'<p></p>';
+}
 function vAssistantChat(){
   const cat=UI._assistantCat||'skin';
-  return`<div class="chat-head">
+  return`<div class="chat-screen">
+    <div class="chat-head">
       <button class="chat-back" data-call="assistantBack">${CHEV_SVG}</button>
       <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · Assistant</div>
       <span style="width:30px"></span>
     </div>
     <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
     <div class="chat-composer">
-      <input id="chatInput" placeholder="Ask about your ${cat}…" autocomplete="off"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();assistantSend();}">
+      <textarea id="chatInput" rows="1" placeholder="Ask about your ${cat}…"
+        oninput="chatGrow(this)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!/Mobi|Android/i.test(navigator.userAgent)){event.preventDefault();assistantSend();}"></textarea>
       <button class="chat-send" id="chatSend" onclick="assistantSend()">${SEND_SVG}</button>
-    </div>`;
+    </div>
+  </div>`;
 }
+function chatGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
 const SEND_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>';
 
 /* ══ PROMPT PAGE ══ */
