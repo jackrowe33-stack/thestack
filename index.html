@@ -770,7 +770,7 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v82';
+const BUILD='2026-07-05 · v83';
 const SEED={
   v:15,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -986,20 +986,24 @@ function _entriesForDate(ds){
 }
 
 function _flushFirestore(){
-  if(!_fsReady||_fsSuspend||!window.stackFS) return;
+  if(!_fsReady||_fsSuspend||!window.stackFS) return Promise.resolve();
+  const ps=[];
   // core doc
-  window.stackFS.saveCore(_coreSlice());
+  ps.push(window.stackFS.saveCore(_coreSlice()));
   // dirty journal days
   _dirtyJournalDays().forEach(ds=>{
     const t=(DB.journal||{})[ds];
-    window.stackFS.saveJournalDay(ds, t===undefined?'':t);
+    ps.push(window.stackFS.saveJournalDay(ds, t===undefined?'':t));
   });
   // dirty completion days (write the whole day's entry-map)
   _dirtyCompletionDays().forEach(ds=>{
-    window.stackFS.saveCompletionDay(ds, _entriesForDate(ds));
+    ps.push(window.stackFS.saveCompletionDay(ds, _entriesForDate(ds)));
   });
   _snapshotShadow();
+  return Promise.all(ps);
 }
+// Flush any pending debounced write immediately and wait for it to land.
+window.stackFlushNow = function(){ clearTimeout(_fsDirtyTimer); return _flushFirestore(); };
 
 function save(){
   DB.updatedAt=Date.now();
@@ -1230,7 +1234,7 @@ document.addEventListener('visibilitychange',()=>{
   // Legacy KV sync retired in Stage C. Firestore's offline cache and live
   // onSnapshot listeners handle background/foreground sync automatically.
   // On hide, flush any pending debounced write immediately so nothing is lost.
-  if(document.visibilityState!=='visible'){ if(_fsReady){ clearTimeout(_fsDirtyTimer); _flushFirestore(); } }
+  if(document.visibilityState!=='visible'){ if(_fsReady){ window.stackFlushNow(); } }
 });
 
 /* ══ RENDER ══ */
@@ -2378,7 +2382,7 @@ function vDataPage(){
     <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◇</div><div class="menu-body"><div class="menu-title">AI connection</div><div class="menu-sub">${DB.settings.syncUrl?'Worker connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div><div class="menu-sub">Download a JSON copy of all your data</div></div></button>
     <button class="menu-item" onclick="document.getElementById('impData').click()"><div class="menu-body"><div class="menu-title">Import backup</div><div class="menu-sub">Restore from a JSON backup file</div></div></button>
-    <button class="menu-item" onclick="if(window.stackSignOut){window.stackSignOut().finally(function(){location.reload();});}"><div class="menu-body"><div class="menu-title">Sign out</div><div class="menu-sub">Return to the sign-in screen</div></div></button>
+    <button class="menu-item" onclick="(window.stackFlushNow?window.stackFlushNow():Promise.resolve()).then(function(){return window.stackSignOut?window.stackSignOut():Promise.resolve();}).finally(function(){location.reload();});"><div class="menu-body"><div class="menu-title">Sign out</div><div class="menu-sub">Return to the sign-in screen</div></div></button>
     <button class="menu-item" onclick="if(confirm('Reset everything to defaults? This cannot be undone.')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div><div class="menu-sub">Erase everything and start fresh</div></div></button>
   </div>
   <input type="file" id="impData" accept=".json" style="display:none" onchange="importData(this)">`;
