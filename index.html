@@ -57,6 +57,24 @@
   --bg:#f0eff4;--bg-raise:#e6e4ec;--card:#f7f6fa;--card-edge:#d6d3de;--hairline:#dfdce6;
   --cu:#6e5e94;--cu-deep:#584a7a;--cu-btn:#5f5280;--cu-rgb:164,147,201;
 }}
+/* themes — steel (dark blue) */
+[data-theme="steel"]{
+  --bg:#111318;--bg-raise:#171a21;--card:#1b1f27;--card-edge:#2a303c;--hairline:#252a33;
+  --cu:#6f9ad6;--cu-deep:#5580bd;--cu-btn:#3d5f96;--cu-rgb:111,154,214;
+}
+@media(prefers-color-scheme:light){[data-theme="steel"]{
+  --bg:#eef1f6;--bg-raise:#e2e7f0;--card:#f5f7fb;--card-edge:#d0d7e3;--hairline:#dae0ea;
+  --cu:#3d63a8;--cu-deep:#31518b;--cu-btn:#3d5f96;--cu-rgb:111,154,214;
+}}
+/* themes — amber (yellow) */
+[data-theme="amber"]{
+  --bg:#161410;--bg-raise:#1d1a13;--card:#221e16;--card-edge:#352f22;--hairline:#2b271d;
+  --cu:#dcb650;--cu-deep:#bd9a3a;--cu-btn:#8f7220;--cu-rgb:220,182,80;
+}
+@media(prefers-color-scheme:light){[data-theme="amber"]{
+  --bg:#f5f1e8;--bg-raise:#ebe4d5;--card:#faf6ee;--card-edge:#e0d6c1;--hairline:#e8dfcb;
+  --cu:#9c7a18;--cu-deep:#836615;--cu-btn:#8f7220;--cu-rgb:220,182,80;
+}}
 /* forced light */
 :root[data-mode="light"]{
   --bg:#f2f0ee;--bg-raise:#e8e5e0;--card:#f8f6f2;--card-edge:#d8d4ce;
@@ -79,6 +97,14 @@
   --bg:#f6eff1;--bg-raise:#eee2e6;--card:#fbf6f7;--card-edge:#e2d2d8;--hairline:#ead9de;
   --cu:#b56183;--cu-deep:#9a4d6c;--cu-btn:#a04f70;--cu-rgb:221,163,182;
 }
+[data-theme="steel"][data-mode="light"]{
+  --bg:#eef1f6;--bg-raise:#e2e7f0;--card:#f5f7fb;--card-edge:#d0d7e3;--hairline:#dae0ea;
+  --cu:#3d63a8;--cu-deep:#31518b;--cu-btn:#3d5f96;--cu-rgb:111,154,214;
+}
+[data-theme="amber"][data-mode="light"]{
+  --bg:#f5f1e8;--bg-raise:#ebe4d5;--card:#faf6ee;--card-edge:#e0d6c1;--hairline:#e8dfcb;
+  --cu:#9c7a18;--cu-deep:#836615;--cu-btn:#8f7220;--cu-rgb:220,182,80;
+}
 /* forced dark */
 :root[data-mode="dark"]{
   --bg:#121418;--bg-raise:#191c22;--card:#1e2128;--card-edge:#2c303a;
@@ -99,6 +125,14 @@
 [data-theme="blush"][data-mode="dark"]{
   --bg:#171316;--bg-raise:#1e181c;--card:#221b20;--card-edge:#342a31;--hairline:#2b2229;
   --cu:#dda3b6;--cu-deep:#c2879c;--cu-btn:#8f4f68;--cu-rgb:221,163,182;
+}
+[data-theme="steel"][data-mode="dark"]{
+  --bg:#111318;--bg-raise:#171a21;--card:#1b1f27;--card-edge:#2a303c;--hairline:#252a33;
+  --cu:#6f9ad6;--cu-deep:#5580bd;--cu-btn:#3d5f96;--cu-rgb:111,154,214;
+}
+[data-theme="amber"][data-mode="dark"]{
+  --bg:#161410;--bg-raise:#1d1a13;--card:#221e16;--card-edge:#352f22;--hairline:#2b271d;
+  --cu:#dcb650;--cu-deep:#bd9a3a;--cu-btn:#8f7220;--cu-rgb:220,182,80;
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;}
@@ -388,6 +422,7 @@ a{color:inherit}
 .chat-send:disabled{opacity:.45}
 .chat-send svg{width:18px;height:18px}
 .chat-disclaimer{flex:0 0 auto;font-size:11px;color:var(--ink-soft);text-align:center;padding:6px 16px calc(8px + env(safe-area-inset-bottom));background:var(--bg);line-height:1.4}
+.med-note{font-size:11.5px;color:var(--ink-soft);text-align:center;line-height:1.45;background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:12px 16px;margin:14px 0 4px}
 /* write-back confirm sheet */
 .chg-head{padding:6px 4px 14px}
 .chg-title{font-family:'Fraunces',serif;font-size:21px;color:var(--ink)}
@@ -515,7 +550,7 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v73';
+const BUILD='2026-07-05 · v75';
 const SEED={
   v:13,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
@@ -1591,7 +1626,7 @@ function vSupplements(){
       ${other.length?`<div class="sec-label" style="margin:20px 0 10px">Not scheduled today</div>${other.map(s=>item(s,false)).join('')}`:''}
       <button class="btn full" style="margin-top:14px" data-call="editSupp" data-args="new">+ Add a supplement</button>
       <div class="assist-hint">You can also use the assistant to add, remove and edit supplements.</div>
-      <div class="chat-disclaimer" style="padding:14px 10px 0;position:static">This is not medical advice. Check with your doctor before taking supplements.</div>
+      <div class="med-note">This is not medical advice. Check with your doctor before taking supplements.</div>
     </div>
   </div>`;
 }
@@ -1783,6 +1818,7 @@ function vSetupRouter(){
   if(p==='sync')return vSyncPage();
   if(p==='reco')return vRecoPage();
   if(p==='appearance')return vAppearancePage();
+  if(p==='data')return vDataPage();
   if(p==='streak')return vStreakPage();
   if(p==='lowstock')return vLowStockPage();
   if(p==='prompt')return vPromptPage();
@@ -1805,17 +1841,9 @@ function vSetupMenu(){
   </div>
   <div class="card">
     <button class="menu-item" onclick="UI.setupPage='streak';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◈</div><div class="menu-body"><div class="menu-title">Streak</div><div class="menu-sub" style="text-transform:capitalize">${['skin','hair','scent','supplements'].filter(c=>c==='skin'?(DB.settings?.streakScope?.[c]!==false):!!(DB.settings?.streakScope?.[c])).join(', ')||'Nothing counted'}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='appearance';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="openSupplements()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⬡</div><div class="menu-body"><div class="menu-title">Supplements</div><div class="menu-sub">${(DB.supplements||[]).filter(s=>s.active!==false).length} tracked</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="UI.setupPage='reco';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◎</div><div class="menu-body"><div class="menu-title">Recommendations</div><div class="menu-sub">${DB.settings.country||'AU'} · ${({online:'Online',instore:'In-store',both:'Online & in-store'})[DB.settings.shopMethod||'both']}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇅</div><div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='prompt';render()"><div class="menu-icon" style="background:rgba(160,139,192,.1)">✦</div><div class="menu-body"><div class="menu-title">Claude Prompt</div><div class="menu-sub">Copy full routine context</div></div><span class="menu-arrow">›</span></button>
-  </div>
-  <div class="sec-label">Data</div>
-  <div class="card">
-    <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div></div></button>
-    <button class="menu-item" onclick="document.getElementById('imp').click()"><div class="menu-body"><div class="menu-title">Import backup</div></div></button>
-    <button class="menu-item" onclick="if(confirm('Reset everything to defaults?')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div></div></button>
+    <button class="menu-item" onclick="UI.setupPage='appearance';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="UI.setupPage='data';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇲</div><div class="menu-body"><div class="menu-title">Data</div><div class="menu-sub">Sync, backup & reset</div></div><span class="menu-arrow">›</span></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
   <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v}</div>`;
@@ -1902,7 +1930,9 @@ function vRoutineEditPage(){
     <div style="padding:0 22px 8px;display:flex;gap:8px">
       <button class="btn" data-call="openAddStep" data-args="${r.id}">+ Add product</button>
       <button class="btn danger" data-call="deleteLook" data-args="${(DB.hairLooks||[]).indexOf(lookEntry)}">Delete look</button>
-    </div>`;
+    </div>
+    <p style="font-size:11px;color:var(--ink-soft);padding:0 22px 4px">Changes save automatically as you edit.</p>
+    <div style="padding:4px 22px 8px"><button class="btn full" data-call="navTab" data-args="routines">Save &amp; close</button></div>`;
   }
   return`<button class="back-btn" data-call="navTab" data-args="routines">${CHEV_SVG}</button>
   <h1 class="page-title">Edit Routine</h1>
@@ -1924,7 +1954,11 @@ function vRoutineEditPage(){
   <div class="card">${stepsHTML}</div>
   <div style="padding:0 22px 8px;display:flex;gap:8px">
     <button class="btn" data-call="openAddStep" data-args="${r.id}">+ Add step</button>
-    <button class="btn danger" data-call="deleteRoutine" data-args="${r.id}">Delete</button>
+    <button class="btn danger" data-call="deleteRoutine" data-args="${r.id}">Delete routine</button>
+  </div>
+  <p style="font-size:11px;color:var(--ink-soft);padding:0 22px 4px">Changes save automatically as you edit.</p>
+  <div style="padding:4px 22px 8px;display:flex;gap:8px">
+    <button class="btn full" onclick="UI.setupPage='routines';render()">Save &amp; close</button>
   </div>
   <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
@@ -1965,11 +1999,28 @@ function vLooksPage(){
 
 function vInventoryPage(){
   const cat=UI.invCat;
-  const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
   const titles={skin:'Skin Inventory',hair:'Hair Inventory',scent:'Scent Inventory',supplements:'Supplements',inactive:'Inactive Products'};
-  return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
+  const seg=`<div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['supplements','Suppl.'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" data-call="setInvCat" data-args="${k}">${l}</button>`).join('')}</div>`;
+  const header=`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">${titles[cat]||'Inventory'}</h1>
-  <div class="seg">${[['skin','Skin'],['hair','Hair'],['scent','Scent'],['supplements','Suppl.'],['inactive','Inactive']].map(([k,l])=>`<button class="${cat===k?'on':''}" data-call="setInvCat" data-args="${k}">${l}</button>`).join('')}</div>
+  ${seg}`;
+  if(cat==='supplements'){
+    // supplement tracker data, shown as a product-style list
+    const sups=(DB.supplements||[]).filter(s=>s.active!==false);
+    const rows=sups.map(s=>{
+      const daysTxt=s.everyday?'Every day':(s.days||[]).slice().sort().map(d=>dayShort(d)).join(', ');
+      return`<button class="step" data-call="editSupp" data-args="${s.id}"><div class="step-body">
+      <div class="step-name">${esc(s.name)}</div>
+      <div class="step-note">${s.dose?esc(s.dose)+' · ':''}${daysTxt}</div></div>
+      <span class="step-arrow">›</span></button>`;
+    }).join('')||'<div class="empty">No supplements yet</div>';
+    return`${header}
+    <div class="card">${rows}</div>
+    <div style="padding:0 22px 8px"><button class="btn full" data-call="editSupp" data-args="new">+ Add a supplement</button></div>
+    <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit supplements.</div>`;
+  }
+  const items=Object.entries(DB.products).filter(([id,p])=>cat==='inactive'?!p.active:(p.cat===cat&&p.active));
+  return`${header}
   <div class="card">${items.map(([id,p])=>{const dl=daysLeft(p,id);
     return`<button class="step" data-call="openProduct" data-args="${id}"><div class="step-body">
     <div class="step-name">${esc(p.brand)} ${esc(p.name)}</div>
@@ -1979,8 +2030,19 @@ function vInventoryPage(){
   <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
 
+function vDataPage(){
+  return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
+  <h1 class="page-title">Data</h1><p class="page-sub">Sync, backup and reset</p>
+  <div class="card">
+    <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇅</div><div class="menu-body"><div class="menu-title">Sync</div><div class="menu-sub">${DB.settings.syncUrl?'Cloudflare connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div><div class="menu-sub">Download a JSON copy of all your data</div></div></button>
+    <button class="menu-item" onclick="document.getElementById('impData').click()"><div class="menu-body"><div class="menu-title">Import backup</div><div class="menu-sub">Restore from a JSON backup file</div></div></button>
+    <button class="menu-item" onclick="if(confirm('Reset everything to defaults? This cannot be undone.')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div><div class="menu-sub">Erase everything and start fresh</div></div></button>
+  </div>
+  <input type="file" id="impData" accept=".json" style="display:none" onchange="importData(this)">`;
+}
 function vAppearancePage(){
-  const themes=[['copper','Copper','#b87040'],['sage','Sage','#8fae94'],['heather','Heather','#a493c9'],['blush','Blush','#dda3b6']];
+  const themes=[['copper','Copper','#b87040'],['sage','Sage','#8fae94'],['heather','Heather','#a493c9'],['blush','Blush','#dda3b6'],['steel','Steel','#5b83c4'],['amber','Amber','#d9b24a']];
   const cur=DB.settings.theme||'copper';
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">Appearance</h1>
@@ -3413,13 +3475,23 @@ function attachModalSwipe(sheetEl){
   },{passive:true});
 }
 function closeModal(after){
+  // if a product sheet was opened from a routine view, closing returns to that routine
+  if(!after&&UI.modal&&UI.modal.type==='product'&&UI._productReturn){
+    const ret=UI._productReturn;UI._productReturn=null;
+    UI.modal=ret;renderModal();return;
+  }
+  UI._productReturn=null;
   const ov=document.getElementById('ov');
   UI.modal=null;
   if(!ov||ov.classList.contains('closing')){if(after)after();render();return;}
   ov.classList.add('closing');
   setTimeout(()=>{ov.remove();if(after)after();render();},430);
 }
-function openProduct(id){UI.modal={type:'product',id};if(document.getElementById('ov'))renderModal();else render();}
+function openProduct(id){
+  // if opening from an open routine-view sheet, remember it so closing returns there
+  UI._productReturn=(UI.modal&&UI.modal.type==='routine-view')?{type:'routine-view',id:UI.modal.id}:null;
+  UI.modal={type:'product',id};if(document.getElementById('ov'))renderModal();else render();
+}
 function openEdit(id){UI.modal={type:'edit',id};if(document.getElementById('ov'))renderModal();else render();}
 function closeEdit(){if(UI._afterNewProduct){const rid=UI._afterNewProduct.returnToEdit;UI._afterNewProduct=null;UI.modal={type:'edit',id:rid};render();}else closeModal();}
 function productDetailSheet(id){
