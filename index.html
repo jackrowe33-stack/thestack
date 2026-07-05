@@ -455,6 +455,11 @@ a{color:inherit}
 .sup-name{font-size:14.5px;font-weight:600;color:var(--ink)}
 .sup-name.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--card-edge)}
 .sup-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+.sup-slots{display:flex;gap:7px;margin:-2px 0 10px;flex-wrap:wrap}
+.sup-slot{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-mid);background:var(--card);border:1px solid var(--card-edge);border-radius:100px;padding:6px 12px 6px 9px;cursor:pointer}
+.sup-slot.on{color:var(--cu);border-color:var(--cu);background:rgba(var(--cu-rgb),.08)}
+.sup-slot-tick{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--card-edge);display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:transparent}
+.sup-slot.on .sup-slot-tick{background:var(--cu);border-color:var(--cu);color:#f5f0e0}
 .sheet-h{font-family:'Fraunces',serif;font-size:21px;font-weight:400;color:var(--ink);margin:0 0 16px}
 .daypick{display:flex;gap:7px;margin:0 0 16px;flex-wrap:wrap}
 .daypick .dp{width:38px;height:38px;border-radius:50%;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;background:var(--bg-raise);border:1.5px solid var(--card-edge);color:var(--ink-soft);cursor:pointer}
@@ -550,9 +555,9 @@ a{color:inherit}
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v75';
+const BUILD='2026-07-05 · v76';
 const SEED={
-  v:13,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:14,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -670,6 +675,11 @@ function migrate(d){
     });
     d.v=13;
   }
+  if(d.v<14){
+    // supplements gain named dose slots; default existing ones to a single morning dose
+    (d.supplements||[]).forEach(s=>{if(!Array.isArray(s.slots)||!s.slots.length)s.slots=['morning'];});
+    d.v=14;
+  }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
@@ -742,11 +752,22 @@ function compKey(rid,date){return rid+'_'+(date||todayStr());}
 function getComp(rid,date){return DB.completions[compKey(rid,date)]||null;}
 function isRoutineComplete(rid,date){const c=getComp(rid,date);return!!(c&&c.completedAt);}
 /* ── supplements (lightweight model) ── */
+const SUPP_SLOTS=[['morning','Morning'],['midday','Midday'],['evening','Evening']];
+function suppSlots(s){const sl=(s&&Array.isArray(s.slots)&&s.slots.length)?s.slots:['morning'];
+  // preserve canonical order
+  return SUPP_SLOTS.map(([k])=>k).filter(k=>sl.includes(k));}
+function suppSlotLabel(k){const f=SUPP_SLOTS.find(x=>x[0]===k);return f?f[1]:k;}
 function supplements(){return (DB.supplements||[]).filter(s=>s.active!==false);}
 function suppForDay(day){return supplements().filter(s=>s.everyday||(Array.isArray(s.days)&&s.days.includes(day)));}
-function suppKey(id,date){return 'supp_'+id+'_'+(date||todayStr());}
-function suppTaken(id,date){return !!DB.completions[suppKey(id,date)];}
-function toggleSupp(id,date){const k=suppKey(id,date||todayStr());if(DB.completions[k])delete DB.completions[k];else DB.completions[k]={completedAt:Date.now()};save();render();}
+function suppKey(id,date,slot){return 'supp_'+id+'_'+(date||todayStr())+(slot&&slot!=='morning'?'_'+slot:'');}
+function suppSlotTaken(id,date,slot){return !!DB.completions[suppKey(id,date,slot)];}
+function toggleSuppSlot(id,slot,date){const k=suppKey(id,date||todayStr(),slot);if(DB.completions[k])delete DB.completions[k];else DB.completions[k]={completedAt:Date.now()};save();render();}
+/* a supplement counts as "taken" for the day only when every one of its slots is done */
+function suppTaken(id,date){const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return false;const slots=suppSlots(s);return slots.every(sl=>suppSlotTaken(id,date,sl));}
+/* legacy single-tap toggle: fills or clears all slots at once (used where a whole-supplement toggle is wanted) */
+function toggleSupp(id,date){const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return;const ds=date||todayStr();const slots=suppSlots(s);const allDone=slots.every(sl=>suppSlotTaken(id,ds,sl));slots.forEach(sl=>{const k=suppKey(id,ds,sl);if(allDone)delete DB.completions[k];else DB.completions[k]={completedAt:Date.now()};});save();render();}
+/* dose-level totals for progress rings: counts each slot of each scheduled supplement */
+function suppDoseTotals(day,ds){let total=0,done=0;suppForDay(day).forEach(s=>{suppSlots(s).forEach(sl=>{total++;if(suppSlotTaken(s.id,ds,sl))done++;});});return{total,done};}
 function suppTakenCount(day,ds){const list=suppForDay(day);return list.filter(s=>suppTaken(s.id,ds)).length;}
 function suppStreakComplete(day,ds){const list=suppForDay(day).filter(s=>s.countStreak);return list.length>0&&list.every(s=>suppTaken(s.id,ds));}
 function suppHasStreakItems(day){return suppForDay(day).some(s=>s.countStreak);}
@@ -1405,7 +1426,7 @@ function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
 function histNav(d){UI._histOff=(UI._histOff||0)+d;render();}
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
 function parseArgs(a){return (a||'').split('|').filter(x=>x!=='').map(t=>/^-?\d{1,4}$/.test(t)?parseInt(t):t);}
@@ -1511,12 +1532,13 @@ function vHome(){
   const cardBorder=todayComplete?'box-shadow:0 0 0 1.5px rgba(var(--cu-rgb),.45)':'';
   // supplements today (lightweight)
   const suppList=suppForDay(day);
-  const suppTakenN=suppTakenCount(day,dateStr);
+  const _sDT=suppDoseTotals(day,dateStr);
+  const suppTakenN=_sDT.done;const suppTotalN=_sDT.total;
   const suppNext=suppList.find(s=>!suppTaken(s.id,dateStr));
   const _sR=13,_sSz=34,_sCirc=2*Math.PI*_sR;
-  const _sDash=(suppList.length?(suppTakenN/suppList.length)*_sCirc:0).toFixed(2);
-  const suppDone=suppList.length>0&&suppTakenN===suppList.length;
-  const suppRing=suppList.length?`<svg width="${_sSz}" height="${_sSz}" style="flex-shrink:0" viewBox="0 0 ${_sSz} ${_sSz}"><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--hairline)" stroke-width="2.5"/><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--cu)" stroke-width="2.5" stroke-dasharray="${_sDash} ${(_sCirc-parseFloat(_sDash)).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 17 17)"/><text x="17" y="17" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="700" fill="${suppDone?'var(--cu)':'var(--ink-mid)'}">${suppDone?'✓':suppTakenN+'/'+suppList.length}</text></svg>`:'';
+  const _sDash=(suppTotalN?(suppTakenN/suppTotalN)*_sCirc:0).toFixed(2);
+  const suppDone=suppTotalN>0&&suppTakenN===suppTotalN;
+  const suppRing=suppList.length?`<svg width="${_sSz}" height="${_sSz}" style="flex-shrink:0" viewBox="0 0 ${_sSz} ${_sSz}"><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--hairline)" stroke-width="2.5"/><circle cx="17" cy="17" r="${_sR}" fill="none" stroke="var(--cu)" stroke-width="2.5" stroke-dasharray="${_sDash} ${(_sCirc-parseFloat(_sDash)).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 17 17)"/><text x="17" y="17" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="700" fill="${suppDone?'var(--cu)':'var(--ink-mid)'}">${suppDone?'✓':suppTakenN+'/'+suppTotalN}</text></svg>`:'';
   const _rR=13,_rC=17,_rSz=34,_rCirc=2*Math.PI*_rR;
   const _rDash=(total>0?(done/total)*_rCirc:0).toFixed(2);
   const _rGap=(_rCirc-parseFloat(_rDash)).toFixed(2);
@@ -1581,7 +1603,7 @@ function vHome(){
     <div class="row-icon" style="flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg></div>
     <div class="row-body">
       <div style="font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px">Supplements</div>
-      <div class="row-title">${suppDone?'All taken today':suppTakenN+' of '+suppList.length+' taken today'}</div>
+      <div class="row-title">${suppDone?'All taken today':suppTakenN+' of '+suppTotalN+(suppTotalN!==suppList.length?' doses':'')+' taken today'}</div>
       ${!suppDone&&suppNext?`<div class="row-sub">${esc(suppNext.name)} still to take</div>`:''}
     </div>
     ${suppRing}
@@ -1606,21 +1628,34 @@ function vSupplements(){
   const other=all.filter(s=>!todayIds.has(s.id));
   const takenN=suppTakenCount(day,ds);
   const item=(s,scheduled)=>{
+    const slots=suppSlots(s);
+    const multi=slots.length>1;
     const taken=suppTaken(s.id,ds);
     const daysTxt=s.everyday?'Every day':(s.days||[]).slice().sort().map(d=>dayShort(d)).join(', ');
+    const takenSlots=slots.filter(sl=>suppSlotTaken(s.id,ds,sl)).length;
+    const metaExtra=multi?` · ${takenSlots}/${slots.length} doses`:'';
+    // single-slot: original left check. multi-slot: no left check, per-slot pills below.
+    const leftCheck=scheduled
+      ? (multi
+          ? `<span class="sup-check ${taken?'on':''}" style="cursor:default">${taken?'✓':''}</span>`
+          : `<button class="sup-check ${taken?'on':''}" data-call="toggleSupp" data-args="${s.id}">${taken?'✓':''}</button>`)
+      : `<span class="sup-check" style="border-style:dashed;cursor:default"></span>`;
+    const slotRow=(scheduled&&multi)
+      ? `<div class="sup-slots">${slots.map(sl=>{const on=suppSlotTaken(s.id,ds,sl);
+          return`<button class="sup-slot ${on?'on':''}" data-call="toggleSuppSlot" data-args="${s.id}|${sl}"><span class="sup-slot-tick">${on?'✓':''}</span>${suppSlotLabel(sl)}</button>`;}).join('')}</div>`
+      : '';
     return`<div class="sup-item${scheduled?'':' sup-dim'}">
-      ${scheduled?`<button class="sup-check ${taken?'on':''}" data-call="toggleSupp" data-args="${s.id}">${taken?'✓':''}</button>`
-        :`<span class="sup-check" style="border-style:dashed;cursor:default"></span>`}
+      ${leftCheck}
       <button class="sup-body" data-call="editSupp" data-args="${s.id}" style="text-align:left;background:none;border:0;padding:0;cursor:pointer">
         <div class="sup-name ${taken&&scheduled?'done':''}">${esc(s.name)}</div>
-        <div class="sup-meta">${s.dose?esc(s.dose)+' · ':''}${daysTxt}</div>
+        <div class="sup-meta">${s.dose?esc(s.dose)+' · ':''}${daysTxt}${metaExtra}</div>
       </button>
-    </div>`;
+    </div>${slotRow}`;
   };
   return`<div class="today-sheet ${enter?'page-up':''}">
     <button class="sheet-close-tap" aria-label="Close" onclick="dismissSheet()"><div class="sheet-handle"></div></button>
     <h1 class="page-title" style="padding-top:14px">Supplements</h1>
-    <p class="page-sub" style="padding-top:0">${dayName(day)} ${new Date().getDate()} ${new Date().toLocaleString('en-AU',{month:'long'})}${today.length?' · '+takenN+' of '+today.length+' taken':''}</p>
+    <p class="page-sub" style="padding-top:0">${dayName(day)} ${new Date().getDate()} ${new Date().toLocaleString('en-AU',{month:'long'})}${(()=>{if(!today.length)return'';const dt=suppDoseTotals(day,ds);return ' · '+dt.done+' of '+dt.total+(dt.total!==today.length?' doses':'')+' taken';})()}</p>
     <div style="padding:0 22px">
       ${today.length?today.map(s=>item(s,true)).join(''):`<div class="empty" style="padding:20px 0">Nothing scheduled today.</div>`}
       ${other.length?`<div class="sec-label" style="margin:20px 0 10px">Not scheduled today</div>${other.map(s=>item(s,false)).join('')}`:''}
@@ -1631,11 +1666,12 @@ function vSupplements(){
   </div>`;
 }
 function editSupp(id){
-  if(id==='new'){UI._suppEdit={id:'s'+Date.now(),name:'',dose:'',everyday:true,days:[1,2,3,4,5,6,0],countStreak:false,active:true,_new:true};}
-  else{const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return;UI._suppEdit=JSON.parse(JSON.stringify(s));}
+  if(id==='new'){UI._suppEdit={id:'s'+Date.now(),name:'',dose:'',everyday:true,days:[1,2,3,4,5,6,0],slots:['morning'],countStreak:false,active:true,_new:true};}
+  else{const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return;UI._suppEdit=JSON.parse(JSON.stringify(s));if(!Array.isArray(UI._suppEdit.slots)||!UI._suppEdit.slots.length)UI._suppEdit.slots=['morning'];}
   UI.modal={type:'supp-edit'};render();
 }
 function suppEditField(field,v){if(!UI._suppEdit)return;UI._suppEdit[field]=v;}
+function suppEditToggleSlot(slot){if(!UI._suppEdit)return;const e=UI._suppEdit;const sl=Array.isArray(e.slots)?e.slots:['morning'];const i=sl.indexOf(slot);if(i>=0){if(sl.length>1)sl.splice(i,1);}else sl.push(slot);e.slots=sl;renderModal();}
 function suppEditEveryday(on){if(!UI._suppEdit)return;UI._suppEdit.everyday=on;if(on)UI._suppEdit.days=[1,2,3,4,5,6,0];renderModal();}
 function suppEditToggleDay(d){if(!UI._suppEdit)return;const days=UI._suppEdit.days||[];const i=days.indexOf(d);if(i>=0)days.splice(i,1);else days.push(d);UI._suppEdit.days=days;UI._suppEdit.everyday=(days.length===7);renderModal();}
 function suppEditStreak(on){if(!UI._suppEdit)return;UI._suppEdit.countStreak=on;renderModal();}
@@ -1645,9 +1681,10 @@ function saveSupp(){
   if(nameEl)e.name=nameEl.value.trim();if(doseEl)e.dose=doseEl.value.trim();
   if(!e.name){alert('Give it a name first.');return;}
   if(!e.everyday&&(!e.days||!e.days.length)){alert('Pick at least one day, or choose Every day.');return;}
+  const slots=(Array.isArray(e.slots)&&e.slots.length)?SUPP_SLOTS.map(([k])=>k).filter(k=>e.slots.includes(k)):['morning'];
   if(!Array.isArray(DB.supplements))DB.supplements=[];
   const idx=DB.supplements.findIndex(x=>x.id===e.id);
-  const rec={id:e.id,name:e.name,dose:e.dose||'',everyday:!!e.everyday,days:e.everyday?[0,1,2,3,4,5,6]:e.days.slice(),countStreak:!!e.countStreak,active:true};
+  const rec={id:e.id,name:e.name,dose:e.dose||'',everyday:!!e.everyday,days:e.everyday?[0,1,2,3,4,5,6]:e.days.slice(),slots,countStreak:!!e.countStreak,active:true};
   if(idx>=0)DB.supplements[idx]=rec;else DB.supplements.push(rec);
   UI._suppEdit=null;save();closeModal(()=>render());
 }
@@ -1668,6 +1705,9 @@ function suppEditSheet(){
     <div class="sec-label" style="margin:8px 0 8px">Schedule</div>
     <div class="seg" style="margin:0 0 14px;width:100%"><button class="${e.everyday?'on':''}" onclick="suppEditEveryday(true)">Every day</button><button class="${e.everyday?'':'on'}" onclick="suppEditEveryday(false)">Specific days</button></div>
     ${!e.everyday?`<div class="daypick">${days.map(([d,l])=>`<button class="dp ${(e.days||[]).includes(+d)?'on':''}" onclick="suppEditToggleDay(${d})">${l}</button>`).join('')}</div>`:''}
+    <div class="sec-label" style="margin:14px 0 8px">Times per day</div>
+    <div class="seg" style="margin:0 0 6px;width:100%">${SUPP_SLOTS.map(([k,l])=>`<button class="${(e.slots||['morning']).includes(k)?'on':''}" onclick="suppEditToggleSlot('${k}')">${l}</button>`).join('')}</div>
+    <p style="font-size:11px;color:var(--ink-soft);margin:0 0 16px">Pick each time you take it. One selected = a single daily dose.</p>
     <div class="sec-label" style="margin:8px 0 8px">Count toward streak?</div>
     <div class="seg" style="margin:0 0 16px;width:100%"><button class="${e.countStreak?'':'on'}" onclick="suppEditStreak(false)">No</button><button class="${e.countStreak?'on':''}" onclick="suppEditStreak(true)">Yes</button></div>
     <button class="btn full" onclick="saveSupp()">Save supplement</button>
@@ -2009,9 +2049,10 @@ function vInventoryPage(){
     const sups=(DB.supplements||[]).filter(s=>s.active!==false);
     const rows=sups.map(s=>{
       const daysTxt=s.everyday?'Every day':(s.days||[]).slice().sort().map(d=>dayShort(d)).join(', ');
+      const sl=suppSlots(s);const doseTxt=sl.length>1?' · '+sl.map(suppSlotLabel).join('/'):'';
       return`<button class="step" data-call="editSupp" data-args="${s.id}"><div class="step-body">
       <div class="step-name">${esc(s.name)}</div>
-      <div class="step-note">${s.dose?esc(s.dose)+' · ':''}${daysTxt}</div></div>
+      <div class="step-note">${s.dose?esc(s.dose)+' · ':''}${daysTxt}${doseTxt}</div></div>
       <span class="step-arrow">›</span></button>`;
     }).join('')||'<div class="empty">No supplements yet</div>';
     return`${header}
@@ -3195,7 +3236,8 @@ function applyChange(c){
   }
   if(c.type==='add_supplement'){
     if(!Array.isArray(DB.supplements))DB.supplements=[];
-    DB.supplements.push({id:'s'+Date.now()+Math.floor(Math.random()*1000),name:c.name,dose:c.dose||'',everyday:!!c.everyday,days:c.everyday?[0,1,2,3,4,5,6]:c.days.slice(),countStreak:!!c.countStreak,active:true});
+    const slots=(Array.isArray(c.slots)&&c.slots.length)?SUPP_SLOTS.map(([k])=>k).filter(k=>c.slots.includes(k)):['morning'];
+    DB.supplements.push({id:'s'+Date.now()+Math.floor(Math.random()*1000),name:c.name,dose:c.dose||'',everyday:!!c.everyday,days:c.everyday?[0,1,2,3,4,5,6]:c.days.slice(),slots,countStreak:!!c.countStreak,active:true});
     return;
   }
   if(c.type==='update_supplement'){
@@ -3204,6 +3246,7 @@ function applyChange(c){
     if(f.name)s.name=f.name.to;
     if(f.dose)s.dose=f.dose.to;
     if(f.countStreak)s.countStreak=f.countStreak.to;
+    if(f.slots&&Array.isArray(f.slots.to))s.slots=SUPP_SLOTS.map(([k])=>k).filter(k=>f.slots.to.includes(k))||['morning'];
     if(f.schedule){s.everyday=f.schedule.to.everyday;s.days=f.schedule.to.everyday?[0,1,2,3,4,5,6]:f.schedule.to.days.slice();}
     return;
   }
