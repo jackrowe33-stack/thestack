@@ -544,6 +544,17 @@ a{color:inherit}
 /* visual refresh — layered surfaces over borders */
 .card,.checklist,.steps,.row,.streak-card,.hero,.scent-card,.scent-today,.date-nav,.prog-item,.stat-item{border:none}
 .done-btn{font-size:15px;font-weight:600;color:var(--cu);background:none;border:none;padding:8px 0;cursor:pointer}
+/* paywall sheet (F2) */
+.pw-sheet{padding:8px 4px 4px;text-align:center}
+.pw-glyph{width:40px;height:40px;margin:6px auto 14px;color:var(--cu)}
+.pw-glyph svg{width:40px;height:40px}
+.pw-title{font-family:'Fraunces',serif;font-size:24px;font-weight:400;color:var(--ink);margin:0 0 8px}
+.pw-sub{font-size:14px;color:var(--ink-mid);line-height:1.5;margin:0 auto 20px;max-width:300px}
+.pw-feats{text-align:left;max-width:300px;margin:0 auto 22px;display:flex;flex-direction:column;gap:10px}
+.pw-feat{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink);line-height:1.4}
+.pw-tick{color:var(--cu);font-weight:600;flex-shrink:0}
+.pw-later{display:block;width:100%;text-align:center;background:none;border:none;color:var(--ink-mid);font:inherit;font-size:13px;padding:14px 0 4px;cursor:pointer}
+</style>
 <style id="ag-style">
 #authgate{position:fixed;inset:0;z-index:9999;background:var(--bg,#121418);display:none;overflow-y:auto;-webkit-font-smoothing:antialiased}
 #authgate.show{display:block}
@@ -759,9 +770,9 @@ if(auth){
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps){return{id,cat,type,name,days,steps};}
-const BUILD='2026-07-05 · v81';
+const BUILD='2026-07-05 · v82';
 const SEED={
-  v:14,updatedAt:0,journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:15,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -884,6 +895,11 @@ function migrate(d){
     (d.supplements||[]).forEach(s=>{if(!Array.isArray(s.slots)||!s.slots.length)s.slots=['morning'];});
     d.v=14;
   }
+  if(d.v<15){
+    // entitlement tier. Worker is authoritative for AI; client uses this for UX gating.
+    if(d.plan===undefined)d.plan='free';
+    d.v=15;
+  }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
   return d;
 }
@@ -901,7 +917,49 @@ let _fsCoreTimer=null, _fsDirtyTimer=null;
 let _fsReady=false;   // true once Firestore has hydrated DB (or determined it's a fresh account)
 let _fsSuspend=false; // true while applying a remote snapshot, to avoid echo-saves
 
-const CORE_KEYS=['v','updatedAt','supplements','settings','profile','onboarding','aiMemory','lookByContext','products','routines','hairLooks'];
+const CORE_KEYS=['v','updatedAt','plan','supplements','settings','profile','onboarding','aiMemory','lookByContext','products','routines','hairLooks'];
+
+/* ══ ENTITLEMENT / FREE-TIER CAPS (F1+F2) ══
+   NOTE: these gates are UX only. The AI feature is enforced server-side at
+   the Worker (token-auth + entitlement) — the client gate is cosmetic there.
+   The routine/product/supplement caps are client-side by design: bypassing
+   them only lets a user add items to their own account, which costs us nothing. */
+const FREE_CAPS={ routines:5, products:15, supplements:5 };
+function userPlan(){ return (DB && DB.plan) || 'free'; }
+function isPremium(){ const p=userPlan(); return p==='premium'||p==='comp'; }
+function countRoutines(){ return (DB.routines||[]).length; }
+function countProducts(){ return Object.keys(DB.products||{}).length; }
+function countSupplements(){ return (DB.supplements||[]).length; }
+function atCap(kind){
+  if(isPremium()) return false;
+  if(kind==='routines') return countRoutines()>=FREE_CAPS.routines;
+  if(kind==='products') return countProducts()>=FREE_CAPS.products;
+  if(kind==='supplements') return countSupplements()>=FREE_CAPS.supplements;
+  return false;
+}
+/* Returns true if creation is allowed; if blocked, shows the paywall sheet and returns false. */
+function gateCreate(kind){
+  if(!atCap(kind)) return true;
+  openPaywall(kind);
+  return false;
+}
+function openPaywall(kind){ UI.modal={type:'paywall',kind:kind}; render(); }
+function paywallSheet(kind){
+  const label={routines:'routines',products:'products',supplements:'supplements'}[kind]||'items';
+  const cap=FREE_CAPS[kind];
+  return `<div class="pw-sheet">
+    <div class="pw-glyph">${FACET_SVG}</div>
+    <h2 class="pw-title">Unlock The Stack</h2>
+    <p class="pw-sub">You've reached the free limit of ${cap} ${label}. Upgrade to add unlimited ${label} — and unlock Facet, your AI routine assistant.</p>
+    <div class="pw-feats">
+      <div class="pw-feat"><span class="pw-tick">✓</span> Unlimited routines, products &amp; supplements</div>
+      <div class="pw-feat"><span class="pw-tick">✓</span> Facet — personalised AI guidance on your routines</div>
+      <div class="pw-feat"><span class="pw-tick">✓</span> Journal-aware advice &amp; product suggestions</div>
+    </div>
+    <button class="btn full" onclick="closeModal()">Coming soon</button>
+    <button class="pw-later" onclick="closeModal()">Maybe later</button>
+  </div>`;
+}
 function _coreSlice(){ const o={}; CORE_KEYS.forEach(k=>{ if(DB[k]!==undefined)o[k]=DB[k]; }); return o; }
 
 function _snapshotShadow(){
@@ -1652,7 +1710,7 @@ function setPromptSel(k){UI._promptSel=k;render();}
 function setSchedType(t){UI._schedType=t;render();}
 function openPlannerFor(t){UI._setupReturn='routines';UI._schedType=t;UI.tab='setup';UI.setupPage='planner';render();}
 function pickHairLook(id){UI.hairLook=id;closeModal();}
-function openNewRoutine(cat){UI._newR={cat:cat,type:'morning',name:'',copyFrom:''};UI.modal={type:'new-routine'};render();}
+function openNewRoutine(cat){if(!gateCreate('routines'))return;UI._newR={cat:cat,type:'morning',name:'',copyFrom:''};UI.modal={type:'new-routine'};render();}
 function backToProduct(id){UI._afterNewProduct=null;UI.modal={type:'product',id:id};render();}
 function delRStep(rid,i){routineById(rid).steps.splice(i,1);save();render();}
 function lkDel(lookIdx,i){routineById(DB.hairLooks[lookIdx].id).steps.splice(i,1);save();render();}
@@ -1907,7 +1965,7 @@ function vSupplements(){
   </div>`;
 }
 function editSupp(id){
-  if(id==='new'){UI._suppEdit={id:'s'+Date.now(),name:'',dose:'',everyday:true,days:[1,2,3,4,5,6,0],slots:['morning'],countStreak:false,active:true,_new:true};}
+  if(id==='new'){if(!gateCreate('supplements'))return;UI._suppEdit={id:'s'+Date.now(),name:'',dose:'',everyday:true,days:[1,2,3,4,5,6,0],slots:['morning'],countStreak:false,active:true,_new:true};}
   else{const s=(DB.supplements||[]).find(x=>x.id===id);if(!s)return;UI._suppEdit=JSON.parse(JSON.stringify(s));if(!Array.isArray(UI._suppEdit.slots)||!UI._suppEdit.slots.length)UI._suppEdit.slots=['morning'];}
   UI.modal={type:'supp-edit'};render();
 }
@@ -2183,7 +2241,7 @@ function vRoutinesPage(){
       <div class="step-body"><div class="step-name">${esc(r.name)}</div>
       <div class="step-note">${r.days.length?r.days.map(d=>dayShort(d)).join(' · '):'No days'} · ${activeSteps(r.steps).length} steps</div></div>
       <span class="step-arrow">›</span></button>`).join('')}</div>`;}).join('')).join('')}
-  <div style="padding:8px 22px 0"><button class="btn full" onclick="UI.modal={type:'new-routine'};render()">+ New routine</button></div>`;
+  <div style="padding:8px 22px 0"><button class="btn full" onclick="if(gateCreate('routines')){UI.modal={type:'new-routine'};render()}">+ New routine</button></div>`;
 }
 
 function vRoutineEditPage(){
@@ -3683,6 +3741,7 @@ function renderModal(){
   else if(m.type==='new-routine')inner=newRoutineSheet();
   else if(m.type==='changes')inner=changesSheet();
   else if(m.type==='supp-edit')inner=suppEditSheet();
+  else if(m.type==='paywall')inner=paywallSheet(m.kind);
   ov.innerHTML=`<div class="sheet"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
   document.body.appendChild(ov);
   attachModalSwipe(ov.querySelector('.sheet'));
@@ -3894,7 +3953,7 @@ function swapProduct(id){
 }
 function setNextFromInventory(id,nextId){if(!nextId){DB.products[id].next=null;save();render();return;}DB.products[id].next={productId:nextId,why:'',link:''};save();render();}
 function createAndQueueReplacement(id){const p=DB.products[id];const newId='p'+Date.now();DB.products[newId]=P(p.cat,'','','','');DB.products[id].next={productId:newId,why:'',link:''};save();UI._afterNewProduct={returnToEdit:id};openEdit(newId);}
-function newProduct(cat){const id='p'+Date.now();DB.products[id]=P(cat||'skin','','','','');save();openEdit(id);}
+function newProduct(cat){if(!gateCreate('products'))return;const id='p'+Date.now();DB.products[id]=P(cat||'skin','','','','');save();openEdit(id);}
 
 function toggleStep(routineId,productId){
   const r=routineById(routineId);if(!r)return;
@@ -3978,7 +4037,7 @@ function lookSheet(idx){
 function lkMove(idx,i,d){const r=routineById((DB.hairLooks||[])[idx]?.id);if(!r)return;const st=r.steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
 function lkAdd(idx){const l=(DB.hairLooks||[])[idx];if(!l)return;let r=routineById(l.id);if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);save();}UI.modal={type:'addstep',routineId:l.id};render();}
 function deleteLook(idx){if(!confirm('Delete this look?'))return;const l=DB.hairLooks[idx];DB.routines=DB.routines.filter(r=>r.id!==l.id);DB.hairLooks.splice(idx,1);save();closeModal();}
-function newLook(){const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:''});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
+function newLook(){if(!gateCreate('routines'))return;const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:''});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
 function lookPickSheet(){return`<h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" data-call="pickHairLook" data-args="${l.id}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;}
 
 /* ══ PROMPTS ══ */
