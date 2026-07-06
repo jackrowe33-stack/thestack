@@ -8,9 +8,12 @@
 <meta name="theme-color" content="#121418">
 <link rel="manifest" href="manifest.json">
 <title>The Stack</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap">
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#121418;--bg-raise:#191c22;--card:#1e2128;--card-edge:#2c303a;
@@ -571,6 +574,16 @@ a{color:inherit}
 .ft-tick{color:var(--cu);font-weight:600;flex-shrink:0}
 .ft-fine{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:12px;line-height:1.4}
 </style>
+<style id="boot-style">
+#bootscreen{position:fixed;inset:0;z-index:10000;background:var(--bg,#121418);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;transition:opacity .35s ease;}
+#bootscreen.hide{opacity:0;pointer-events:none;}
+#bootscreen .bs-wrap{text-align:center;}
+#bootscreen .bs-glyph{width:40px;height:40px;margin:0 auto 14px;display:block;animation:bs-pulse 1.8s ease-in-out infinite;}
+#bootscreen .bs-word{font-family:'Fraunces',serif;font-size:24px;font-weight:400;color:var(--ink,#edeae6);letter-spacing:-.01em;margin-bottom:22px;}
+#bootscreen .bs-word em{font-style:italic;color:var(--cu,#b87040);}
+#bootscreen .bs-spin{width:26px;height:26px;margin:0 auto;border:2.5px solid var(--card-edge,#2c303a);border-top-color:var(--cu,#b87040);border-radius:50%;animation:agspin .8s linear infinite;}
+@keyframes bs-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+</style>
 <style id="ag-style">
 #authgate{position:fixed;inset:0;z-index:9999;background:var(--bg,#121418);display:none;overflow-y:auto;-webkit-font-smoothing:antialiased}
 #authgate.show{display:block}
@@ -713,7 +726,7 @@ function agChrome(hide){
   ['app','tabs','fab-global'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=hide?'none':'';});
   var scrim=document.querySelector('.statusbar-scrim');if(scrim)scrim.style.display=hide?'none':'';
 }
-function showGate(){ gate.classList.add('show'); gate.setAttribute('aria-hidden','false'); agChrome(true); renderGate(); }
+function showGate(){ gate.classList.add('show'); gate.setAttribute('aria-hidden','false'); agChrome(true); renderGate(); if(window.hideBootScreen)window.hideBootScreen(); }
 function hideGate(){ gate.classList.remove('show'); gate.setAttribute('aria-hidden','true'); agChrome(false); }
 
 function renderGate(err){
@@ -776,10 +789,16 @@ if(auth){
   onAuthStateChanged(auth,user=>{
     window.__authReady=true;
     if(user){
+      try{ localStorage.setItem('stack_session','1'); }catch(e){}
       window.stackFS.setUid(user.uid);
       hideGate();
       if(!booted){ booted=true; if(window.bootApp) window.bootApp(); }
+      // uid is now known — start (or continue) the cloud sync.
+      if(window.startCloudSync) window.startCloudSync();
     }else{
+      // No user. Clear the fast-boot marker; if we optimistically booted from a
+      // stale marker, this will surface the login gate over the app.
+      try{ localStorage.removeItem('stack_session'); }catch(e){}
       window.stackFS.setUid(null);
       showGate();
     }
@@ -792,18 +811,38 @@ if(auth){
 </script>
 </head>
 <body>
+<div id="bootscreen">
+  <div class="bs-wrap">
+    <svg class="bs-glyph" viewBox="0 0 32 32" fill="none"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="var(--cu,#b87040)" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <div class="bs-word">The <em>Stack</em></div>
+    <div class="bs-spin"></div>
+  </div>
+</div>
 <div id="app"></div>
 <div id="authgate" aria-hidden="true"></div>
 <div class="statusbar-scrim"></div>
 <nav class="tabs" id="tabs"></nav>
 <button class="fab-global" id="fab-global" style="display:none" onclick="goToWaitStep()">⏱ <span class="fab-global-t">–:––</span></button>
 <script>
+/* Boot screen: hidden by bootApp() (logged in) or showGate() (needs login),
+   whichever fires first. Hard failsafe below in case neither ever fires. */
+function hideBootScreen(){
+  var el=document.getElementById('bootscreen');
+  if(!el)return;
+  el.classList.add('hide');
+  setTimeout(function(){ if(el&&el.parentNode)el.parentNode.removeChild(el); },400);
+}
+setTimeout(hideBootScreen,6000); // failsafe: never leave the user staring at this forever
+</script>
+<script>
 /* ══ SEED ══ */
 function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand,role,why,link:'',notes:'',steps:[],durationDays:90,restockedAt:Date.now(),flags:[],active:true,tags:[],next:null},opts);}
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
-const BUILD='2026-07-06 · v90';
+/* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
+function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
+const BUILD='2026-07-06 · v95';
 const SEED={
-  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},lookByContext:{weekday:'hair-look-weekday',weekend:'hair-look-weekend'},completions:{},
+  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -836,9 +875,9 @@ const SEED={
     R('hair-look-beachy','hair','morning','Look — Beachy',[],[{p:'shampoo',wait:0}])
   ],
   hairLooks:[
-    {id:'hair-look-weekday',name:'Weekday — Controlled Chaos',desc:'Presentable from 9-5, questionable at 5:01'},
-    {id:'hair-look-weekend',name:'Weekend — Helmet',desc:'High hold, no regrets, several regrets'},
-    {id:'hair-look-beachy',name:'Casual — Just Woke Up',desc:'Definitely not 20 minutes of effort.'}
+    {id:'hair-look-weekday',name:'Weekday — Controlled Chaos',desc:'Presentable from 9-5, questionable at 5:01',tags:['weekday']},
+    {id:'hair-look-weekend',name:'Weekend — Helmet',desc:'High hold, no regrets, several regrets',tags:['weekend','casual']},
+    {id:'hair-look-beachy',name:'Casual — Just Woke Up',desc:'Definitely not 20 minutes of effort.',tags:['casual']}
   ]
 };
 /* ══ MIGRATION ══ */
@@ -942,6 +981,10 @@ function migrate(d){
     d.v=16;
   }
   if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
+  // Look tags are additive and don't need a version bump — same treatment as syncUrl above.
+  // lookByContext is retired in favour of tag-based auto-select (suggestLook); drop it if present.
+  (d.hairLooks||[]).forEach(l=>{if(!Array.isArray(l.tags))l.tags=[];});
+  if(d.lookByContext!==undefined)delete d.lookByContext;
   return d;
 }
 
@@ -958,7 +1001,7 @@ let _fsCoreTimer=null, _fsDirtyTimer=null;
 let _fsReady=false;   // true once Firestore has hydrated DB (or determined it's a fresh account)
 let _fsSuspend=false; // true while applying a remote snapshot, to avoid echo-saves
 
-const CORE_KEYS=['v','updatedAt','plan','supplements','settings','profile','onboarding','aiMemory','lookByContext','products','routines','hairLooks'];
+const CORE_KEYS=['v','updatedAt','plan','supplements','settings','profile','onboarding','aiMemory','products','routines','hairLooks'];
 
 /* ══ ENTITLEMENT / FREE-TIER CAPS (F1+F2) ══
    NOTE: these gates are UX only. The AI feature is enforced server-side at
@@ -1095,9 +1138,19 @@ function scents(){return Object.entries(DB.products).filter(([id,p])=>p.cat==='s
 function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function suggestScent(goingOut){
   const day=new Date().getDay(),h=new Date().getHours(),sc=scents();
-  const tags=goingOut?['occasion','evening']:h>=17?['evening']:(day===0||day===6)?['weekend','casual']:['weekday','office','daily'];
+  const dayTags=(day===0||day===6)?['weekend','casual']:['weekday','office','daily'];
+  const tags=goingOut?['occasion','evening',...dayTags]:h>=17?['evening',...dayTags]:dayTags;
   for(const t of tags){const m=sc.find(s=>s.tags.includes(t));if(m)return m;}
   return sc[0]||null;
+}
+/* Auto-pick today's hair look from its tags, same priority order as suggestScent: evening overrides weekend/weekday. */
+const LOOK_TAGS=['weekday','weekend','casual','evening','special occasion','gym','formal'];
+function suggestLook(){
+  const day=new Date().getDay(),h=new Date().getHours(),ls=DB.hairLooks||[];
+  const dayTags=(day===0||day===6)?['weekend','casual']:['weekday'];
+  const tags=h>=17?['evening',...dayTags]:dayTags;
+  for(const t of tags){const m=ls.find(l=>(l.tags||[]).includes(t));if(m)return m.id;}
+  return ls[0]?ls[0].id:null;
 }
 /* ══ GAMIFICATION ══ */
 function haptic(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
@@ -1554,7 +1607,7 @@ function vToday(){
   const _looks=DB.hairLooks||[];
   function lookSelectorHTML(){
     if(!_looks.length)return'';
-    const defLook=(day===0||day===6)?(DB.lookByContext&&DB.lookByContext.weekend):(DB.lookByContext&&DB.lookByContext.weekday);
+    const defLook=suggestLook();
     const selLook=UI.todayLook||defLook||_looks[0]?.id;
     return`<div style="margin-top:14px">
       <div class="sec-label" style="margin:0 22px 6px">Look</div>
@@ -1564,7 +1617,7 @@ function vToday(){
   // Merged hair section: base steps + selected look steps in one continuous checklist
   function mergedHairSection(hairR,label,sectionId){
     if(!hairR)return'';
-    const defLook=(day===0||day===6)?(DB.lookByContext&&DB.lookByContext.weekend):(DB.lookByContext&&DB.lookByContext.weekday);
+    const defLook=suggestLook();
     const selLook=UI.todayLook||defLook||_looks[0]?.id;
     const lookR=selLook?routineById(selLook):null;
     const hasLookSteps=lookR&&activeSteps(lookR.steps).length>0;
@@ -1788,7 +1841,7 @@ function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
 function histNav(d){UI._histOff=(UI._histOff||0)+d;if(UI.modal&&UI.modal.type==='history')renderModal();else render();}
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
 function parseArgs(a){return (a||'').split('|').filter(x=>x!=='').map(t=>/^-?\d{1,4}$/.test(t)?parseInt(t):t);}
@@ -2083,7 +2136,7 @@ function openScent(){UI.modal={type:'scent'};render();}
 function vRoutines(){
   const cats=[['skin','Skin'],['hair','Hair'],['supplements','Supplements']];
   const sel=(UI.routinesCat&&cats.some(c=>c[0]===UI.routinesCat))?UI.routinesCat:'skin';UI.routinesCat=sel;
-  const catRs=DB.routines.filter(r=>r.cat===sel&&!r.id.startsWith('hair-look')&&!r.deletedAt);
+  const catRs=DB.routines.filter(r=>r.cat===sel&&!isLookId(r.id)&&!r.deletedAt);
   const morning=catRs.filter(r=>r.type==='morning');
   const evening=catRs.filter(r=>r.type==='evening');
   function summary(r){const n=activeSteps(r.steps).length;return n+' step'+(n!==1?'s':'')+(r.days.length?'':' · Not scheduled');}
@@ -2127,7 +2180,7 @@ function vRoutines(){
   ${gapBanner}
   ${body}
   <div style="padding:0 22px 8px"><button class="btn full" data-call="openNewRoutine" data-args="${sel}">+ Add ${sel} routine</button></div>
-  ${sel==='hair'?`<div class="sec-label">Looks</div><div class="card">${(DB.hairLooks||[]).map((l,i)=>`<button class="step" data-call="openLook" data-args="${i}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${(routineById(l.id)?.steps||[]).map(st=>pName(st.p)).join(' · ')||'No steps'}</div></div><span class="step-arrow">›</span></button>`).join('')||'<div class="empty">No looks yet</div>'}</div>
+  ${sel==='hair'?`<div class="sec-label">Looks</div><div class="card">${(DB.hairLooks||[]).map((l,i)=>`<button class="step" data-call="openLook" data-args="${i}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${(routineById(l.id)?.steps||[]).map(st=>pName(st.p)).join(' · ')||'No steps'}${(l.tags||[]).length?' · '+l.tags.join('/'):''}</div></div><span class="step-arrow">›</span></button>`).join('')||'<div class="empty">No looks yet</div>'}</div>
   <div style="padding:0 22px 8px"><button class="btn full" onclick="newLook()">+ Add look</button></div>`:''}`;
 }
 
@@ -2325,6 +2378,9 @@ function vRoutineEditPage(){
     <div style="padding:0 22px 14px"><input value="${esc(lookEntry.name)}" data-chg="updateLookName" data-args="${r.id}"></div>
     <div class="sec-label">Description</div>
     <div style="padding:0 22px 14px"><input value="${esc(lookEntry.desc||'')}" placeholder="Short description…" data-chg="updateLookDesc" data-args="${r.id}"></div>
+    <div class="sec-label">Tags</div>
+    <div style="padding:0 22px 14px"><div class="tags">${LOOK_TAGS.map(t=>`<button class="chip ${(lookEntry.tags||[]).includes(t)?'c-cu':'c-mute'}" data-call="toggleLookTag" data-args="${r.id}|${t}">${t}</button>`).join('')}</div>
+    <p style="font-size:11px;color:var(--ink-soft);margin-top:6px">Used to auto-pick today's look — evening after 5pm, then weekend/casual on Sat–Sun, else weekday.</p></div>
     <div class="sec-label">Products</div>
     <div class="card">${stepsHTML}</div>
     <div style="padding:0 22px 8px;display:flex;gap:8px">
@@ -2385,6 +2441,13 @@ function updateLookDesc(rid,val){
   if(l){l.desc=val;}else{if(!DB.hairLooks)DB.hairLooks=[];DB.hairLooks.push({id:rid,name:routineById(rid)?.name||rid,desc:val});}
   save();
 }
+function toggleLookTag(rid,t){
+  const l=(DB.hairLooks||[]).find(l=>l.id===rid);if(!l)return;
+  if(!Array.isArray(l.tags))l.tags=[];
+  const i=l.tags.indexOf(t);
+  if(i>=0)l.tags.splice(i,1);else l.tags.push(t);
+  save();render();
+}
 
 function vLooksPage(){
   const looks=DB.hairLooks||[];
@@ -2392,7 +2455,7 @@ function vLooksPage(){
   <h1 class="page-title">Hair Looks</h1>
   <div class="card">${looks.map((l,i)=>`<button class="step" data-call="openLook" data-args="${i}">
     <div class="step-body"><div class="step-name">${esc(l.name)}</div>
-    <div class="step-note">${(routineById(l.id)?.steps||[]).map(s=>pName(s.p)).join(' · ')||'No steps'}</div></div>
+    <div class="step-note">${(routineById(l.id)?.steps||[]).map(s=>pName(s.p)).join(' · ')||'No steps'}${(l.tags||[]).length?' · '+l.tags.join('/'):''}</div></div>
     <span class="step-arrow">›</span></button>`).join('')||'<div class="empty">No looks</div>'}</div>
   <div style="padding:0 22px 8px"><button class="btn full" onclick="newLook()">+ Add look</button></div>`;
 }
@@ -2838,7 +2901,7 @@ function obFreeExtra(sec,v){DB.profile[sec].free=v;save2();}
 function vAssistantHome(){
   const cats=[
     {k:'skin',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke-linecap="round"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='skin'&&p.active).length;const r=DB.routines.filter(r=>r.cat==='skin'&&!r.deletedAt).length;return `${r} routines · ${n} products`;}},
-    {k:'hair',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c0-6 3-11 8-11s8 5 8 11M7 16c0-4 2-7 5-7s5 3 5 7"/></svg>',sub:()=>{const r=DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).length;const l=(DB.hairLooks||[]).length;return `${r} routines · ${l} looks`;}},
+    {k:'hair',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c0-6 3-11 8-11s8 5 8 11M7 16c0-4 2-7 5-7s5 3 5 7"/></svg>',sub:()=>{const r=DB.routines.filter(r=>r.cat==='hair'&&!isLookId(r.id)&&!r.deletedAt).length;const l=(DB.hairLooks||[]).length;return `${r} routines · ${l} looks`;}},
     {k:'scent',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 3h6v3l2 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z"/></svg>',sub:()=>{const n=scents().length;return `${n} in rotation`;}},
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
   ];
@@ -2927,7 +2990,7 @@ function behaviourPrompt(cat){
   lines.push('THEIR CURRENT '+cat.toUpperCase()+' ROUTINE & PRODUCTS:');
   lines.push(ctx());
   // machine-readable routine IDs so you can specify exact placement
-  const rlist=DB.routines.filter(r=>(cat==='supplements'?r.cat==='supplements':(r.cat===cat&&!r.id.startsWith('hair-look')))&&!r.deletedAt);
+  const rlist=DB.routines.filter(r=>(cat==='supplements'?r.cat==='supplements':(r.cat===cat&&!isLookId(r.id)))&&!r.deletedAt);
   if(rlist.length){
     lines.push('');
     lines.push('ROUTINE IDs (use these exact ids when placing a product):');
@@ -3010,9 +3073,11 @@ function behaviourPrompt(cat){
   lines.push('12. Bring an inactive product back: {"type":"reactivate_product","productId":"exact-id"}');
   lines.push('13. Mark a product as freshly restocked/repurchased (resets its "days left"): {"type":"restock_product","productId":"exact-id"}');
   if(cat==='hair'){
-    lines.push('14. Create a hair look (a named styling combination): {"type":"create_look","name":"Beachy waves","desc":"short description"}');
+    lines.push('14. Create a hair look (a named styling combination): {"type":"create_look","name":"Beachy waves","desc":"short description","tags":["weekend","casual"]}');
+    lines.push('    - "tags" is optional, from this exact list: weekday, weekend, casual, evening, special occasion, gym, formal. Tags drive which look is auto-picked on Today (evening after 5pm, then weekend/casual on Sat–Sun, else weekday).');
     lines.push('    - After creating, add products to it with add_product using "place":{"lookName":"the name you used","index":1}.');
-    lines.push('15. Edit a look\'s name or description: {"type":"edit_look","lookName":"existing look name","name":"New name","desc":"new desc"}');
+    lines.push('15. Edit a look\'s name, description or tags: {"type":"edit_look","lookName":"existing look name","name":"New name","desc":"new desc","tags":["formal"]}');
+    lines.push('    - Sending "tags" replaces the look\'s full tag set (from the same list as above), not just adds to it.');
     lines.push('16. Delete a look: {"type":"delete_look","lookName":"existing look name"}');
   }
   lines.push('SETTINGS (only when the user explicitly asks to change a setting):');
@@ -3179,30 +3244,148 @@ const THINK_LINES={
     'Weighing ceramides against your bank balance…',
     'Pretending to be surprised by your barrier concerns…',
     'Checking if the £90 cream is meaningfully better than the £9 one…',
-    'Rearranging the acids so they don\'t start a fight…'
+    'Rearranging the acids so they don\'t start a fight…',
+    'Reading the ingredient list back to front, just in case…',
+    'Googling what "clinically proven" is actually proving…',
+    'Counting how many steps this routine has grown by…',
+    'Making sure retinol and vitamin C aren\'t about to have words…',
+    'Wondering if "glass skin" is a texture or a lifestyle…',
+    'Checking the marketing claims against actual chemistry…',
+    'Debating whether SPF really needs its own personality…',
+    'Estimating how long this bottle will last vs. how long you\'ll use it…',
+    'Cross-examining the word "dermatologist-recommended"…',
+    'Working out if this is skincare or just expensive hope…',
+    'Deciding whether "purging" is progress or panic…',
+    'Checking the pH so your face doesn\'t stage a protest…',
+    'Weighing up whether niacinamide is doing anything at all…',
+    'Making sure this doesn\'t undo last night\'s exfoliation…',
+    'Quietly judging the ingredient list\'s font size…',
+    'Working out if "fragrance-free" actually means fragrance-free…',
+    'Deciding how many active ingredients is too many…',
+    'Checking whether this cream knows what it\'s for…'
   ],
   hair:[
     'Untangling the difference between your six similar products…',
     'Calculating optimal grease-to-effort ratio…',
     'Considering whether "beachy" is achievable inland…',
-    'Asking the bond builder what it actually bonds…'
+    'Asking the bond builder what it actually bonds…',
+    'Working out if "volumising" means anything scientifically…',
+    'Checking whether this pomade and that clay are secretly the same product…',
+    'Debating if "salt spray" texture is worth the actual salt…',
+    'Estimating how long "all-day hold" really holds…',
+    'Cross-checking your product shelf for silent duplicates…',
+    'Deciding whether this needs heat protection or blind optimism…',
+    'Wondering if "matte" and "dry" are doing different jobs here…',
+    'Working out where bond-building ends and marketing begins…',
+    'Checking if this conditioner is rich or just heavy…',
+    'Deciding whether your part deserves this much thought…',
+    'Weighing "effortless" against the seven steps required to get there…',
+    'Making sure the mask isn\'t just a sad, thin conditioner…',
+    'Considering whether frizz is weather or a lifestyle choice…',
+    'Working out if this clay actually re-styles or just sits there…',
+    'Checking whether "restorative" is a promise or a suggestion…',
+    'Debating if wash day really needs six separate products…',
+    'Estimating how much of this is texture and how much is hope…',
+    'Deciding if this counts as styling or damage control…'
   ],
   scent:[
     'Sniffing out whether this is niche or just expensive…',
     'Translating "quiet intensity" into something purchasable…',
     'Deciding how many compliments this realistically earns…',
-    'Pretending to detect notes of oakmoss and confidence…'
+    'Pretending to detect notes of oakmoss and confidence…',
+    'Working out if "skin scent" means anyone can smell it at all…',
+    'Checking whether this projects or just politely exists…',
+    'Estimating longevity against your optimism…',
+    'Deciding if "woody" is a note or a personality trait…',
+    'Cross-referencing this against your last three "signature" scents…',
+    'Weighing up whether niche really means better, or just rarer…',
+    'Working out if this smells expensive or just sounds expensive…',
+    'Checking whether "unisex" is doing any real work here…',
+    'Deciding if this is office-appropriate or a small act of rebellion…',
+    'Estimating how long before someone asks what you\'re wearing…',
+    'Working out if the dry-down redeems the opening…',
+    'Debating whether this is a scent or a personal statement…',
+    'Checking if "intimate" means subtle or just weak…',
+    'Deciding whether this belongs in the rotation or the drawer…',
+    'Weighing the review\'s poetry against what\'s actually in the bottle…',
+    'Working out if this is a compliment magnet or a warning label…',
+    'Considering whether "mysterious" is a note or a marketing decision…',
+    'Checking whether this scent knows what season it\'s in…'
   ],
   supplements:[
     'Checking this is a normal supplement and not a decision your doctor should hear about first…',
     'Confirming this is available at an actual shop and not a shady forum…',
-    'Politely resisting the urge to give medical advice…'
+    'Politely resisting the urge to give medical advice…',
+    'Double-checking this isn\'t just an expensive multivitamin in disguise…',
+    'Making sure "clinically studied" refers to this dose, not a different one…',
+    'Checking whether this needs food, water, or blind faith…',
+    'Confirming this isn\'t going to argue with anything else you\'re taking…',
+    'Working out if "bioavailable" is doing any real work in that sentence…',
+    'Checking the label matches what the bottle claims…',
+    'Making sure this is a supplement and not a marketing exercise…',
+    'Politely declining to speculate on dosage…',
+    'Confirming there\'s actual evidence behind this, not just a good review…',
+    'Checking whether "supports" means "does" or just "is near"…',
+    'Making sure this isn\'t a trend wearing a lab coat…',
+    'Working out if this needs to be taken with anything in particular…',
+    'Double-checking this is worth the shelf space…',
+    'Confirming this isn\'t the same thing as three other bottles already up there…',
+    'Keeping this factual and firmly out of diagnosis territory…',
+    'Checking if this is backed by research or just a good marketing team…',
+    'Making sure I\'m being useful, not a substitute for an actual doctor…'
   ],
   generic:[
     'Thinking, allegedly…',
     'Assembling something more useful than three dots…',
     'Doing the reading so you don\'t have to…',
-    'Consulting the routine, judging quietly…'
+    'Consulting the routine, judging quietly…',
+    'Buffering wisdom…',
+    'Running this past absolutely nobody, then proceeding anyway…',
+    'Weighing your options with the seriousness of a UN summit…',
+    'Pretending this takes more effort than it does…',
+    'Consulting a spreadsheet that doesn\'t exist…',
+    'Double-checking so you don\'t have to double-check me…',
+    'Reticulating splines, ironically…',
+    'Summoning the last of my remaining patience…',
+    'Cross-referencing your questionable choices…',
+    'Loading a personality, please hold…',
+    'Doing maths I\'m not confident about…',
+    'Asking myself if this is really necessary. It is…',
+    'Stalling professionally…',
+    'Composing a response worthy of the wait…',
+    'Consulting my inner monologue, which has opinions…',
+    'Filtering out the bad advice first…',
+    'Making sure this doesn\'t sound like a fortune cookie…',
+    'Running the numbers, badly…',
+    'Checking this isn\'t a terrible idea in disguise…',
+    'Rehearsing this answer one more time…',
+    'Politely overthinking on your behalf…',
+    'Aligning the stars, or at least the bullet points…',
+    'Giving this more thought than it probably deserves…',
+    'Consulting the group chat in my head…',
+    'Making sure I sound confident either way…',
+    'Deciding how honest to actually be here…',
+    'Doing due diligence, allegedly…',
+    'Running a background check on this idea…',
+    'Weighing plausibility against vibes…',
+    'Reading between the lines you didn\'t write…',
+    'Consulting my notes, which are mostly vibes…',
+    'Trying not to overpromise…',
+    'Checking if this holds up under scrutiny…',
+    'Sanity-checking my own sanity check…',
+    'Deciding whether to be blunt or diplomatic…',
+    'Loading opinions, some stronger than others…',
+    'Making sure this isn\'t just confident nonsense…',
+    'Giving the appearance of deep thought…',
+    'Quietly revising my first draft…',
+    'Fact-checking myself, mostly out of habit…',
+    'Consulting the part of me that overthinks everything…',
+    'Making sure this doesn\'t age badly…',
+    'Running one more pass before committing to an answer…',
+    'Deciding if "it depends" is an acceptable answer…',
+    'Trying to sound less like a search engine…',
+    'Weighing the pros, cons, and everything in between…',
+    'Making sure this is worth the wait…'
   ]
 };
 function thinkLine(){
@@ -3442,12 +3625,18 @@ function validateChanges(cat,raw){
     } else if(c.type==='create_look'){
       const name=(c.name||'').trim();if(!name)continue;
       const dup=(DB.hairLooks||[]).find(l=>l.name.toLowerCase()===name.toLowerCase());
-      out.push({type:'create_look',name,desc:(c.desc||'').trim(),_dupId:dup?dup.id:null});
+      const tags=Array.isArray(c.tags)?c.tags.map(t=>String(t).trim().toLowerCase()).filter(t=>LOOK_TAGS.includes(t)):[];
+      out.push({type:'create_look',name,desc:(c.desc||'').trim(),tags,_dupId:dup?dup.id:null});
     } else if(c.type==='edit_look'){
       const l=(DB.hairLooks||[]).find(x=>x.name.toLowerCase()===String(c.lookName||'').trim().toLowerCase());if(!l)continue;
       const ch={type:'edit_look',lookId:l.id,lookName:l.name,fields:{}};
       if(typeof c.name==='string'&&c.name.trim()&&c.name.trim()!==l.name)ch.fields.name={from:l.name,to:c.name.trim()};
       if(typeof c.desc==='string'&&c.desc.trim()!==(l.desc||''))ch.fields.desc={from:l.desc||'',to:c.desc.trim()};
+      if(Array.isArray(c.tags)){
+        const tags=[...new Set(c.tags.map(t=>String(t).trim().toLowerCase()).filter(t=>LOOK_TAGS.includes(t)))];
+        const from=(l.tags||[]).slice();
+        if(tags.join(',')!==from.join(','))ch.fields.tags={from,to:tags};
+      }
       if(Object.keys(ch.fields).length)out.push(ch);
     } else if(c.type==='delete_look'){
       const l=(DB.hairLooks||[]).find(x=>x.name.toLowerCase()===String(c.lookName||'').trim().toLowerCase());if(!l)continue;
@@ -3516,9 +3705,9 @@ function changeSummary(c){
   if(c.type==='swap_now')return{icon:'⇄',cls:'upd',title:c.pName,sub:'Swap now → '+c.repName+' (retires current)'};
   if(c.type==='reactivate_product')return{icon:'↺',cls:'add',title:c.pName,sub:'Bring back from Inactive'};
   if(c.type==='restock_product')return{icon:'↻',cls:'upd',title:c.pName,sub:'Mark restocked (resets days left)'};
-  if(c.type==='create_look')return{icon:'✦',cls:'add',title:c.name,sub:'New hair look'+(c.desc?' · '+c.desc:'')+(c._dupId?' (exists — will reuse)':'')};
+  if(c.type==='create_look')return{icon:'✦',cls:'add',title:c.name,sub:'New hair look'+(c.desc?' · '+c.desc:'')+(c.tags&&c.tags.length?' · '+c.tags.join('/'):'')+(c._dupId?' (exists — will reuse)':'')};
   if(c.type==='edit_look'){
-    const parts=[];if(c.fields.name)parts.push('rename to "'+c.fields.name.to+'"');if(c.fields.desc)parts.push('description');
+    const parts=[];if(c.fields.name)parts.push('rename to "'+c.fields.name.to+'"');if(c.fields.desc)parts.push('description');if(c.fields.tags)parts.push('tags → '+(c.fields.tags.to.join('/')||'none'));
     return{icon:'✎',cls:'upd',title:c.lookName,sub:'Look · '+parts.join(' · ')};
   }
   if(c.type==='delete_look')return{icon:'✕',cls:'del',title:c.lookName,sub:'Delete this hair look'};
@@ -3566,18 +3755,24 @@ function applyChange(c){
     return id;
   }
   if(c.type==='add_product'){
+    // resolve target routine/look first so we can check for an existing duplicate before creating anything
+    let r=null;
+    if(c.place){
+      if(c.place.routineId)r=DB.routines.find(x=>x.id===c.place.routineId);
+      else if(c.place.newRoutineName){const rid=(UI._newRoutineMap||{})[c.place.newRoutineName.toLowerCase()];r=rid?DB.routines.find(x=>x.id===rid):null;}
+      else if(c.place.lookName){const lid=c.place.lookId||(UI._newLookMap||{})[c.place.lookName.toLowerCase()];r=lid?DB.routines.find(x=>x.id===lid):null;}
+    }
+    if(r&&Array.isArray(r.steps)){
+      const wantName=((c.brand||'')+' '+(c.name||'')).trim().toLowerCase();
+      const dupStep=r.steps.find(s=>{const p=DB.products[s.p];return p&&((p.brand+' '+p.name).trim().toLowerCase()===wantName);});
+      if(dupStep)return dupStep.p; // already present in this routine/look — don't add a second copy
+    }
     const id='p'+Date.now()+Math.floor(Math.random()*1000);
     DB.products[id]=P(c.cat,c.name,c.brand,c.role,c.why,{
       durationDays:c.durationDays,tags:c.tags,link:c.link||'',
       steps:(c.applicationSteps||[]).map(t=>({text:t}))
     });
-    if(c.place){
-      let r=null;
-      if(c.place.routineId)r=DB.routines.find(x=>x.id===c.place.routineId);
-      else if(c.place.newRoutineName){const rid=(UI._newRoutineMap||{})[c.place.newRoutineName.toLowerCase()];r=rid?DB.routines.find(x=>x.id===rid):null;}
-      else if(c.place.lookName){const lid=c.place.lookId||(UI._newLookMap||{})[c.place.lookName.toLowerCase()];r=lid?DB.routines.find(x=>x.id===lid):null;}
-      if(r){if(!Array.isArray(r.steps))r.steps=[];const at=Math.max(0,Math.min(c.place.index-1,r.steps.length));r.steps.splice(at,0,{p:id,wait:c.place.wait||0});}
-    }
+    if(r){if(!Array.isArray(r.steps))r.steps=[];const at=Math.max(0,Math.min((c.place&&c.place.index||r.steps.length+1)-1,r.steps.length));r.steps.splice(at,0,{p:id,wait:(c.place&&c.place.wait)||0});}
     return id;
   }
   if(c.type==='move_step'){
@@ -3604,7 +3799,7 @@ function applyChange(c){
   }
   if(c.type==='delete_routine'){
     const rt=DB.routines.find(r=>r.id===c.routineId);
-    const isLook=c.routineId&&String(c.routineId).startsWith('hair-look')||(Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===c.routineId));
+    const isLook=isLookId(c.routineId);
     if(isLook){
       DB.routines=DB.routines.filter(r=>r.id!==c.routineId);
       if(Array.isArray(DB.hairLooks))DB.hairLooks=DB.hairLooks.filter(l=>l.id!==c.routineId);
@@ -3667,10 +3862,15 @@ function applyChange(c){
   if(c.type==='reactivate_product'){const p=DB.products[c.productId];if(p)p.active=true;return;}
   if(c.type==='restock_product'){const p=DB.products[c.productId];if(p)p.restockedAt=Date.now();return;}
   if(c.type==='create_look'){
-    if(c._dupId){(UI._newLookMap||(UI._newLookMap={}))[c.name.toLowerCase()]=c._dupId;return c._dupId;}
+    if(c._dupId){
+      // reusing an existing look — still merge in any newly-requested tags rather than silently dropping them
+      const l=(DB.hairLooks||[]).find(x=>x.id===c._dupId);
+      if(l&&Array.isArray(c.tags)&&c.tags.length){if(!Array.isArray(l.tags))l.tags=[];c.tags.forEach(t=>{if(!l.tags.includes(t))l.tags.push(t);});}
+      (UI._newLookMap||(UI._newLookMap={}))[c.name.toLowerCase()]=c._dupId;return c._dupId;
+    }
     const id='look-'+Date.now()+Math.floor(Math.random()*1000);
     if(!Array.isArray(DB.hairLooks))DB.hairLooks=[];
-    DB.hairLooks.push({id,name:c.name,desc:c.desc||''});
+    DB.hairLooks.push({id,name:c.name,desc:c.desc||'',tags:Array.isArray(c.tags)?c.tags.slice():[]});
     DB.routines.push(R(id,'hair','morning',c.name,[],[]));
     (UI._newLookMap||(UI._newLookMap={}))[c.name.toLowerCase()]=id;
     return id;
@@ -3679,6 +3879,7 @@ function applyChange(c){
     const l=(DB.hairLooks||[]).find(x=>x.id===c.lookId);if(!l)return;
     if(c.fields.name){l.name=c.fields.name.to;const r=DB.routines.find(x=>x.id===c.lookId);if(r)r.name=c.fields.name.to;}
     if(c.fields.desc)l.desc=c.fields.desc.to;
+    if(c.fields.tags)l.tags=c.fields.tags.to.slice();
     return;
   }
   if(c.type==='delete_look'){
@@ -4136,15 +4337,15 @@ function lookSheet(idx){
 function lkMove(idx,i,d){const r=routineById((DB.hairLooks||[])[idx]?.id);if(!r)return;const st=r.steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
 function lkAdd(idx){const l=(DB.hairLooks||[])[idx];if(!l)return;let r=routineById(l.id);if(!r){r=R(l.id,'hair','morning',l.name,[],[]);DB.routines.push(r);save();}UI.modal={type:'addstep',routineId:l.id};render();}
 function deleteLook(idx){if(!confirm('Delete this look?'))return;const l=DB.hairLooks[idx];DB.routines=DB.routines.filter(r=>r.id!==l.id);DB.hairLooks.splice(idx,1);save();closeModal();}
-function newLook(){if(!gateCreate('routines'))return;const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:''});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
+function newLook(){if(!gateCreate('routines'))return;const id='look-'+Date.now();DB.hairLooks.push({id,name:'New look',desc:'',tags:[]});DB.routines.push(R(id,'hair','morning','New look',[],[]));save();UI.modal={type:'look',idx:DB.hairLooks.length-1};render();}
 function lookPickSheet(){return`<h3>Pick a look</h3>${(DB.hairLooks||[]).map(l=>`<button class="step" style="border-bottom:1px solid var(--hairline)" data-call="pickHairLook" data-args="${l.id}"><div class="step-body"><div class="step-name">${esc(l.name)}</div><div class="step-note">${esc(l.desc)}</div></div></button>`).join('')}`;}
 
 /* ══ PROMPTS ══ */
 function claudePrompt(){
   const lines=['MY PERSONAL CARE CONTEXT — '+new Date().toLocaleDateString('en-AU'),'','SKIN PROFILE: Dry/sensitive, antihistamines, anti-ageing, no chemical smells. Melbourne AU.',''];
   DB.routines.filter(r=>r.cat==='skin'&&!r.deletedAt).forEach(r=>{lines.push('SKIN — '+r.name+' ('+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];let l=(i+1)+'. '+p.brand+' '+p.name;const np=p.next&&p.next.productId?DB.products[p.next.productId]:null;if(np)l+=' [next: '+np.brand+' '+np.name+']';else if(p.next&&p.next.name)l+=' [next: '+p.next.name+']';if((p.flags||[]).includes('removeWhenDone'))l+=' [phasing out]';lines.push(l);});lines.push('');});
-  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
-  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
+  DB.routines.filter(r=>r.cat==='hair'&&!isLookId(r.id)&&!r.deletedAt).forEach(r=>{lines.push('HAIR — '+r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'unassigned')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push((i+1)+'. '+p.brand+' '+p.name);});lines.push('');});
+  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push('HAIR LOOK — '+l.name+(l.tags&&l.tags.length?' ['+l.tags.join('/')+']':'')+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):''));});
   lines.push('');lines.push('SCENTS: '+scents().map(s=>s.brand+' '+s.name+' ('+s.tags.join('/')+')').join('; '));
   const suppProds=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active);if(suppProds.length){lines.push('');lines.push('SUPPLEMENTS: '+suppProds.map(p=>p.brand+' '+p.name).join(', '));}
   const inactive=Object.values(DB.products).filter(p=>!p.active);if(inactive.length){lines.push('');lines.push('RETIRED: '+inactive.map(p=>p.brand+' '+p.name).join(', '));}
@@ -4163,9 +4364,9 @@ function claudePromptHair(){
   const lines=['MY HAIR ROUTINE & PRODUCTS — '+new Date().toLocaleDateString('en-AU'),'','── PRODUCTS ──'];
   Object.values(DB.products).filter(p=>p.cat==='hair'&&p.active).forEach(p=>{lines.push('');lines.push(p.brand+' '+p.name);lines.push('Role: '+p.role);if(p.why)lines.push('Why: '+p.why);if(p.notes)lines.push('Notes: '+p.notes);});
   lines.push('','── ROUTINES ──');
-  DB.routines.filter(r=>r.cat==='hair'&&!r.id.startsWith('hair-look')&&!r.deletedAt).forEach(r=>{lines.push('');lines.push(r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
+  DB.routines.filter(r=>r.cat==='hair'&&!isLookId(r.id)&&!r.deletedAt).forEach(r=>{lines.push('');lines.push(r.name+' ('+r.type+', '+(r.days.length?r.days.map(d=>dayShort(d)).join('/'):'no days')+'):');activeSteps(r.steps).forEach((s,i)=>{const p=DB.products[s.p];lines.push('  '+(i+1)+'. '+p.brand+' '+p.name+(s.wait?' [wait '+fmtWait(s.wait)+']':''));});});
   lines.push('','── LOOKS ──');
-  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push(l.name+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):'no steps'));});
+  (DB.hairLooks||[]).forEach(l=>{const r=routineById(l.id);lines.push(l.name+(l.tags&&l.tags.length?' ['+l.tags.join('/')+']':'')+': '+(r?activeSteps(r.steps).map(s=>{const p=DB.products[s.p];return p.brand+' '+p.name;}).join(' → '):'no steps'));});
   return lines.join('\n');
 }
 function claudePromptScent(){
@@ -4209,13 +4410,26 @@ claudePromptSkin=function(){return _cpSkin()+journalBlock();};
 
 /* ══ BOOT ══ */
 async function bootApp(){
+  if(booted_local)return;          // idempotent: only paint once
+  booted_local=true;
   if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
-  // Paint immediately from local cache so there's no blank wait; Firestore hydrates next.
+  // Paint immediately from local cache so there's no blank wait; Firestore hydrates
+  // later, once auth confirms a uid (see startCloudSync).
   applyTheme();
   render();
-  await hydrateFromFirestore();
+  hideBootScreen();
 }
 window.bootApp=bootApp;
+let booted_local=false;
+
+// Kicked off by the auth handler once a real uid is known. Safe to call once.
+async function startCloudSync(){
+  if(_cloudStarted)return;
+  _cloudStarted=true;
+  await hydrateFromFirestore();
+}
+window.startCloudSync=startCloudSync;
+let _cloudStarted=false;
 
 async function hydrateFromFirestore(){
   const fs=window.stackFS;
@@ -4272,9 +4486,17 @@ function startLiveSync(){
 }
 
 /* Boot is triggered by the auth gate (see auth module in <head>).
+   Fast path: if a previous session left a marker in localStorage, we very
+   likely have a valid session, so paint the app from local cache right now
+   instead of waiting for the (slow) Firebase auth handshake. The auth module
+   still runs in the background: if the session is genuinely valid it starts
+   cloud sync silently; if the marker was stale it surfaces the login gate.
    Fallback: if the auth module never loads (offline SDK fetch fail),
    boot on local cache so the app is never permanently blank. */
 window.__authReady=false;
+try{
+  if(localStorage.getItem('stack_session')==='1'){ bootApp(); }
+}catch(e){}
 setTimeout(function(){if(!window.__authReady){ _fsReady=true; _snapshotShadow(); bootApp(); }},4000);
 </script>
 </body>
