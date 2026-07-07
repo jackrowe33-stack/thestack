@@ -243,8 +243,8 @@ a{color:inherit}
 .dd-sub{font-size:12px;color:var(--ink-mid)}
 @keyframes ack-pop{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.18)}100%{transform:scale(1);opacity:1}}
 .ack-pop{display:inline-block;animation:ack-pop .45s cubic-bezier(.3,1.4,.4,1)}
-@keyframes tabfade{from{opacity:.35;transform:translateY(6px)}to{opacity:1;transform:none}}
-#app.tab-fade{animation:tabfade .22s ease}
+@keyframes tabfade{from{opacity:.4;transform:translateY(30px)}to{opacity:1;transform:none}}
+#app.tab-fade{animation:tabfade .52s cubic-bezier(.32,.72,0,1)}
 @keyframes page-down{from{transform:translateY(0)}to{transform:translateY(100vh)}}
 .page-down{animation:page-down .42s cubic-bezier(.32,.72,0,1) forwards}
 .page-down-ghost{animation:page-down .42s cubic-bezier(.32,.72,0,1) forwards}
@@ -503,6 +503,12 @@ a{color:inherit}
 .sheet .sheet-close-tap{padding:12px 0 6px}
 .sheet{background:var(--bg-raise);border-radius:24px 24px 0 0;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;padding:10px 22px calc(32px + env(safe-area-inset-bottom));border:1px solid var(--card-edge);border-bottom:none}
 .sheet-handle{width:38px;height:4px;border-radius:4px;background:var(--card-edge);margin:8px auto 18px}
+/* Facet persistent sheet */
+.facet-sheet{padding-left:22px;padding-right:22px}
+.facet-sheet.facet-chat{padding:0;max-height:92vh;height:92vh;overflow:hidden;display:flex;flex-direction:column}
+.facet-sheet.facet-chat .chat-screen{position:relative;top:auto;left:auto;right:auto;height:100%;z-index:auto;border-radius:24px 24px 0 0;transform:none!important}
+.facet-sheet.facet-chat .chat-head{padding:16px 16px 10px;border-radius:24px 24px 0 0}
+.facet-sheet.facet-chat .chat-wrap{overscroll-behavior:contain}
 .sheet h3{font-family:'Fraunces',serif;font-size:21px;font-weight:400;margin-bottom:2px;color:var(--ink)}
 .sheet .brand{font-size:12px;color:var(--ink-mid);margin-bottom:16px}
 .field{margin-bottom:14px}
@@ -674,7 +680,7 @@ window.stackFS = (function(){
   }
   async function saveCore(coreObj){
     if(!db||!uid) return;
-    try{ await setDoc(doc(db,'users',uid,'core','current'), coreObj); }catch(e){ console.warn('core save',e); }
+    try{ await setDoc(doc(db,'users',uid,'core','current'), coreObj); }catch(e){ console.warn('core save',e); throw e; }
   }
   async function saveJournalDay(ds,text){
     if(!db||!uid) return;
@@ -682,7 +688,7 @@ window.stackFS = (function(){
   }
   async function saveCompletionDay(ds,entriesForDay){
     if(!db||!uid) return;
-    try{ await setDoc(doc(db,'users',uid,'completions',ds), { entries: entriesForDay, updatedAt: Date.now() }); }catch(e){ console.warn('completion save',e); }
+    try{ await setDoc(doc(db,'users',uid,'completions',ds), { entries: entriesForDay, updatedAt: Date.now() }); }catch(e){ console.warn('completion save',e); throw e; }
   }
   function subscribe(onChange){
     if(!db||!uid) return ()=>{};
@@ -840,7 +846,7 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-06 · v95';
+const BUILD='2026-07-07 · v96';
 const SEED={
   v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},completions:{},
   products:{
@@ -1074,19 +1080,17 @@ function _entriesForDate(ds){
 function _flushFirestore(){
   if(!_fsReady||_fsSuspend||!window.stackFS) return Promise.resolve();
   const ps=[];
-  // core doc
   ps.push(window.stackFS.saveCore(_coreSlice()));
-  // dirty journal days
   _dirtyJournalDays().forEach(ds=>{
     const t=(DB.journal||{})[ds];
     ps.push(window.stackFS.saveJournalDay(ds, t===undefined?'':t));
   });
-  // dirty completion days (write the whole day's entry-map)
   _dirtyCompletionDays().forEach(ds=>{
     ps.push(window.stackFS.saveCompletionDay(ds, _entriesForDate(ds)));
   });
-  _snapshotShadow();
-  return Promise.all(ps);
+  // Mark the shadow clean only AFTER writes land, so a failed write stays dirty
+  // and retries instead of being silently dropped.
+  return Promise.all(ps).then(()=>{_snapshotShadow();}).catch(e=>{console.warn('flush failed, will retry',e);});
 }
 // Flush any pending debounced write immediately and wait for it to land.
 window.stackFlushNow = function(){ clearTimeout(_fsDirtyTimer); return _flushFirestore(); };
@@ -1313,7 +1317,7 @@ function tickStep(rid,productId,dateStr){
       const h=el.offsetHeight;el.style.overflow='hidden';el.style.maxHeight=h+'px';el.style.transition='max-height 250ms ease-out,opacity 250ms ease-out';
       if(!UI.todayExpanded)UI.todayExpanded={};delete UI.todayExpanded[rid];
       requestAnimationFrame(()=>{el.style.maxHeight='0';el.style.opacity='0';});
-      setTimeout(()=>renderTodayPage(),270);return;
+      setTimeout(()=>{UI._settleScroll=true;renderTodayPage();},270);return;
     }
   }
   renderTodayPage();
@@ -1328,7 +1332,7 @@ function completeAllDate(rid,dateStr){
   const isDayDone=dayComplete(ddow,dateStr);
   haptic(isDayDone?[20,40,20,40,40]:[15,30,15]);
   if(dateStr===todayStr()){if(isDayDone)celebrateDay();else celebrateRoutine(r.name);}
-  UI.todayScrollTo=null;save();renderTodayPage();
+  UI.todayScrollTo=null;UI._settleScroll=true;save();renderTodayPage();
 }
 function uncompleteRoutineDate(rid,dateStr){
   delete DB.completions[compKey(rid,dateStr)];
@@ -1359,18 +1363,21 @@ function render(){
   else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
   else if(UI.tab==='scent')app.innerHTML=vScent();
   else if(UI.tab==='history')app.innerHTML=vHistory();
-  else if(UI.tab==='assistant')app.innerHTML=vAssistant();
   else if(UI.tab==='supplements')app.innerHTML=vSupplements();
   else app.innerHTML=vHome();
   app.classList.remove('tab-fade');
   if(UI._tabFade){void app.offsetWidth;app.classList.add('tab-fade');UI._tabFade=false;}
-  renderTabs();renderModal();
+  renderTabs();renderModal();renderFacet();
   if(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history'||UI.tab==='supplements')attachSheetSwipe();
   // Wake lock follows the checklist views
   if(UI.tab==='today'||UI.tab==='runner')acquireWakeLock();else releaseWakeLock();
   // Scroll handling: exact-restore (mid-checklist re-render) > evening auto-scroll > per-tab restore > top
   const scrollKey=UI.tab+(UI.setupPage||'');
-  if(UI._keepScroll!=null){
+  if(UI._settleScroll){
+    UI._settleScroll=false;UI._keepScroll=null;UI._scrollRestoring=false;
+    const clamp=()=>{const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);if(window.scrollY>max)window.scrollTo(0,max);};
+    requestAnimationFrame(()=>{clamp();requestAnimationFrame(clamp);});
+  } else if(UI._keepScroll!=null){
     const y=UI._keepScroll;UI._keepScroll=null;UI._scrollRestoring=false;
     requestAnimationFrame(()=>{
       const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
@@ -1383,14 +1390,15 @@ function render(){
     window.scrollTo(0,0);
   } else {UI._scrollRestoring=false;}
   updateWaitDisplay();
-  if(UI.tab==='assistant'&&UI._view==='chat')requestAnimationFrame(syncChatViewport);
+  if(UI._facetOpen&&UI._view==='chat')requestAnimationFrame(syncChatViewport);
 }
 function renderTabs(){
-  const ts=[['home',HOME_SVG,'Home'],['routines',LIST_SVG,'Routines'],['assistant',FACET_SVG,'Loop']];
-  document.getElementById('tabs').style.display=(UI.tab==='setup'||(UI.tab==='assistant'&&isPremium()&&(!profileComplete()||UI._view==='chat')))?'none':'';
-  document.getElementById('tabs').innerHTML=ts.map(([k,ic,l])=>{
-    const active=UI.tab===k;
-    return`<button class="tab ${active?'active':''}" data-call="navTab" data-args="${k}"><span class="ic">${ic}</span><span class="tab-label">${l}</span></button>`;
+  const ts=[['home',HOME_SVG,'Home','navTab'],['facet',FACET_SVG,'Loop','openFacet'],['routines',LIST_SVG,'Routines','navTab']];
+  document.getElementById('tabs').style.display=(UI.tab==='setup')?'none':'';
+  document.getElementById('tabs').innerHTML=ts.map(([k,ic,l,call])=>{
+    const active=(call==='navTab'&&UI.tab===k)||(k==='facet'&&UI._facetOpen);
+    const args=(call==='openFacet')?'':k;
+    return`<button class="tab ${active?'active':''}" data-call="${call}" data-args="${args}"><span class="ic">${ic}</span><span class="tab-label">${l}</span></button>`;
   }).join('');
 }
 function saveScroll(){if(!UI._scrollPositions)UI._scrollPositions={};UI._scrollPositions[UI.tab+(UI.setupPage||'')]=window.scrollY;}
@@ -1474,7 +1482,7 @@ function dismissSheet(){
   }
 }
 function navTab(k){saveScroll();if(k==='today'){openToday();return;}leaveToday(()=>{UI.tab=k;UI.setupPage=null;UI.runnerId=null;UI._view=null;UI._scrollRestoring=true;UI._tabFade=true;render();});}
-function openSetup(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage=null;render();});}
+function openSetup(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage=null;UI._tabFade=true;render();});}
 function closeSetup(){navTab(UI._setupReturn==='routines'?'routines':'home');}
 const GEAR_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/></svg>';
 const HOME_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"/></svg>';
@@ -1818,13 +1826,13 @@ function setTodayLook(id){UI.todayLook=id;renderTodayPage();}
 function openLook(idx){UI.modal={type:'look',idx:idx};render();}
 function openAddStep(rid){UI.modal={type:'addstep',routineId:rid};render();}
 function openRoutineView(id){UI.modal={type:'routine-view',id:id};render();}
-function openRoutineEdit(id){UI.setupPage='routine-edit';UI.editRoutineId=id;render();}
+function openRoutineEdit(id){UI.editRoutineId=id;setupNav('routine-edit');}
 function editFromSheet(id){closeModal(()=>{UI.tab='setup';UI.setupPage='routine-edit';UI.editRoutineId=id;});}
 function setRoutinesCat(k){UI.routinesCat=k;render();}
 function setInvCat(k){UI.invCat=k;render();}
 function setPromptSel(k){UI._promptSel=k;render();}
 function setSchedType(t){UI._schedType=t;render();}
-function openPlannerFor(t){UI._setupReturn='routines';UI._schedType=t;UI.tab='setup';UI.setupPage='planner';render();}
+function openPlannerFor(t){UI._setupReturn='routines';UI._schedType=t;UI.tab='setup';UI.setupPage='planner';UI._tabFade=true;render();}
 function pickHairLook(id){UI.hairLook=id;closeModal();}
 function openNewRoutine(cat){if(!gateCreate('routines'))return;UI._newR={cat:cat,type:'morning',name:'',copyFrom:''};UI.modal={type:'new-routine'};render();}
 function backToProduct(id){UI._afterNewProduct=null;UI.modal={type:'product',id:id};render();}
@@ -1841,7 +1849,7 @@ function setRoutineType(rid,v){routineById(rid).type=v;save();render();}
 function setRoutineCat(rid,v){routineById(rid).cat=v;save();render();}
 function stepSearchQ(rid,v){stepSearch(v,rid);}
 function histNav(d){UI._histOff=(UI._histOff||0)+d;if(UI.modal&&UI.modal.type==='history')renderModal();else render();}
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot,openFacet,closeFacet};
 const CHG_FNS={assignDay,updateProductStep,updateLookName,updateLookDesc,updNext,upd,setNextFromInventory,setJournal,setStepWait,setRoutineName,setRoutineType,setRoutineCat,lkName,lkDesc,obFree,obFreeExtra,chgEditF,chgEditFF,chgEditSteps,chgEditStepsF};
 const INP_FNS={stepSearchQ};
 function parseArgs(a){return (a||'').split('|').filter(x=>x!=='').map(t=>/^-?\d{1,4}$/.test(t)?parseInt(t):t);}
@@ -2277,7 +2285,8 @@ function vSetupRouter(){
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
 }
-function setupBack(page){saveScroll();UI.setupPage=page||null;UI._scrollRestoring=!!(page);render();}
+function setupBack(page){saveScroll();UI.setupPage=page||null;UI._scrollRestoring=!!(page);UI._tabFade=true;render();}
+function setupNav(page,extra){saveScroll();UI.setupPage=page;if(extra&&extra.invCat)UI.invCat=extra.invCat;UI._tabFade=true;render();}
 
 function vSetupMenu(){
   const low=lowStock().length;
@@ -2287,16 +2296,16 @@ function vSetupMenu(){
   </div>
   <p class="page-sub">Tap to configure</p>
   <div class="card">
-    <button class="menu-item" onclick="UI.setupPage='planner';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">▦</div><div class="menu-body"><div class="menu-title">Week planner</div><div class="menu-sub">Skin & hair routines per day, AM & PM</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('planner')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">▦</div><div class="menu-body"><div class="menu-title">Week planner</div><div class="menu-sub">Skin & hair routines per day, AM & PM</div></div><span class="menu-arrow">›</span></button>
   </div>
   <div class="card">
-    <button class="menu-item" onclick="UI.setupPage='inventory';UI.invCat='skin';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">✦</div><div class="menu-body"><div class="menu-title">Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.active).length} active products${low?' · '+low+' low stock':''}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('inventory',{invCat:'skin'})"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">✦</div><div class="menu-body"><div class="menu-title">Inventory</div><div class="menu-sub">${Object.values(DB.products).filter(p=>p.active).length} active products${low?' · '+low+' low stock':''}</div></div><span class="menu-arrow">›</span></button>
   </div>
   <div class="card">
-    <button class="menu-item" onclick="UI.setupPage='streak';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◈</div><div class="menu-body"><div class="menu-title">Streak</div><div class="menu-sub" style="text-transform:capitalize">${['skin','hair','scent','supplements'].filter(c=>c==='skin'?(DB.settings?.streakScope?.[c]!==false):!!(DB.settings?.streakScope?.[c])).join(', ')||'Nothing counted'}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='reco';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◎</div><div class="menu-body"><div class="menu-title">Recommendations</div><div class="menu-sub">${DB.settings.country||'AU'} · ${({online:'Online',instore:'In-store',both:'Online & in-store'})[DB.settings.shopMethod||'both']}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='appearance';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="UI.setupPage='data';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇲</div><div class="menu-body"><div class="menu-title">Data</div><div class="menu-sub">Sync, backup & reset</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('streak')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◈</div><div class="menu-body"><div class="menu-title">Streak</div><div class="menu-sub" style="text-transform:capitalize">${['skin','hair','scent','supplements'].filter(c=>c==='skin'?(DB.settings?.streakScope?.[c]!==false):!!(DB.settings?.streakScope?.[c])).join(', ')||'Nothing counted'}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('reco')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◎</div><div class="menu-body"><div class="menu-title">Recommendations</div><div class="menu-sub">${DB.settings.country||'AU'} · ${({online:'Online',instore:'In-store',both:'Online & in-store'})[DB.settings.shopMethod||'both']}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('appearance')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('data')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇲</div><div class="menu-body"><div class="menu-title">Data</div><div class="menu-sub">Sync, backup & reset</div></div><span class="menu-arrow">›</span></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
   <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v}</div>`;
@@ -2414,7 +2423,7 @@ function vRoutineEditPage(){
   </div>
   <p style="font-size:11px;color:var(--ink-soft);padding:0 22px 4px">Changes save automatically as you edit.</p>
   <div style="padding:4px 22px 8px;display:flex;gap:8px">
-    <button class="btn full" onclick="UI.setupPage='routines';render()">Save &amp; close</button>
+    <button class="btn full" onclick="setupNav('routines')">Save &amp; close</button>
   </div>
   <div class="assist-hint" style="margin:8px 22px">You can also use the assistant to add, remove and edit your products and routines.</div>`;
 }
@@ -2429,7 +2438,7 @@ function toggleRoutineDay(id,day){
   }
 }
 function moveRStep(id,i,d){const st=routineById(id).steps;const j=i+d;if(j<0||j>=st.length)return;[st[i],st[j]]=[st[j],st[i]];save();render();}
-function deleteRoutine(id){if(!confirm('Delete this routine? Your past history stays intact — it just won\u2019t be scheduled from today on.'))return;const r=routineById(id);if(!r){DB.routines=DB.routines.filter(x=>x.id!==id);save();UI.setupPage='routines';render();return;}r.deletedAt=todayStr();save();UI.setupPage='routines';render();}
+function deleteRoutine(id){if(!confirm('Delete this routine? Your past history stays intact — it just won\u2019t be scheduled from today on.'))return;const r=routineById(id);if(!r){DB.routines=DB.routines.filter(x=>x.id!==id);save();setupNav('routines');return;}r.deletedAt=todayStr();save();setupNav('routines');}
 function updateLookName(rid,val){
   const r=routineById(rid);if(r)r.name=val;
   const l=(DB.hairLooks||[]).find(l=>l.id===rid);
@@ -2498,7 +2507,7 @@ function vDataPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">Data</h1><p class="page-sub">Sync, backup and reset</p>
   <div class="card">
-    <button class="menu-item" onclick="UI.setupPage='sync';render()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◇</div><div class="menu-body"><div class="menu-title">AI connection</div><div class="menu-sub">${DB.settings.syncUrl?'Worker connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('sync')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◇</div><div class="menu-body"><div class="menu-title">AI connection</div><div class="menu-sub">${DB.settings.syncUrl?'Worker connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div><div class="menu-sub">Download a JSON copy of all your data</div></div></button>
     <button class="menu-item" onclick="document.getElementById('impData').click()"><div class="menu-body"><div class="menu-title">Import backup</div><div class="menu-sub">Restore from a JSON backup file</div></div></button>
     <button class="menu-item" onclick="(window.stackFlushNow?window.stackFlushNow():Promise.resolve()).then(function(){return window.stackSignOut?window.stackSignOut():Promise.resolve();}).finally(function(){location.reload();});"><div class="menu-body"><div class="menu-title">Sign out</div><div class="menu-sub">Return to the sign-in screen</div></div></button>
@@ -2541,7 +2550,7 @@ function vStreakPage(){
   <div class="seg">${[0,1,2].map(n=>`<button class="${(DB.settings.graceDaysPerMonth??1)===n?'on':''}" data-call="setGrace" data-args="${n}">${n}</button>`).join('')}</div>
   <p class="page-sub">Missed days forgiven per month before the streak resets.</p>`;
 }
-function openLowStock(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage='lowstock';render();});}
+function openLowStock(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage='lowstock';UI._tabFade=true;render();});}
 function restockProduct(id){DB.products[id].restockedAt=Date.now();save();render();}
 function vLowStockPage(){
   const items=lowStock().sort((a,b)=>daysLeft(a[1],a[0])-daysLeft(b[1],b[0]));
@@ -2809,10 +2818,6 @@ function vAssistant(){
 function vFacetTeaser(){
   return`<div class="top">
     <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Loop</h1>
-    <div class="hdr-right">
-      <div class="wordmark">The <em>Stack</em></div>
-      ${gearBtn()}
-    </div>
   </div>
   <div class="facet-teaser">
     <div class="ft-glyph">${FACET_SVG}</div>
@@ -2895,7 +2900,7 @@ function vOnboard(){
       <button class="btn" data-call="obAdvance">${(sec===OB_SECTIONS[OB_SECTIONS.length-1]&&step===qs.length-1)?'Finish':'Continue'}</button>
     </div>`;
 }
-function obLeave(){save();navTab('home');}
+function obLeave(){save();if(UI._facetOpen){UI._view=null;closeFacet();}else navTab('home');}
 function obFreeExtra(sec,v){DB.profile[sec].free=v;save2();}
 
 function vAssistantHome(){
@@ -2907,10 +2912,6 @@ function vAssistantHome(){
   ];
   return`<div class="top">
     <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Loop</h1>
-    <div class="hdr-right">
-      <div class="wordmark">The <em>Stack</em></div>
-      ${gearBtn()}
-    </div>
   </div>
     <div class="ob-hint" style="padding-top:14px">How can I help? Pick an area and I'll use your routine, your notes and what you've told me.</div>
     <div class="ob-body" style="padding-top:6px">
@@ -3137,12 +3138,14 @@ async function aiCall(system,messages,useWebSearch){
 /* chat state lives in UI (not persisted; a fresh session each open) */
 function assistantPick(cat){
   UI._assistantCat=cat;
-  UI._chat=[];            // {role:'user'|'assistant', content}
+  if(!UI._chats)UI._chats={};
+  if(!UI._recallByCat)UI._recallByCat={};
+  if(UI._chats[cat]&&UI._chats[cat].length){UI._chat=UI._chats[cat];}
+  else{UI._chat=[];UI._chats[cat]=UI._chat;}
   UI._chatBusy=false;
-  UI._recallDone=false;
-  UI.tab='assistant';UI._view='chat';
-  render();
-  runRecall(cat);         // fire the smart recall opener
+  UI._view='chat';
+  renderFacet();
+  if(!UI._recallByCat[cat]&&!UI._chat.length){UI._recallByCat[cat]=true;runRecall(cat);}
 }
 
 /* smart recall: ask the model to read recent journal + profile and open the conversation */
@@ -3197,7 +3200,7 @@ async function assistantSend(explicit){
   }
 }
 
-function assistantBack(){stopThinking();UI._view=null;UI._assistantCat=null;UI._chat=null;render();}
+function assistantBack(){stopThinking();UI._chatBusy=false;UI._view=null;UI._assistantCat=null;renderFacet();}
 
 function scrollChatBottom(){
   const wrap=document.getElementById('chatWrap');
@@ -3209,7 +3212,7 @@ function scrollChatBottom(){
 }
 function renderChat(){
   const wrap=document.getElementById('chatWrap');
-  if(!wrap){render();return;}
+  if(!wrap){renderFacet();return;}
   wrap.innerHTML=chatMessagesHtml();
   scrollChatBottom();
   const send=document.getElementById('chatSend');
@@ -3451,6 +3454,7 @@ function chatGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollH
 function syncChatViewport(){
   const s=document.querySelector('.chat-screen');
   if(!s)return;
+  if(s.closest('.facet-chat')){s.style.height='';s.style.transform='';return;}
   if(window.visualViewport){
     s.style.height=window.visualViewport.height+'px';
     s.style.transform='translateY('+window.visualViewport.offsetTop+'px)';
@@ -4128,6 +4132,101 @@ function closeModal(after){
   ov.classList.add('closing');
   setTimeout(()=>{ov.remove();if(after)after();render();},430);
 }
+
+/* ══ FACET — persistent bottom sheet ══ */
+function ensureFacetLayer(){
+  let ov=document.getElementById('facet-ov');
+  if(ov)return ov;
+  ov=document.createElement('div');
+  ov.className='overlay facet-ov';
+  ov.id='facet-ov';
+  ov.style.display='none';
+  ov.onclick=e=>{if(e.target===ov)closeFacet();};
+  const sheet=document.createElement('div');
+  sheet.className='sheet facet-sheet';
+  sheet.id='facet-sheet';
+  ov.appendChild(sheet);
+  document.body.appendChild(ov);
+  return ov;
+}
+function facetBodyHtml(){
+  if(!isPremium()) return vFacetTeaser();
+  if(UI._view==='chat'&&UI._assistantCat) return vAssistantChat();
+  if(!profileComplete()) return vOnboard();
+  return vAssistantHome();
+}
+function renderFacet(){
+  if(!UI._facetOpen)return;
+  ensureFacetLayer();
+  const sheet=document.getElementById('facet-sheet');
+  const chatMode=(UI._view==='chat'&&UI._assistantCat&&isPremium());
+  sheet.classList.toggle('facet-chat',chatMode);
+  const handle=`<button class="sheet-close-tap" aria-label="Close" data-call="closeFacet"><div class="sheet-handle"></div></button>`;
+  sheet.innerHTML=(chatMode?'':handle)+facetBodyHtml();
+  if(chatMode){requestAnimationFrame(()=>{syncChatViewport();scrollChatBottom();});}
+}
+function openFacet(){
+  const ov=ensureFacetLayer();
+  const wasOpen=UI._facetOpen;
+  UI._facetOpen=true;
+  renderFacet();
+  ov.style.display='';
+  ov.classList.remove('closing');
+  if(!wasOpen){
+    ov.classList.remove('enter');void ov.offsetWidth;ov.classList.add('enter');
+    const sheet=document.getElementById('facet-sheet');
+    if(sheet&&!sheet._facetSwipeBound){attachFacetSwipe(sheet);sheet._facetSwipeBound=true;}
+  }
+  renderTabs();
+}
+function closeFacet(){
+  const ov=document.getElementById('facet-ov');
+  UI._facetOpen=false;
+  stopThinking();
+  if(!ov){renderTabs();return;}
+  ov.classList.remove('enter');
+  ov.classList.add('closing');
+  setTimeout(()=>{
+    if(!UI._facetOpen){ov.style.display='none';ov.classList.remove('closing');}
+  },430);
+  renderTabs();
+}
+function attachFacetSwipe(sheetEl){
+  let sx=0,sy=0,armed=false,dragging=false,dead=false,dy=0,lastY=0,lastT=0,vel=0;
+  sheetEl.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+    lastY=sy;lastT=e.timeStamp;vel=0;dy=0;dragging=false;dead=false;
+    armed=sheetEl.scrollTop<=2;
+  },{passive:true});
+  sheetEl.addEventListener('touchmove',e=>{
+    if(!armed||dead)return;
+    const y=e.touches[0].clientY;
+    const dx=e.touches[0].clientX-sx;
+    dy=y-sy;
+    vel=(y-lastY)/Math.max(1,e.timeStamp-lastT);
+    lastY=y;lastT=e.timeStamp;
+    if(!dragging){
+      if(dy<-6||Math.abs(dx)>Math.abs(dy)+6){dead=true;return;}
+      if(dy>6){dragging=true;sheetEl.style.transition='none';}
+      else return;
+    }
+    e.preventDefault();
+    sheetEl.style.transform=`translateY(${Math.max(0,dy)}px)`;
+  },{passive:false});
+  sheetEl.addEventListener('touchend',()=>{
+    if(!dragging){armed=false;return;}
+    dragging=false;armed=false;
+    if(dy>140||(dy>60&&vel>0.5)){
+      sheetEl.style.transition='';sheetEl.style.transform='';
+      closeFacet();
+    }else{
+      sheetEl.style.transition='transform .3s cubic-bezier(.32,.72,0,1)';
+      sheetEl.style.transform='translateY(0)';
+      setTimeout(()=>{sheetEl.style.transition='';sheetEl.style.transform='';},320);
+    }
+  },{passive:true});
+}
+
 function openProduct(id){
   // if opening from an open routine-view sheet, remember it so closing returns there
   UI._productReturn=(UI.modal&&(UI.modal.type==='routine-view'||UI.modal.type==='scent'))?{type:UI.modal.type,id:UI.modal.id}:null;
@@ -4476,7 +4575,14 @@ function startLiveSync(){
       }else if(kind==='journal'){
         DB.journal=data||{};
       }else if(kind==='completions'){
-        DB.completions=data||{};
+        // Merge, not replace: preserve local ticks/un-ticks not yet flushed.
+        const remote=data||{};
+        const merged=Object.assign({},remote);
+        const shadow=_fsShadow.completions||{};
+        const local=DB.completions||{};
+        for(const k in local){ if(JSON.stringify(local[k])!==JSON.stringify(shadow[k])){ merged[k]=local[k]; } }
+        for(const k in shadow){ if(!(k in local) && (k in merged)){ delete merged[k]; } }
+        DB.completions=merged;
       }
       try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
       _snapshotShadow();
