@@ -784,6 +784,19 @@ async function doEmail(){
   catch(e){ b.disabled=false; b.textContent=mode==='signup'?'Create account':'Sign in'; msg(friendly(e.code)); }
 }
 async function doGoogle(){ try{ await signInWithPopup(auth,new GoogleAuthProvider()); }catch(e){ msg(friendly(e.code)); } }
+// Sign-out from Settings → Data. Gives immediate visual feedback (disabled
+// button + spinner-style label) since flush+signOut+reload can take a
+// moment on a slow connection and the button used to just sit there.
+function doSignOutTap(btn){
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;
+  btn.style.opacity='.6';
+  const t=document.getElementById('signOutTitle'); if(t)t.textContent='Signing out…';
+  const s=document.getElementById('signOutSub'); if(s)s.textContent='One moment';
+  (window.stackFlushNow?window.stackFlushNow():Promise.resolve())
+    .then(function(){ return window.stackSignOut?window.stackSignOut():Promise.resolve(); })
+    .finally(function(){ location.reload(); });
+}
 async function doReset(){
   const email=document.getElementById('ag-email').value.trim();
   if(!email){msg('Enter your email above first, then tap reset.');return;}
@@ -809,12 +822,25 @@ if(auth){
   onAuthStateChanged(auth,user=>{
     window.__authReady=true;
     if(user){
+      // A genuine sign-in transition is when the gate was actually on screen
+      // (the user just typed credentials or tapped Google) — as opposed to
+      // a cold-start fast-boot from an already-known session, where painting
+      // instantly from local cache is correct and desired. Only the former
+      // risks a flash of stale/placeholder data, since it can be a different
+      // account than whatever was last cached locally.
+      const fromGate = gate.classList.contains('show');
       try{ localStorage.setItem('stack_session','1'); }catch(e){}
       window.stackFS.setUid(user.uid);
       hideGate();
+      if(fromGate && window.showBootScreen) window.showBootScreen();
       if(!booted){ booted=true; if(window.bootApp) window.bootApp(); }
-      // uid is now known — start (or continue) the cloud sync.
-      if(window.startCloudSync) window.startCloudSync();
+      // uid is now known — start (or continue) the cloud sync. When this
+      // sign-in came from the gate, keep the boot screen up until the
+      // account's real data has hydrated, then reveal it — no flash.
+      if(window.startCloudSync){
+        const p=window.startCloudSync();
+        if(fromGate && p && p.then) p.then(function(){ if(window.hideBootScreen) window.hideBootScreen(); });
+      }
     }else{
       // No user. Clear the fast-boot marker; if we optimistically booted from a
       // stale marker, this will surface the login gate over the app.
@@ -853,6 +879,26 @@ function hideBootScreen(){
   setTimeout(function(){ if(el&&el.parentNode)el.parentNode.removeChild(el); },400);
 }
 setTimeout(hideBootScreen,6000); // failsafe: never leave the user staring at this forever
+
+/* Re-shown right after a sign-in (from the auth gate) while the new
+   account's Firestore data hydrates, so the user never sees a flash of
+   whichever data happened to be sitting in local cache first. Uses the
+   same markup as the initial boot screen — it's the one standard loading
+   screen for the whole app, not a second one. */
+function showBootScreen(){
+  var el=document.getElementById('bootscreen');
+  if(!el){
+    el=document.createElement('div');
+    el.id='bootscreen';
+    el.innerHTML='<div class="bs-wrap"><svg class="bs-glyph" viewBox="0 0 32 32" fill="none"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="var(--cu,#b87040)" stroke-width="1.6" stroke-linejoin="round"/></svg><div class="bs-word">The <em>Stack</em></div><div class="bs-spin"></div></div>';
+    document.body.insertBefore(el,document.body.firstChild);
+  }
+  el.classList.remove('hide');
+  clearTimeout(window.__bootFailsafe);
+  window.__bootFailsafe=setTimeout(hideBootScreen,6000); // same failsafe: never trap the user if hydration stalls
+}
+window.showBootScreen=showBootScreen;
+window.hideBootScreen=hideBootScreen;
 </script>
 <script>
 /* ══ SEED ══ */
@@ -860,9 +906,9 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-11 · v97';
+const BUILD='2026-07-11 · v98';
 const SEED={
-  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{syncUrl:'',pin:'',theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},completions:{},
+  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -902,14 +948,13 @@ const SEED={
 };
 /* ══ MIGRATION ══ */
 function safeUrl(u){u=(u||'').trim();if(!u)return'';if(!/^https?:\/\//i.test(u))u='https://'+u.replace(/^[a-z]+:\/*/i,'');return u;}
-function normUrl(u){u=(u||'').trim().replace(/\/+$/,'');if(u&&!/^https?:\/\//i.test(u))u='https://'+u;return u;}
 function migrate(d){
   if(!d.v||d.v<4){
     d.routines=structuredClone(SEED.routines);
     if(d.skin){['am','a','b','c','refresh'].forEach(k=>{if(d.skin[k])d.routines.find(r=>r.id==='skin-'+k)&&(d.routines.find(r=>r.id==='skin-'+k).name=d.skin[k].name||d.routines.find(r=>r.id==='skin-'+k).name);});}
     delete d.skin;delete d.hair;
     d.hairLooks=structuredClone(SEED.hairLooks);
-    d.settings={syncUrl:d.settings?.syncUrl||'',pin:d.settings?.pin||''};
+    d.settings={};
     Object.values(d.products||{}).forEach(p=>{if(!p.cat)p.cat='skin';if(p.active===undefined)p.active=true;if(!p.tags)p.tags=[];});
     d.v=4;
   }
@@ -1000,11 +1045,18 @@ function migrate(d){
     });
     d.v=16;
   }
-  if(d.settings?.syncUrl)d.settings.syncUrl=normUrl(d.settings.syncUrl);
-  // Look tags are additive and don't need a version bump — same treatment as syncUrl above.
+  // Look tags are additive and don't need a version bump — same treatment as pin/syncUrl below.
   // lookByContext is retired in favour of tag-based auto-select (suggestLook); drop it if present.
   (d.hairLooks||[]).forEach(l=>{if(!Array.isArray(l.tags))l.tags=[];});
   if(d.lookByContext!==undefined)delete d.lookByContext;
+  // PIN was a leftover from before Firebase Auth; the Worker only checks the
+  // ID token now, so the field is dead weight — same additive-cleanup
+  // treatment as lookByContext above, no version bump needed.
+  if(d.settings && d.settings.pin!==undefined)delete d.settings.pin;
+  // Worker URL is now a hardcoded constant (WORKER_URL) shared by every user
+  // instead of a per-user setting, since it's the same single Worker for
+  // everyone and identity travels via the Firebase ID token, not the URL.
+  if(d.settings && d.settings.syncUrl!==undefined)delete d.settings.syncUrl;
   return d;
 }
 
@@ -2316,7 +2368,6 @@ function vSetupRouter(){
   if(p==='routine-edit')return vRoutineEditPage();
   if(p==='looks')return vLooksPage();
   if(p==='inventory')return vInventoryPage();
-  if(p==='sync')return vSyncPage();
   if(p==='reco')return vRecoPage();
   if(p==='appearance')return vAppearancePage();
   if(p==='data')return vDataPage();
@@ -2547,10 +2598,9 @@ function vDataPage(){
   return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">Data</h1><p class="page-sub">Sync, backup and reset</p>
   <div class="card">
-    <button class="menu-item" onclick="setupNav('sync')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◇</div><div class="menu-body"><div class="menu-title">AI connection</div><div class="menu-sub">${DB.settings.syncUrl?'Worker connected':'Not configured'}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="exportData()"><div class="menu-body"><div class="menu-title">Export backup</div><div class="menu-sub">Download a JSON copy of all your data</div></div></button>
     <button class="menu-item" onclick="document.getElementById('impData').click()"><div class="menu-body"><div class="menu-title">Import backup</div><div class="menu-sub">Restore from a JSON backup file</div></div></button>
-    <button class="menu-item" onclick="(window.stackFlushNow?window.stackFlushNow():Promise.resolve()).then(function(){return window.stackSignOut?window.stackSignOut():Promise.resolve();}).finally(function(){location.reload();});"><div class="menu-body"><div class="menu-title">Sign out</div><div class="menu-sub">Return to the sign-in screen</div></div></button>
+    <button class="menu-item" id="signOutBtn" onclick="doSignOutTap(this)"><div class="menu-body"><div class="menu-title" id="signOutTitle">Sign out</div><div class="menu-sub" id="signOutSub">Return to the sign-in screen</div></div></button>
     <button class="menu-item" onclick="if(confirm('Reset everything to defaults? This cannot be undone.')){localStorage.removeItem('stack_v1');location.reload();}"><div class="menu-body"><div class="menu-title" style="color:var(--danger)">Reset all data</div><div class="menu-sub">Erase everything and start fresh</div></div></button>
   </div>
   <input type="file" id="impData" accept=".json" style="display:none" onchange="importData(this)">`;
@@ -2678,15 +2728,6 @@ function vRecoPage(){
   </div>
   <p class="page-sub">Country and shopping preference are sent with every assistant request so recommendations are things you can actually buy.</p>`;
 }
-function vSyncPage(){
-  return`<button class="back-btn" onclick="setupBack()">${CHEV_SVG}</button>
-  <h1 class="page-title">AI connection</h1><p class="page-sub">Connect your Worker to enable Loop, your AI assistant.</p>
-  <div class="card pad">
-    <div class="field"><label>Worker URL</label><input value="${esc(DB.settings.syncUrl)}" placeholder="https://thestack.you.workers.dev" onchange="DB.settings.syncUrl=normUrl(this.value);save();render()"></div>
-    <div class="field"><label>PIN</label><input value="${esc(DB.settings.pin)}" placeholder="4–6 digits" onchange="DB.settings.pin=this.value.trim();save()"></div>
-  </div>
-  <p class="page-sub">Your routines now sync automatically through your account — this connection is only used for the AI assistant.</p>`;
-}
 
 /* ══ ASSISTANT (stage 1 placeholder) ══ */
 function profileComplete(){
@@ -2805,7 +2846,6 @@ async function obPhotoPick(inp){
   const files=[...(inp.files||[])].slice(0,3);
   inp.value='';
   if(!files.length)return;
-  if(!aiUrl()){alert('Set your Worker URL in Settings → Sync before adding photos for analysis.');return;}
   UI._photoBusy=true;render();
   try{
     // read + downscale each image to keep the request small; images are NOT stored
@@ -2964,7 +3004,11 @@ function vAssistantHome(){
 }
 /* ══ ASSISTANT CHAT ENGINE (stage 3) ══ */
 const ASSIST_LINE='I\'m here to help with your routines.';
-function aiUrl(){const b=(DB.settings.syncUrl||'').replace(/\/+$/,'');return b?b+'/ai':'';}
+// The Stack's single Cloudflare Worker — same for every user, no matter who's
+// signed in. Identity/entitlement is carried by the Firebase ID token on each
+// request, not by this URL, so it doesn't need to be a per-user setting.
+const WORKER_URL='https://thestack.jack-rowe33.workers.dev';
+function aiUrl(){return WORKER_URL+'/ai';}
 
 /* behaviour + context system prompt for a given category */
 function behaviourPrompt(cat){
@@ -3158,7 +3202,7 @@ function recentJournal(){
 /* core call to the Worker /ai route */
 async function aiCall(system,messages,useWebSearch){
   const url=aiUrl();
-  if(!url)return{error:'Set your Worker URL in Settings → AI connection first.'};
+  if(!url)return{error:'Assistant is temporarily unavailable — please try again shortly.'};
   let token=null;
   try{ token = window.stackGetToken ? await window.stackGetToken() : null; }catch(e){}
   if(!token)return{error:'Please sign in again to use the assistant.'};
