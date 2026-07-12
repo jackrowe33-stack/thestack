@@ -168,13 +168,43 @@ function renderGate(err){
 }
 function msg(t,ok){const m=document.getElementById('ag-msg');if(!m)return;m.textContent=t;m.className='ag-msg '+(ok?'ok':'on');}
 
+/* Unified smart email auth: whichever button they pressed, land them in an
+   account. Sign-in with no matching account auto-creates one; sign-up with
+   an existing email just signs them in (if the password matches). Note:
+   Firebase deliberately hides whether an email exists (invalid-credential
+   covers both "no such user" and "wrong password"), so the only way to
+   auto-signup is to attempt creation and interpret the failure. */
 async function doEmail(){
   const email=document.getElementById('ag-email').value.trim();
   const pw=document.getElementById('ag-pw').value;
   if(!email||!pw){msg('Enter your email and password.');return;}
   const b=document.getElementById('ag-submit');b.disabled=true;b.textContent='…';
-  try{ if(mode==='signup') await createUserWithEmailAndPassword(auth,email,pw); else await signInWithEmailAndPassword(auth,email,pw); }
-  catch(e){ b.disabled=false; b.textContent=mode==='signup'?'Create account':'Sign in'; msg(friendly(e.code)); }
+  const fail=code=>{ b.disabled=false; b.textContent=mode==='signup'?'Create account':'Sign in'; msg(friendly(code)); };
+  if(mode==='signup'){
+    try{ await createUserWithEmailAndPassword(auth,email,pw); }
+    catch(e){
+      if(e.code==='auth/email-already-in-use'){
+        // Account exists — try signing them straight in with what they typed.
+        try{ await signInWithEmailAndPassword(auth,email,pw); }
+        catch(e2){ fail('auth/account-exists-wrong-pw'); }
+      } else fail(e.code);
+    }
+  } else {
+    try{ await signInWithEmailAndPassword(auth,email,pw); }
+    catch(e){
+      const noMatch=(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'||e.code==='auth/invalid-login-credentials');
+      if(!noMatch){ fail(e.code); return; }
+      // No matching credentials. If the account genuinely doesn't exist,
+      // create it on the spot; if it does exist (creation collides), the
+      // password was simply wrong.
+      try{ await createUserWithEmailAndPassword(auth,email,pw); }
+      catch(e2){
+        if(e2.code==='auth/email-already-in-use') fail(e.code);            // account exists → wrong password
+        else if(e2.code==='auth/weak-password') fail('auth/signin-or-weak'); // ambiguous: wrong pw, or new user with short pw
+        else fail(e2.code);
+      }
+    }
+  }
 }
 async function doGoogle(){ try{ await signInWithPopup(auth,new GoogleAuthProvider()); }catch(e){ msg(friendly(e.code)); } }
 // Sign-out from Settings → Data. Gives immediate visual feedback (disabled
@@ -206,9 +236,12 @@ function friendly(code){return({
   'auth/missing-password':'Enter a password.',
   'auth/weak-password':'Password needs at least 6 characters.',
   'auth/email-already-in-use':'That email already has an account — try signing in.',
+  'auth/account-exists-wrong-pw':'That email already has an account, but the password didn\'t match. Try again, or tap "Forgot your password?" on the sign-in screen.',
+  'auth/signin-or-weak':'No sign-in matched. If you\'re new here, pick a password of at least 6 characters and we\'ll create your account.',
   'auth/invalid-credential':'Email or password is incorrect.',
   'auth/user-not-found':'No account with that email — try signing up.',
   'auth/wrong-password':'Email or password is incorrect.',
+  'auth/operation-not-allowed':'Email sign-in isn\'t enabled for this app right now.',
   'auth/popup-closed-by-user':'Sign-in window closed before finishing.',
   'auth/popup-blocked':'Your browser blocked the popup — allow popups and retry.',
   'auth/unauthorized-domain':'This domain isn\'t authorized in Firebase yet.',
@@ -230,14 +263,19 @@ if(auth){
       try{ localStorage.setItem('stack_session','1'); }catch(e){}
       window.stackFS.setUid(user.uid);
       hideGate();
-      if(fromGate && window.showBootScreen) window.showBootScreen();
+      // Order matters: bootApp() ends with hideBootScreen(), so it must run
+      // BEFORE showBootScreen() or a gate sign-in flashes stale cached data
+      // for the whole hydration window (the boot screen dies instantly).
       if(!booted){ booted=true; if(window.bootApp) window.bootApp(); }
+      if(fromGate && window.showBootScreen) window.showBootScreen();
       // uid is now known — start (or continue) the cloud sync. When this
       // sign-in came from the gate, keep the boot screen up until the
-      // account's real data has hydrated, then reveal it — no flash.
+      // account's real data has hydrated, then reveal it — no flash. The
+      // finally() (not then()) guarantees the screen drops even if
+      // hydration rejects, rather than hanging until the 6s failsafe.
       if(window.startCloudSync){
         const p=window.startCloudSync();
-        if(fromGate && p && p.then) p.then(function(){ if(window.hideBootScreen) window.hideBootScreen(); });
+        if(fromGate) Promise.resolve(p).catch(function(e){ console.warn('cloud sync after sign-in failed', e); }).finally(function(){ if(window.hideBootScreen) window.hideBootScreen(); });
       }
     }else{
       // No user. Clear the fast-boot marker; if we optimistically booted from a

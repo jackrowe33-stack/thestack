@@ -3,7 +3,7 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-12 · v106';
+const BUILD='2026-07-12 · v107';
 const SEED={
   v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false},supplements:{concerns:[],budget:'',free:'',done:false,skipped:false}},onboarding:{stage:'welcome',welcomeSeen:false,seedCleared:false,howtoSeen:false,section:null,step:0},aiMemory:{},completions:{},
   products:{
