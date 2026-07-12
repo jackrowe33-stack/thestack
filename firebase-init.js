@@ -170,6 +170,11 @@ function doSignOutTap(btn){
     .then(function(){ return window.stackSignOut?window.stackSignOut():Promise.resolve(); })
     .finally(function(){ location.reload(); });
 }
+// This file is loaded as a module (<script type="module">), so its top-level
+// declarations are module-scoped, not global — the Settings → Data page's
+// inline onclick="doSignOutTap(this)" (rendered by a classic script) can only
+// ever resolve a real global, same as stackSignOut/stackGetToken below.
+window.doSignOutTap = doSignOutTap;
 async function doReset(){
   const email=document.getElementById('ag-email').value.trim();
   if(!email){msg('Enter your email above first, then tap reset.');return;}
