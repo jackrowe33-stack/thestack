@@ -73,6 +73,21 @@ window.stackFS = (function(){
   return { setUid, loadAll, saveCore, saveJournalDay, saveCompletionDay, subscribe, dateOfCompKey };
 })();
 
+/* ── Admin-configurable AI prompt blocks: config/prompts (public read, edited
+   in the admin console). Cached copy is applied instantly so chats work
+   offline or before the network fetch lands; fresh copy overwrites it. ── */
+try{ const c=localStorage.getItem('stack_prompts_cfg'); if(c) window.REMOTE_PROMPTS=JSON.parse(c); }catch(e){}
+(async()=>{
+  if(!db) return;
+  try{
+    const s=await getDoc(doc(db,'config','prompts'));
+    if(s.exists()){
+      window.REMOTE_PROMPTS=s.data();
+      try{ localStorage.setItem('stack_prompts_cfg',JSON.stringify(s.data())); }catch(e){}
+    }
+  }catch(e){ console.warn('prompt config load',e); }
+})();
+
 const gate = document.getElementById('authgate');
 let mode='signin';
 let booted=false;
