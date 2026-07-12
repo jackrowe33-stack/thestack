@@ -1,7 +1,7 @@
 /* ══ ASSISTANT (stage 1 placeholder) ══ */
 function profileComplete(){
   const p=DB.profile||{};
-  return ['skin','hair','scent','looks'].every(k=>p[k]&&(p[k].done||p[k].skipped));
+  return ['skin','hair','scent','looks','supplements'].every(k=>p[k]&&(p[k].done||p[k].skipped));
 }
 /* ══ ONBOARDING SCHEMA ══
  Each question: {sec, id, q, hint, type, options[], save}
@@ -9,8 +9,8 @@ function profileComplete(){
  save: dotted path under DB.profile[sec] (e.g. 'concerns')
  For skin/hair: if the category already has products, we show a "known" panel and ask satisfaction
  against real product names instead of "what do you use".                                        */
-const OB_SECTIONS=['skin','hair','scent','looks'];
-const OB_SEC_LABEL={skin:'Skin',hair:'Hair',scent:'Scent',looks:'Hair looks'};
+const OB_SECTIONS=['skin','hair','looks','scent','supplements'];
+const OB_SEC_LABEL={skin:'Skin',hair:'Hair',looks:'Hair looks',scent:'Scent',supplements:'Supplements'};
 function catHasProducts(cat){return Object.values(DB.products||{}).some(p=>p.cat===cat&&p.active);}
 function obQuestions(sec){
   if(sec==='skin'||sec==='hair'){
@@ -60,6 +60,20 @@ function obQuestions(sec){
       {label:'Clean',desc:'Soapy, laundered, minimal'}
     ],save:'imageToProject'},
   ];
+  if(sec==='supplements') return [
+    {sec,id:'concerns',q:'What are your supplement goals?',hint:'Pick any that apply, and add your own.',type:'multi',options:[
+      {label:'General health',desc:'Everyday wellbeing and nutrition gaps'},
+      {label:'Energy',desc:'Less fatigue, steadier through the day'},
+      {label:'Sleep',desc:'Falling asleep or staying asleep'},
+      {label:'Skin & hair',desc:'Collagen, biotin and similar'},
+      {label:'Muscle & recovery',desc:'Training support, protein, creatine'},
+      {label:'Digestion',desc:'Gut health, probiotics, fibre'},
+      {label:'Immunity',desc:'Vitamin C, zinc, general defence'},
+      {label:'Stress & mood',desc:'Magnesium, adaptogens, calm'}
+    ],save:'concerns'},
+    {sec,id:'budget',q:'What\'s your budget level?',hint:'This shapes what I recommend.',type:'single',options:['Budget friendly','Mid range','Premium','Whatever works best'],save:'budget'},
+    {sec,id:'currentText',q:'What supplements do you take now, if any?',hint:'List them however you like, or leave blank.',type:'text',save:'free'},
+  ];
   // looks
   return [
     {sec,id:'goals',q:'What are you going for with your hair looks?',hint:'Everyday style, special occasions, low effort, whatever matters to you.',type:'text',save:'goals'},
@@ -74,7 +88,10 @@ function obPos(){
   let step=Math.min(Math.max(0,ob.step||0),qs.length-1);
   return {sec,step,qs};
 }
-function obSetPos(sec,step){DB.onboarding={section:sec,step};save();render();}
+/* merge, don't replace — DB.onboarding also carries the first-run stage
+   machine's fields (stage/welcomeSeen/modQueue/...), which a wholesale
+   reassignment here would silently wipe on every single question advance */
+function obSetPos(sec,step){Object.assign(DB.onboarding,{section:sec,step});save();render();}
 /* advance to next question, or next unfinished section, or finish */
 function obAdvance(){
   const {sec,step,qs}=obPos();
@@ -82,7 +99,8 @@ function obAdvance(){
   // finished this section
   DB.profile[sec].done=true;DB.profile[sec].skipped=false;
   const next=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
-  DB.onboarding={section:next||null,step:0};save();render();
+  if(!next&&DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'){finishOnboarding();return;}
+  Object.assign(DB.onboarding,{section:next||null,step:0});save();render();
 }
 function obBack(){
   const {sec,step}=obPos();
@@ -95,7 +113,8 @@ function obSkipSection(){
   const {sec}=obPos();
   DB.profile[sec].skipped=true;DB.profile[sec].done=false;
   const next=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
-  DB.onboarding={section:next||null,step:0};save();render();
+  if(!next&&DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'){finishOnboarding();return;}
+  Object.assign(DB.onboarding,{section:next||null,step:0});save();render();
 }
 /* answer handlers */
 function obToggle(sec,save,val){
@@ -249,8 +268,181 @@ function vOnboard(){
       <button class="btn" data-call="obAdvance">${(sec===OB_SECTIONS[OB_SECTIONS.length-1]&&step===qs.length-1)?'Finish':'Continue'}</button>
     </div>`;
 }
-function obLeave(){save();if(UI._facetOpen){UI._view=null;closeFacet();}else navTab('home');}
+function obLeave(){
+  save();
+  // First-run onboarding isn't the Loop overlay — there's no tab underneath to
+  // fall back to (render()'s onboarding gate would just show this screen
+  // again), so "Save & exit" here means finish now, not "go elsewhere".
+  if(DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'&&!UI._facetOpen){finishOnboarding();return;}
+  if(UI._facetOpen){UI._view=null;closeFacet();}else navTab('home');
+}
 function obFreeExtra(sec,v){DB.profile[sec].free=v;save2();}
+
+/* ══ FIRST-RUN ONBOARDING (welcome → tier → priority → modules → done) ══
+   Forks on tier at 'priority'→'modules': paid tiers reuse the AI section
+   engine above (obQuestions/vOnboard) per selected module; Free gets a
+   lightweight "add your products or skip" walkthrough with no AI calls. */
+function finishOnboarding(){
+  // Backfill anything left untouched (e.g. a module the user left as 'off'
+  // never gets visited) so profileComplete() holds true from here on and the
+  // legacy vOnboard() gate in facetBodyHtml()/vAssistant() never resurfaces.
+  OB_SECTIONS.forEach(s=>{ if(DB.profile[s]&&!DB.profile[s].done)DB.profile[s].skipped=true; });
+  DB.onboarding.stage='done';DB.onboarding.section=null;DB.onboarding.step=0;
+  save();render();
+}
+function vOnboardFlow(){
+  const stage=(DB.onboarding&&DB.onboarding.stage)||'done';
+  if(stage==='welcome')return vObWelcome();
+  if(stage==='tier')return vObTier();
+  if(stage==='priority')return vObPriority();
+  if(stage==='modules')return vObModules();
+  return vHome();
+}
+function vObWelcome(){
+  const step=DB.onboarding.welcomeStep||0;
+  const screens=[
+    {h:'Welcome to The Stack',hint:'Your skin, hair, scent and supplement routines — tracked, streaked, and (if you want) coached by Loop, the AI built into the app.'},
+    {h:'Try it before you touch it',hint:'We\'ve pre-loaded example products and routines so you can explore how everything works first. Replace them with your own whenever you\'re ready — nothing here is precious.'}
+  ];
+  const s=screens[step];
+  return`<div class="ob-top"><div class="ob-dots">${screens.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div></div>
+    <div class="ob-q">${esc(s.h)}</div>
+    <div class="ob-hint">${esc(s.hint)}</div>
+    <div class="ob-foot">
+      ${step>0?'<button class="btn ghost" data-call="obWelcomeBack">Back</button>':''}
+      <button class="btn" data-call="obWelcomeNext">${step<screens.length-1?'Continue':'Get started'}</button>
+    </div>`;
+}
+function obWelcomeNext(){
+  const ob=DB.onboarding;const step=ob.welcomeStep||0;
+  if(step<1){ob.welcomeStep=step+1;save();render();return;}
+  ob.welcomeSeen=true;ob.stage='tier';ob.welcomeStep=0;save();render();
+}
+function obWelcomeBack(){
+  const ob=DB.onboarding;const step=ob.welcomeStep||0;
+  if(step>0){ob.welcomeStep=step-1;save();render();}
+}
+const TIER_INFO=[
+  {k:'free',name:'Free',price:'$0',per:'',sub:'forever',blurb:'The full stack engine, on your device.',feats:['Unlimited daily tracking','Step-by-step routine runner','All six themes']},
+  {k:'standard',name:'Standard',price:'$5',per:'/month',sub:'or $50/year — two months free',blurb:'Cloud sync, and Loop on demand.',feats:['Everything in Free','Cloud sync across devices','Loop on demand for your focus stack']},
+  {k:'pro',name:'Pro',price:'$10',per:'/month',sub:'or $110/year',blurb:'Loop works proactively, like a coach.',feats:['Everything in Standard','Proactive Loop across every stack','Highest Loop allowance']}
+];
+function vObTier(){
+  const cur=planTier();
+  return`<div class="ob-top"><div class="ob-step">Choose your plan</div></div>
+    <div class="ob-q">Pick a starting plan</div>
+    <div class="ob-hint">Every tier is fully unlocked here for now — no charge yet. You can switch anytime in Settings.</div>
+    <div class="ob-body"><div class="tier-grid">
+      ${TIER_INFO.map(t=>`<div class="tier-card ${cur===t.k?'sel':''}" data-call="obPickTier" data-args="${t.k}">
+        <div class="tier-name">${t.name}</div>
+        <div class="tier-price">${t.price}<span>${t.per}</span></div>
+        <div class="tier-annual">${t.sub}</div>
+        <div class="tier-blurb">${esc(t.blurb)}</div>
+        <ul class="tier-feats">${t.feats.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+        <div class="tier-cta">${cur===t.k?'Selected':'Choose '+t.name}</div>
+      </div>`).join('')}
+    </div></div>`;
+}
+function obPickTier(tier){
+  setPlanTier(tier);
+  if(DB.onboarding){DB.onboarding.stage='priority';save();}
+  render();
+}
+function vObPriority(){
+  const seg=(cat)=>['core','casual','off'].map(k=>{
+    const p=stackPriority(cat);
+    return`<button class="chip ${p===k?'c-cu':'c-mute'}" data-call="stackPrio" data-args="${cat}|${k}" style="text-transform:capitalize;margin-left:4px">${k}</button>`;
+  }).join('');
+  return`<div class="ob-top"><div class="ob-step">Set your priorities</div></div>
+    <div class="ob-q">What matters most?</div>
+    <div class="ob-hint">Core stacks lead Today and count toward your streak. Casual stacks are tracked without pressure. Off stacks stay out of the way until you want them back. Change this anytime in Settings → Your stacks.</div>
+    <div class="ob-body">
+      <div class="card pad">
+        ${STACK_CATS.map(cat=>`<div class="kv"><span class="k" style="text-transform:capitalize">${cat}</span><span>${seg(cat)}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="ob-foot"><button class="btn" data-call="obPriorityNext">Continue</button></div>`;
+}
+function obPriorityNext(){
+  const ob=DB.onboarding;
+  const cats=STACK_CATS.filter(c=>stackPriority(c)!=='off');
+  if(!ob.seedCleared){clearSeedDataFor(cats);ob.seedCleared=true;}
+  ob.modQueue=cats;ob.modIndex=0;ob.stage='modules';
+  if(isPremium()){
+    // Pre-skip OB_SECTIONS for any module the user set to 'off' so the
+    // existing per-section engine's own traversal (obPos/obAdvance) naturally
+    // lands only on selected modules, with zero changes to that engine's
+    // internals. Hair also gates its paired 'looks' section.
+    STACK_CATS.forEach(cat=>{
+      if(stackPriority(cat)==='off'){
+        const secs=(cat==='hair')?['hair','looks']:[cat];
+        secs.forEach(s=>{ if(DB.profile[s]&&!DB.profile[s].done)DB.profile[s].skipped=true; });
+      }
+    });
+    ob.section=null;ob.step=0;
+  }
+  save();render();
+}
+function vObModules(){
+  if(isPremium()){
+    const openSec=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
+    if(!openSec){finishOnboarding();return vHome();}
+    return vOnboard();
+  }
+  return vObFreeModules();
+}
+function vObFreeModules(){
+  const ob=DB.onboarding;
+  const queue=ob.modQueue||STACK_CATS.filter(c=>stackPriority(c)!=='off');
+  if(!queue.length){finishOnboarding();return vHome();}
+  const idx=Math.min(Math.max(0,ob.modIndex||0),queue.length-1);
+  const cat=queue[idx];
+  const label=cat.charAt(0).toUpperCase()+cat.slice(1);
+  const prods=Object.entries(DB.products).filter(([id,p])=>p.cat===cat&&p.active);
+  const pct=Math.round((idx/queue.length)*100);
+  return`<div class="ob-top">
+      <div class="ob-step">${label} · ${idx+1} of ${queue.length}</div>
+      <div class="ob-prog" style="margin-top:8px"><i style="width:${pct}%"></i></div>
+    </div>
+    <div class="ob-q">Add your ${label.toLowerCase()} products</div>
+    <div class="ob-hint">Add what you currently use, or skip — you can always add products later from Setup → Inventory.</div>
+    <div class="ob-body">
+      ${prods.length?`<div class="ob-known"><div class="k-h">Already added</div>${prods.map(([id,p])=>`<div class="k-row"><span class="k-name">${esc(p.brand)} ${esc(p.name)}</span></div>`).join('')}</div>`:''}
+      <button class="btn ghost full" data-call="obFreeAddProduct" data-args="${cat}">+ Add a product</button>
+      <div class="ob-skip" data-call="obFreeModNext">Skip the ${label.toLowerCase()} section</div>
+    </div>
+    <div class="ob-foot">
+      ${idx>0?'<button class="btn ghost" data-call="obFreeModBack">Back</button>':''}
+      <button class="btn" data-call="obFreeModNext">${idx<queue.length-1?'Continue':'Finish'}</button>
+    </div>`;
+}
+function obFreeAddProduct(cat){newProduct(cat);}
+function obFreeModNext(){
+  const ob=DB.onboarding;
+  const queue=ob.modQueue||[];
+  ob.modIndex=(ob.modIndex||0)+1;
+  if(ob.modIndex>=queue.length){finishOnboarding();return;}
+  save();render();
+}
+function obFreeModBack(){
+  const ob=DB.onboarding;
+  ob.modIndex=Math.max(0,(ob.modIndex||0)-1);
+  save();render();
+}
+/* Settings → Setup entry points (rerunnable onboarding) */
+function replayWelcomeTour(){
+  saveScroll();
+  DB.onboarding.stage='welcome';DB.onboarding.welcomeStep=0;DB.onboarding.welcomeSeen=false;
+  save();render();
+}
+function redoSetupPriorities(){
+  saveScroll();
+  // Reset so the per-module walkthrough actually re-asks, rather than
+  // silently skipping everything as already-done/skipped.
+  OB_SECTIONS.forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
+  DB.onboarding.stage='priority';
+  save();render();
+}
 
 function vAssistantHome(){
   const cats=[

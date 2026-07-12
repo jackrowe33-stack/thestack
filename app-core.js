@@ -3,9 +3,9 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-12 · v103';
+const BUILD='2026-07-12 · v104';
 const SEED={
-  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false}},onboarding:{section:null,step:0},aiMemory:{},completions:{},
+  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false},supplements:{concerns:[],budget:'',free:'',done:false,skipped:false}},onboarding:{stage:'welcome',welcomeSeen:false,seedCleared:false,section:null,step:0},aiMemory:{},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -43,6 +43,29 @@ const SEED={
     {id:'hair-look-beachy',name:'Casual — Just Woke Up',desc:'Definitely not 20 minutes of effort.',tags:['casual']}
   ]
 };
+/* Fixed ids of the demo/example content the app ships with, so a fresh
+   install has something to explore before any real data exists. Derived from
+   SEED rather than duplicated so they can never drift out of sync with it. */
+const SEED_PRODUCT_IDS=Object.keys(SEED.products);
+const SEED_ROUTINE_IDS=SEED.routines.map(r=>r.id);
+const SEED_HAIRLOOK_IDS=SEED.hairLooks.map(l=>l.id);
+/* Clears remaining demo content for the given stacks (deactivate products,
+   soft-delete routines/looks — never a hard delete). Called once, the moment
+   onboarding commits to setting a stack up, so it stops masquerading as the
+   user's real data. Gated by onboarding.seedCleared at the call site so this
+   can only ever run on a genuinely fresh install, never on an existing
+   account replaying setup from Settings. */
+function clearSeedDataFor(cats){
+  SEED_PRODUCT_IDS.forEach(id=>{
+    const p=DB.products[id];
+    if(p&&cats.includes(p.cat))p.active=false;
+  });
+  SEED_ROUTINE_IDS.forEach(id=>{
+    const r=DB.routines.find(x=>x.id===id);
+    if(r&&cats.includes(r.cat)&&!r.deletedAt)r.deletedAt=todayStr();
+  });
+  if(cats.includes('hair'))DB.hairLooks=DB.hairLooks.filter(l=>!SEED_HAIRLOOK_IDS.includes(l.id));
+}
 /* ══ MIGRATION ══ */
 function safeUrl(u){u=(u||'').trim();if(!u)return'';if(!/^https?:\/\//i.test(u))u='https://'+u.replace(/^[a-z]+:\/*/i,'');return u;}
 function migrate(d){
@@ -162,6 +185,23 @@ function migrate(d){
     d.loopFocus={stack:firstCore,setMonth:''}; // empty setMonth ⇒ switchable immediately
     d.v=17;
   }
+  if(d.v<18){
+    // v104: tier-forked first-run onboarding (welcome → tier → priority →
+    // modules) replaces the old isPremium()+profileComplete() gate on Loop.
+    // Existing installs have already been using the app under the old flow —
+    // land them on stage 'done' (and seedCleared true, since their demo data
+    // — if any is even still around — is none of this migration's business)
+    // so nothing new is forced on load; only a brand-new SEED install starts
+    // at 'welcome'/seedCleared:false. Users can always replay via Settings.
+    if(!d.onboarding)d.onboarding={section:null,step:0};
+    if(d.onboarding.stage===undefined)d.onboarding.stage='done';
+    if(d.onboarding.welcomeSeen===undefined)d.onboarding.welcomeSeen=true;
+    if(d.onboarding.seedCleared===undefined)d.onboarding.seedCleared=true;
+    // supplements joins skin/hair/scent/looks as a full onboarding profile section.
+    if(!d.profile)d.profile={};
+    if(!d.profile.supplements)d.profile.supplements={concerns:[],budget:'',free:'',done:false,skipped:false};
+    d.v=18;
+  }
   // Look tags are additive and don't need a version bump — same treatment as pin/syncUrl below.
   // lookByContext is retired in favour of tag-based auto-select (suggestLook); drop it if present.
   (d.hairLooks||[]).forEach(l=>{if(!Array.isArray(l.tags))l.tags=[];});
@@ -203,6 +243,14 @@ function userPlan(){ return (DB && DB.plan) || 'free'; }
 /* v100 tier model: 'standard' is new; 'premium' remains a legacy alias for pro. */
 function planTier(){ const p=userPlan(); if(p==='pro'||p==='premium'||p==='comp')return 'pro'; if(p==='standard')return 'standard'; return 'free'; }
 function isPremium(){ return planTier()!=='free'; }
+/* Free tier switching for testing (pre-store-beta — no charging yet). Never
+   touches a 'comp' account: that's Jack's own, always full access regardless
+   of what's picked here. */
+function setPlanTier(tier){
+  if(userPlan()==='comp')return;
+  if(!['free','standard','pro'].includes(tier))return;
+  DB.plan=tier;save();render();
+}
 
 /* ── v100: stack priority (core / casual / off) ──
    Single writer keeps streakScope mirrored (core ⇒ streak-counted) so the

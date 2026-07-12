@@ -13,6 +13,23 @@ function render(){
   if(!UI._scrollRestoring&&UI._keepScroll==null)UI._scrollPositions[curKey]=window.scrollY;
   const app=document.getElementById('app');
   const detail=document.getElementById('detail');
+  // First-run onboarding (welcome → tier → priority → modules) is full-screen
+  // and independent of UI.tab — it takes over #app and hides the tab bar the
+  // same way UI.tab==='setup' does, then bails out before any of the normal
+  // tab/sheet/board/facet machinery below.
+  const obStage=DB.onboarding&&DB.onboarding.stage;
+  if(obStage&&obStage!=='done'){
+    if(detail){detail.hidden=true;detail.innerHTML='';}
+    document.body.classList.remove('panes-wide','board-wide');
+    app.classList.remove('app-sheet','tab-fade');
+    app.innerHTML=vOnboardFlow();
+    const tabsEl=document.getElementById('tabs');if(tabsEl)tabsEl.style.display='none';
+    const sbd=document.getElementById('sheet-backdrop');if(sbd)sbd.remove();
+    const fov=document.getElementById('facet-ov');if(fov)fov.style.display='none';
+    renderModal();
+    window.scrollTo(0,0);
+    return;
+  }
   const sheetTab=(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history'||UI.tab==='supplements');
   /* v102: master–detail panes retired. Wide (≥900px) Home renders the Day Board
      (morning/evening columns + rail); every other tab renders as a single
@@ -1131,6 +1148,7 @@ function vSetupRouter(){
   if(p==='appearance')return vAppearancePage();
   if(p==='data')return vDataPage();
   if(p==='streak')return vStreakPage();
+  if(p==='plan')return vPlanPage();
   if(p==='lowstock')return vLowStockPage();
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
@@ -1156,6 +1174,11 @@ function vSetupMenu(){
     <button class="menu-item" onclick="setupNav('reco')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◎</div><div class="menu-body"><div class="menu-title">Recommendations</div><div class="menu-sub">${DB.settings.country||'AU'} · ${({online:'Online',instore:'In-store',both:'Online & in-store'})[DB.settings.shopMethod||'both']}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="setupNav('appearance')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◐</div><div class="menu-body"><div class="menu-title">Appearance</div><div class="menu-sub">${(DB.settings.theme||'copper').charAt(0).toUpperCase()+(DB.settings.theme||'copper').slice(1)} theme</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="setupNav('data')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⇲</div><div class="menu-body"><div class="menu-title">Data</div><div class="menu-sub">Sync, backup & reset</div></div><span class="menu-arrow">›</span></button>
+  </div>
+  <div class="card">
+    <button class="menu-item" onclick="setupNav('plan')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◆</div><div class="menu-body"><div class="menu-title">Plan</div><div class="menu-sub" style="text-transform:capitalize">${planTier()} tier${userPlan()==='comp'?' · comp':''}</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="replayWelcomeTour()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">↺</div><div class="menu-body"><div class="menu-title">Replay welcome tour</div><div class="menu-sub">See the intro screens again</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="redoSetupPriorities()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⟳</div><div class="menu-body"><div class="menu-title">Redo setup & priorities</div><div class="menu-sub">Re-run stack priorities and per-module setup</div></div><span class="menu-arrow">›</span></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
   <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v} · ${window.__swCache||'sw pending'}</div>`;
@@ -1415,6 +1438,21 @@ function vStreakPage(){
   <div class="sec-label">Rest days</div>
   <div class="seg">${[0,1,2].map(n=>`<button class="${(DB.settings.graceDaysPerMonth??1)===n?'on':''}" data-call="setGrace" data-args="${n}">${n}</button>`).join('')}</div>
   <p class="page-sub">Missed days forgiven per month before the streak resets.</p>`;
+}
+function vPlanPage(){
+  const cur=userPlan();
+  return`<button class="back-btn" aria-label="Back" onclick="setupBack()">${CHEV_SVG}</button>
+  <h1 class="page-title">Plan</h1>
+  <p class="page-sub">${cur==='comp'?'Your account is comped — every feature stays unlocked no matter what’s selected below.':'Every tier is fully unlocked for now, no charge yet — in-app purchase billing arrives at store beta. Switch freely, anytime.'}</p>
+  <div class="tier-grid" style="padding:0 22px 24px">
+    ${TIER_INFO.map(t=>`<div class="tier-card ${planTier()===t.k?'sel':''}" data-call="setPlanTier" data-args="${t.k}">
+      <div class="tier-name">${t.name}</div>
+      <div class="tier-price">${t.price}<span>${t.per}</span></div>
+      <div class="tier-annual">${t.sub}</div>
+      <div class="tier-blurb">${esc(t.blurb)}</div>
+      <div class="tier-cta">${planTier()===t.k?'Current plan':'Switch to '+t.name}</div>
+    </div>`).join('')}
+  </div>`;
 }
 function openLowStock(){saveScroll();const ret=UI.tab;leaveToday(()=>{if(ret!=='setup')UI._setupReturn=ret;UI.tab='setup';UI.setupPage='lowstock';UI._tabFade=true;render();});}
 function restockProduct(id){DB.products[id].restockedAt=Date.now();save();render();}
