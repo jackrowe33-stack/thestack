@@ -6,6 +6,17 @@
    This file is the source of truth — edit here, then deploy.
 
    CHANGELOG:
+   v3 (2026-07-12) — admin console integration:
+     - Usage tracking: every successful /ai call records calls + tokens
+       per user per day in KV (key u:{YYYY-MM-DD}:{uid}, 40-day TTL).
+     - GET /admin/usage?month=YYYY-MM — aggregates those records for the
+       console dashboard (totals, per-day, top users, byModel for cost).
+       Requires a Firebase ID token with the admin custom claim.
+     - POST /admin/setPlan {uid,plan} — writes the legacy KV plan:{uid}
+       so the console's plan-change toast reports success. Entitlement
+       itself is Firestore-read; this KV entry is informational only.
+     - /ai: a token with the admin claim is always entitled (lets the
+       console use AI for prompt regeneration regardless of its plan).
    v2 (2026-07-12) — entitlement updated for the v100 tier model. The old
      check only accepted plan === 'premium' | 'comp', which predates the
      rename to free/standard/pro — so every real paid user (plan 'pro' or
@@ -55,23 +66,29 @@ const ENTITLED = ['pro', 'standard', 'premium', 'comp'];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
 
     if (url.pathname === '/ai' && request.method === 'POST') {
-      return handleAI(request, env);
+      return handleAI(request, env, ctx);
+    }
+    if (url.pathname === '/admin/usage' && request.method === 'GET') {
+      return handleAdminUsage(request, env, url);
+    }
+    if (url.pathname === '/admin/setPlan' && request.method === 'POST') {
+      return handleAdminSetPlan(request, env);
     }
     return json({ error: 'not found' }, 404);
   },
 };
 
-async function handleAI(request, env) {
+async function handleAI(request, env, ctx) {
   if (!env.ANTHROPIC_API_KEY) return json({ error: 'server not configured' }, 500);
 
   // --- 1. Verify Firebase ID token ---
@@ -86,6 +103,7 @@ async function handleAI(request, env) {
   }
   const uid = claims.sub;
   if (!uid) return json({ error: 'invalid token' }, 401);
+  const isAdmin = claims.admin === true;
 
   // --- 2. Read plan from Firestore ---
   let plan = 'free';
@@ -95,7 +113,9 @@ async function handleAI(request, env) {
     // If entitlement can't be read, fail closed (treat as free) rather than open.
     plan = 'free';
   }
-  const entitled = ENTITLED.includes(plan);
+  // Admin tokens are always entitled — the console uses AI for prompt
+  // regeneration and shouldn't depend on the admin account's own plan.
+  const entitled = isAdmin || ENTITLED.includes(plan);
   if (!entitled) {
     return json({ error: 'upgrade_required', message: 'Loop is a premium feature.' }, 402);
   }
@@ -109,8 +129,8 @@ async function handleAI(request, env) {
   if (globalCount >= GLOBAL_DAILY) {
     return json({ error: 'rate_limited', scope: 'global', message: 'The assistant is temporarily unavailable. Please try again later.' }, 429);
   }
-  // comp exempt from the per-user cap; paid tiers are counted
-  if (plan !== 'comp') {
+  // comp and admin exempt from the per-user cap; paid tiers are counted
+  if (plan !== 'comp' && !isAdmin) {
     const userCount = parseInt((await env.THESTACK.get(userKey)) || '0', 10);
     if (userCount >= PER_USER_DAILY) {
       return json({ error: 'rate_limited', scope: 'user', message: "You've reached today's assistant limit. It resets tomorrow." }, 429);
@@ -150,9 +170,86 @@ async function handleAI(request, env) {
   const data = await r.json();
   if (!r.ok) return json({ error: 'anthropic error', detail: data }, r.status);
 
+  // --- 5. Usage accounting (for the admin console dashboard) ---
+  const rec = recordUsage(env, day, uid, data.usage || {});
+  if (ctx && ctx.waitUntil) ctx.waitUntil(rec); else await rec.catch(() => {});
+
   const text = (data.content || [])
     .filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
   return json({ text, raw: data.stop_reason }, 200);
+}
+
+/* ---------- Usage accounting + admin endpoints ---------- */
+
+/* One KV record per user per day: u:{YYYY-MM-DD}:{uid} → {c,i,o,m}.
+   Aggregated on demand by /admin/usage. Read-modify-write races between
+   concurrent same-user calls can undercount slightly — fine for ops
+   dashboards, and it keeps the hot path to a single small KV write. */
+async function recordUsage(env, day, uid, usage) {
+  try {
+    const key = 'u:' + day + ':' + uid;
+    const cur = JSON.parse((await env.THESTACK.get(key)) || '{"c":0,"i":0,"o":0}');
+    cur.c += 1;
+    cur.i += usage.input_tokens || 0;
+    cur.o += usage.output_tokens || 0;
+    cur.m = MODEL;
+    await env.THESTACK.put(key, JSON.stringify(cur), { expirationTtl: 60 * 60 * 24 * 40 });
+  } catch (e) { /* accounting must never break the chat */ }
+}
+
+async function verifyAdmin(request, env) {
+  const authz = request.headers.get('Authorization') || '';
+  const m = authz.match(/^Bearer\s+(.+)$/i);
+  if (!m) return null;
+  try {
+    const claims = await verifyFirebaseToken(m[1], env.FIREBASE_PROJECT_ID);
+    return claims.admin === true ? claims : null;
+  } catch (e) { return null; }
+}
+
+/* GET /admin/usage?month=YYYY-MM → shape the console dashboard expects:
+   { totals:{calls,in,out}, days:{date:{calls,in,out}}, topUsers:{uid:{calls,in,out}}, byModel:{model:{in,out}} } */
+async function handleAdminUsage(request, env, url) {
+  const admin = await verifyAdmin(request, env);
+  if (!admin) return json({ error: 'admin only' }, 401);
+  const month = (url.searchParams.get('month') || new Date().toISOString().slice(0, 7)).slice(0, 7);
+  const out = { totals: { calls: 0, in: 0, out: 0 }, days: {}, topUsers: {}, byModel: {} };
+  let cursor;
+  do {
+    const page = await env.THESTACK.list({ prefix: 'u:' + month, cursor, limit: 1000 });
+    for (const k of page.keys) {
+      const v = JSON.parse((await env.THESTACK.get(k.name)) || 'null');
+      if (!v) continue;
+      // key: u:YYYY-MM-DD:uid
+      const rest = k.name.slice(2);
+      const day = rest.slice(0, 10);
+      const uid = rest.slice(11);
+      out.totals.calls += v.c || 0; out.totals.in += v.i || 0; out.totals.out += v.o || 0;
+      const d = out.days[day] || (out.days[day] = { calls: 0, in: 0, out: 0 });
+      d.calls += v.c || 0; d.in += v.i || 0; d.out += v.o || 0;
+      const u = out.topUsers[uid] || (out.topUsers[uid] = { calls: 0, in: 0, out: 0 });
+      u.calls += v.c || 0; u.in += v.i || 0; u.out += v.o || 0;
+      const model = v.m || MODEL;
+      const bm = out.byModel[model] || (out.byModel[model] = { in: 0, out: 0 });
+      bm.in += v.i || 0; bm.out += v.o || 0;
+    }
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  return json(out, 200);
+}
+
+/* POST /admin/setPlan {uid,plan} — entitlement is Firestore-read on every /ai
+   call, so this KV entry is informational/legacy only; it exists so the
+   console's plan-change flow completes without its "KV NOT synced" warning. */
+async function handleAdminSetPlan(request, env) {
+  const admin = await verifyAdmin(request, env);
+  if (!admin) return json({ error: 'admin only' }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'bad request' }, 400); }
+  const { uid, plan } = body || {};
+  if (!uid || typeof plan !== 'string') return json({ error: 'uid and plan required' }, 400);
+  await env.THESTACK.put('plan:' + uid, plan);
+  return json({ ok: true, note: 'entitlement is read from Firestore; KV entry is informational' }, 200);
 }
 
 /* ---------- Firebase ID token verification (RS256, Google public keys) ---------- */

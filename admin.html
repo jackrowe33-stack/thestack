@@ -22,6 +22,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:8px;padding:8px 10px;outline:none;width:100%}
 input:focus,select:focus,textarea:focus{border-color:var(--cu)}
 textarea{resize:vertical;min-height:90px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;line-height:1.45}
+/* prompts page: collapsible groups + auto-growing editors + AI regenerate */
+details.pgroup{border:1px solid var(--card-edge);border-radius:12px;background:var(--card);margin-bottom:14px;overflow:hidden}
+details.pgroup>summary{cursor:pointer;list-style:none;padding:13px 16px;font-weight:600;display:flex;justify-content:space-between;align-items:center;user-select:none}
+details.pgroup>summary::-webkit-details-marker{display:none}
+details.pgroup>summary .pg-n{font-weight:400;font-size:12px;color:var(--ink-soft)}
+details.pgroup>summary::after{content:'▸';color:var(--ink-soft);transition:transform .15s;margin-left:10px}
+details.pgroup[open]>summary::after{transform:rotate(90deg)}
+details.pgroup .pg-body{padding:0 16px 14px;border-top:1px solid var(--hairline)}
+.pblock{padding:14px 0;border-bottom:1px solid var(--hairline)}
+.pblock:last-child{border-bottom:none}
+textarea.pta{min-height:120px;overflow:hidden}
+.regen-row{display:flex;gap:8px;margin-top:8px;align-items:flex-start}
+.regen-row input{flex:1;font-size:13px}
+.pv-sg{margin-top:10px;border:1px solid var(--cu);border-radius:10px;padding:12px;background:rgba(184,112,64,.06)}
+.pv-sg .pv-sg-h{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cu);margin-bottom:8px}
+.pv-sg pre{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;line-height:1.45;margin:0 0 10px}
 h1{font-size:20px}h2{font-size:17px;margin-bottom:12px}h3{font-size:14px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px}
 a{color:var(--cu)}
 .btn{background:var(--cu-btn);border:1px solid var(--cu-deep);color:#fff;border-radius:8px;padding:8px 16px;font-weight:600}
@@ -110,7 +126,7 @@ main{flex:1;padding:26px 30px;max-width:1150px;min-width:0}
     <div class="foot">
       <div id="whoami"></div>
       <button class="btn ghost sm" style="margin-top:8px" id="signout">Sign out</button>
-      <div style="margin-top:10px" class="soft">ADMIN BUILD v1</div>
+      <div style="margin-top:10px" class="soft">ADMIN BUILD v2</div>
     </div>
   </nav>
   <main id="main"></main>
@@ -159,7 +175,8 @@ const DEFAULT_PROMPTS = {
   suppSafety: 'SUPPLEMENTS SAFETY (strict):\n- Only discuss common, over-the-counter supplements that are easily and legally purchased online or in shops in {COUNTRY} (e.g. everyday vitamins, minerals, fish oil, protein, common botanicals).\n- Never suggest prescription medicines, hormones, peptides, SARMs, nootropics of concern, high-risk dosing, or anything requiring medical supervision.\n- Never give medical dosing for a health condition. Keep to general, label-level guidance and always defer to a doctor or pharmacist for anything health-related.\n- This is not medical advice and you must not present it as such.',
   recoRules: 'RECOMMENDATION RULES:\n- The user is in country: {COUNTRY}. {METHOD} Only recommend products realistically available to them there and by that method.\n- ALWAYS emphasise ingredients: name the key actives/ingredients and why they suit the user, for every product you suggest.\n- Respect their stated concerns, budget and satisfaction. Do not recommend replacing products they are happy with.\n- Be concise and practical. This is a small mobile chat: keep replies short, ideally 2-4 sentences. Lead with the direct answer.\n- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. When you recommend or compare products, present them as a short bullet list (one product per bullet, each with its key ingredient and one-line reason) rather than a paragraph, so it is quick to scan. Keep each bullet to one line. No blank filler lines.\n- After recommending, briefly offer to go deeper (e.g. "Want me to compare these or explain any in more detail?") rather than dumping everything at once.\n- When you suggest adding a specific product to a routine, include a purchase link in your reply next to that product (a verified product page, or the retailer\'s search URL for it) so they can buy it, then ask if they\'d like you to add it. If you genuinely cannot find a link, say so briefly rather than inventing one.',
   recallJournal: 'Here are my recent daily notes (last 14 days), newest first:\n{JOURNAL}\n\nGreet me briefly for a {CAT} conversation. If any note points to a concern worth addressing (e.g. dryness, irritation, a reaction), mention the most relevant one by referencing when I wrote it, and ask whether I want to dig into that or something else. If nothing stands out, just ask what I\'d like help with. One short paragraph.',
-  recallEmpty: 'Greet me briefly for a {CAT} conversation and ask what I\'d like help with. One short sentence.'
+  recallEmpty: 'Greet me briefly for a {CAT} conversation and ask what I\'d like help with. One short sentence.',
+  onboardIntro: 'I\'m setting up my {CAT} stack for the first time, inside onboarding — this isn\'t a normal chat, it\'s our first conversation. Warmly introduce yourself as Loop in one line, then get straight into it: ask about my main {CAT} concerns, roughly what budget I have in mind, and what I currently use (if anything) — one or two natural questions to start, not a wall of text. If I mention a product, offer to add it for me. Keep it short and friendly: 2-3 sentences plus a question.'
 };
 const PROMPT_META = [
   ['identity','Identity','Who the assistant is. Prepended to every chat.'],
@@ -171,7 +188,17 @@ const PROMPT_META = [
   ['suppSafety','Supplements safety','{COUNTRY} = user country.'],
   ['recoRules','Recommendation rules','{COUNTRY} {METHOD} substituted per user.'],
   ['recallJournal','Recall opener (with journal)','{JOURNAL} {CAT} substituted at runtime.'],
-  ['recallEmpty','Recall opener (no journal)','{CAT} substituted at runtime.']
+  ['recallEmpty','Recall opener (no journal)','{CAT} substituted at runtime.'],
+  ['onboardIntro','Onboarding chat opener','First message of each per-area setup chat in the first-run wizard. {CAT} substituted at runtime.']
+];
+/* Prompts page grouping: [group label, [block keys]] */
+const PROMPT_GROUPS = [
+  ['Identity & scope', ['identity','scopeRules']],
+  ['Capabilities & boundaries', ['canDoIntro','canDoProducts','canDoSupplements','boundaries']],
+  ['Safety', ['suppSafety']],
+  ['Recommendations', ['recoRules']],
+  ['Chat openers', ['recallJournal','recallEmpty']],
+  ['Onboarding', ['onboardIntro']]
 ];
 
 const DEFAULT_PRICING = {
@@ -333,7 +360,7 @@ async function renderDash(){
     <div class="viewhead"><h1>Dashboard</h1>
       <div class="row"><input type="month" style="width:auto" value="${dashMonth}" onchange="_dashMonth(this.value)"></div>
     </div>
-    ${WORKER_OK===false ? '<div class="warnbox">Worker <span class="mono">/admin/usage</span> not reachable — AI usage & cost show as n/a. Deploy the Worker admin endpoints (see worker-admin-spec.md).</div>' : ''}
+    ${WORKER_OK===false ? '<div class="warnbox">Worker <span class="mono">/admin/usage</span> not reachable — AI usage & cost show as n/a. Deploy the latest <span class="mono">worker/worker.js</span> from the app repo.</div>' : ''}
     <div class="grid g4">
       <div class="card stat"><div class="s">Users</div><div class="v">${users.length}</div>
         <div class="s">${tiers.standard} std · ${tiers.pro} pro · ${tiers.comp} comp · ${tiers.free} free${tiers.suspended?' · '+tiers.suspended+' susp':''}</div></div>
@@ -472,6 +499,22 @@ window._fbMail = (id, email) => {
 /* ══ PROMPTS ══ */
 async function renderPrompts(){
   const cfg = await loadConfig('prompts', DEFAULT_PROMPTS);
+  const metaByKey = Object.fromEntries(PROMPT_META.map(m=>[m[0],m]));
+  const block = k => {
+    const [,label,hint] = metaByKey[k] || [k,k,''];
+    return `
+      <div class="pblock">
+        <div class="row" style="justify-content:space-between;margin-bottom:6px">
+          <strong>${esc(label)}</strong><span class="soft small">${esc(hint)}</span>
+        </div>
+        <textarea class="pta" data-pk="${k}" spellcheck="false" oninput="_pgrow(this)">${esc(cfg[k] ?? DEFAULT_PROMPTS[k] ?? '')}</textarea>
+        <div class="regen-row">
+          <input data-rq="${k}" placeholder="Describe a change or new idea for this block…" onkeydown="if(event.key==='Enter')this.nextElementSibling.click()">
+          <button class="btn ghost sm" onclick="_regenPrompt('${k}', this)">✦ Regenerate</button>
+        </div>
+        <div id="sg-${k}"></div>
+      </div>`;
+  };
   $('main').innerHTML = `
     <div class="viewhead"><h1>AI Prompts</h1>
       <div class="row">
@@ -480,17 +523,57 @@ async function renderPrompts(){
         <button class="btn" onclick="_savePrompts()">Save &amp; publish</button>
       </div>
     </div>
-    <p class="muted small" style="margin-bottom:14px">Saved to <span class="mono">config/prompts</span>. The app assembles the full system prompt from these blocks plus live user context (profile, routines, product IDs) which stays in code. Placeholders like <span class="mono">{CAT}</span> <span class="mono">{COUNTRY}</span> are substituted per request. Requires the app-side wiring in integration-notes.md (v101) — until then the app uses its built-in copies.</p>
+    <p class="muted small" style="margin-bottom:14px">Saved to <span class="mono">config/prompts</span> — the app prefers these blocks over its built-in copies (per block, live on next chat). Placeholders like <span class="mono">{CAT}</span> <span class="mono">{COUNTRY}</span> <span class="mono">{JOURNAL}</span> are substituted per request and must be preserved. "Regenerate" sends the current block plus your note to Claude and returns a suggestion — nothing changes until you accept it AND publish.</p>
     <div id="pHist"></div>
-    ${PROMPT_META.map(([k,label,hint])=>`
-      <div class="card">
-        <div class="row" style="justify-content:space-between;margin-bottom:6px">
-          <strong>${esc(label)}</strong><span class="soft small">${esc(hint)}</span>
-        </div>
-        <textarea data-pk="${k}" spellcheck="false">${esc(cfg[k] ?? DEFAULT_PROMPTS[k] ?? '')}</textarea>
-      </div>`).join('')}
+    ${PROMPT_GROUPS.map(([g,keys],i)=>`
+      <details class="pgroup" ${i===0?'open':''}>
+        <summary>${esc(g)}<span class="pg-n">${keys.length} block${keys.length!==1?'s':''}</span></summary>
+        <div class="pg-body">${keys.map(block).join('')}</div>
+      </details>`).join('')}
     <button class="btn" onclick="_savePrompts()">Save &amp; publish</button>`;
+  requestAnimationFrame(()=>document.querySelectorAll('.pta').forEach(t=>window._pgrow(t)));
 }
+window._pgrow = t => { t.style.height='auto'; t.style.height=Math.max(120, t.scrollHeight+4)+'px'; };
+window._regenPrompt = async (k, btn) => {
+  const ta = document.querySelector('[data-pk="'+k+'"]');
+  const rq = document.querySelector('[data-rq="'+k+'"]');
+  const ask = (rq?rq.value:'').trim();
+  if(!ask){ toast('Type what you want changed first', true); return; }
+  const meta = PROMPT_META.find(m=>m[0]===k) || [k,k,''];
+  btn.disabled = true; const was = btn.textContent; btn.textContent = 'Thinking…';
+  try{
+    const system = 'You are a prompt engineer maintaining the system-prompt blocks of "The Stack", a personal-care routine app with an in-app AI assistant called Loop. '
+      +'You will be given ONE block, its purpose, and a requested change. Rewrite the block to incorporate the request while preserving everything that still applies: the voice, the strictness of any rules, and EVERY placeholder token such as {CAT}, {COUNTRY}, {METHOD}, {ASSIST_LINE}, {JOURNAL} that the app substitutes at runtime. '
+      +'Return ONLY the revised block text — no preamble, no quotes, no markdown fences, no commentary.';
+    const user = 'Block key: '+k+'\nBlock purpose: '+meta[1]+(meta[2]?' — '+meta[2]:'')
+      +'\n\nCURRENT BLOCK:\n'+ta.value
+      +'\n\nREQUESTED CHANGE:\n'+ask;
+    const res = await adminFetch('/ai', { system, messages:[{role:'user',content:user}] });
+    const text = (res.text||'').trim();
+    if(!text) throw new Error('empty response');
+    window._SG = window._SG || {};
+    window._SG[k] = text;
+    $('sg-'+k).innerHTML = `<div class="pv-sg">
+      <div class="pv-sg-h">Suggested rewrite</div>
+      <pre>${esc(text)}</pre>
+      <div class="row">
+        <button class="btn sm" onclick="_useSuggestion('${k}')">Use this</button>
+        <button class="btn ghost sm" onclick="document.getElementById('sg-${k}').innerHTML=''">Dismiss</button>
+      </div>
+    </div>`;
+  }catch(e){ toast('Regenerate failed: '+(e.message||e), true); }
+  btn.disabled = false; btn.textContent = was;
+};
+window._useSuggestion = k => {
+  const ta = document.querySelector('[data-pk="'+k+'"]');
+  if(ta && window._SG && window._SG[k]!==undefined){
+    ta.value = window._SG[k];
+    window._pgrow(ta);
+    $('sg-'+k).innerHTML='';
+    const rq = document.querySelector('[data-rq="'+k+'"]'); if(rq) rq.value='';
+    toast('Applied to the editor — Save & publish when ready');
+  }
+};
 window._savePrompts = async () => {
   const data = {};
   document.querySelectorAll('[data-pk]').forEach(t => data[t.dataset.pk] = t.value);

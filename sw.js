@@ -1,7 +1,7 @@
 /* The Stack service worker — v99 (multi-file shell).
    DEPLOY RITUAL: bump VER here whenever BUILD is bumped in app-core.js.
    The cache name change is what makes clients drop the old shell. */
-const VER='v108';
+const VER='v109';
 const C='stack-shell-'+VER;
 const ASSETS=['./','./index.html','./app.css','./firebase-init.js',
   './app-core.js','./app-render.js','./app-loop.js','./app-shell.js','./manifest.json'];
@@ -27,9 +27,13 @@ self.addEventListener('fetch',e=>{
     // online. cache:'no-cache' forces revalidation past the HTTP cache
     // (GitHub Pages max-age=600) — otherwise "network-first" can still
     // return a 10-minute-stale document.
+    // Only the APP document may be cached as ./index.html — any other
+    // same-origin navigation (admin.html!) would otherwise overwrite the
+    // cached app shell and serve the admin console at the app URL offline.
+    const isAppDoc=u.pathname.endsWith('/')||u.pathname.endsWith('/index.html');
     e.respondWith(
-      fetch(e.request,{cache:'no-cache'}).then(r=>{const cl=r.clone();caches.open(C).then(c=>c.put('./index.html',cl));return r;})
-      .catch(()=>caches.match('./index.html'))
+      fetch(e.request,{cache:'no-cache'}).then(r=>{if(isAppDoc){const cl=r.clone();caches.open(C).then(c=>c.put('./index.html',cl));}return r;})
+      .catch(()=>isAppDoc?caches.match('./index.html'):Response.error())
     );
     return;
   }
