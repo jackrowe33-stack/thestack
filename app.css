@@ -578,7 +578,8 @@ a{color:inherit}
 .ft-tick{color:var(--cu);font-weight:600;flex-shrink:0}
 .ft-fine{text-align:center;font-size:11px;color:var(--ink-soft);margin-top:12px;line-height:1.4}
 
-/* ══ WIDE LAYOUT — v99 · Desktop B + Tablet B (rail/sidebar + master–detail panes) ══
+/* ══ WIDE LAYOUT — v102 · rail/sidebar + Day Board Home + centred panels ══
+   (v99 master–detail panes retired — Home is now the Day Board, below.)
    Everything below is scoped to ≥900px; phone rendering is untouched.
    All colors come from the existing custom properties, so all six themes
    and light/dark flow through with zero extra theme code. */
@@ -595,23 +596,21 @@ a{color:inherit}
   .tab .tab-label{display:none}
   .sheet-backdrop{display:none}
   .fab-global{left:auto;right:28px;transform:none;bottom:28px}
-  /* single-column tabs (setup, routines…) get a comfortable centred column */
-  body:not(.panes-wide) #app{max-width:600px;margin:0 auto}
-  /* master–detail panes (home + today/runner/scent/history/supplements) */
-  body.panes-wide #panes{display:grid;grid-template-columns:minmax(340px,430px) minmax(0,1fr);
-    gap:0 30px;max-width:1320px;margin:0 auto;padding:0 30px;align-items:start}
-  body.panes-wide #app{padding-bottom:60px;min-height:100vh}
+  /* every tab except the wide Home board: a comfortable centred column */
+  body:not(.board-wide) #app{max-width:600px;margin:0 auto}
   #detail{display:none}
-  body.panes-wide #detail{display:block;min-width:0;padding-bottom:60px}
-  /* detail panel: sheet chrome becomes panel chrome */
-  #detail .today-sheet{margin-top:26px;border-radius:20px;border-bottom:1px solid var(--card-edge);
-    padding-bottom:32px;min-height:calc(100vh - 60px)}
-  #detail .today-sheet::before{border-radius:20px}
-  #detail .sheet-close-tap{display:none}
-  /* placeholder when nothing is open in the detail pane */
-  .detail-empty{margin-top:26px;border:1px dashed var(--card-edge);border-radius:20px;
-    min-height:70vh;display:flex;align-items:center;justify-content:center;
-    color:var(--ink-soft);font-size:14px;text-align:center;padding:30px}
+  /* sheet views (today/runner/scent/history/supplements): sheet chrome → panel chrome */
+  body:not(.board-wide) #app .today-sheet{margin-top:26px;border-radius:20px;
+    border-bottom:1px solid var(--card-edge);padding-bottom:32px;min-height:calc(100vh - 60px)}
+  body:not(.board-wide) #app .today-sheet::before{border-radius:20px}
+  /* drag handle → × close button (matches the v101 dialog close) */
+  #app .sheet-close-tap{display:flex;justify-content:flex-end;padding:12px 16px 0}
+  #app .sheet-close-tap .sheet-handle{display:none}
+  #app .sheet-close-tap::after{content:'✕';width:30px;height:30px;border-radius:50%;
+    display:grid;place-items:center;font-size:13px;color:var(--ink-mid);
+    background:var(--card);border:1px solid var(--card-edge);
+    transition:color .15s ease,border-color .15s ease}
+  #app .sheet-close-tap:hover::after{color:var(--ink);border-color:var(--cu)}
   /* facet/loop + modal sheets: keep phone width, centred — reads as a dialog */
   .overlay{padding-left:84px}
 }
@@ -672,3 +671,80 @@ a{color:inherit}
 @keyframes dlg-out{to{transform:translateY(10px) scale(.98);opacity:0}}
 @keyframes dock-in{from{transform:translateX(100%)}to{transform:none}}
 @keyframes dock-out{to{transform:translateX(102%)}}
+
+/* ══ v102 · DAY BOARD — wide (≥900px) Home. Replaces v99 master–detail.
+   Tablet (900–1249px): Morning | Evening columns, rail reflows below 2-up.
+   Desktop (≥1250px): Morning | Evening | rail as a third column.
+   All colors from custom properties → six themes + light/dark flow through. ══ */
+@media(min-width:900px){
+  body.board-wide #app{max-width:1380px;margin:0 auto;padding:0 32px 60px}
+  /* header strip */
+  .bd-hdr{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:30px 2px 24px}
+  .bd-date strong{display:block;font-family:'Fraunces',serif;font-size:30px;font-weight:400;line-height:1.15;letter-spacing:-.01em;color:var(--ink)}
+  .bd-date span{font-size:13px;color:var(--ink-mid)}
+  .bd-stats{display:flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
+  .bd-pill{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--card-edge);border-radius:14px;padding:9px 14px;box-shadow:var(--card-shadow)}
+  button.bd-pill{cursor:pointer;text-align:left;font-family:inherit}
+  .bd-week{gap:8px}
+  .bd-wd{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .bd-wd i{width:16px;height:16px;border-radius:50%;background:var(--hairline);display:block}
+  .bd-wd i.done{background:var(--cu)}
+  .bd-wd i.today{background:none;border:2px solid var(--cu);box-sizing:border-box}
+  .bd-wd i.fut{opacity:.3}
+  .bd-wd b{font-size:8.5px;font-weight:700;letter-spacing:.05em;color:var(--ink-soft)}
+  .bd-wd b.hot{color:var(--cu)}
+  .bd-n{font-family:'Fraunces',serif;font-size:24px;color:var(--cu);line-height:1}
+  .bd-l{font-size:10.5px;color:var(--ink-mid);line-height:1.3}
+  /* board grid — tablet default: 2 columns, rail spans below */
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;align-items:start}
+  .bcol-hd{display:flex;align-items:baseline;gap:9px;padding:2px 4px 12px}
+  .bcol-hd h2{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid)}
+  .bcol-hd .est{margin-left:auto;font-size:11px;color:var(--ink-soft)}
+  .bcol{display:flex;flex-direction:column;gap:14px}
+  .brail{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;align-items:start;margin-top:26px}
+  .brail .bcol-hd{grid-column:1/-1;padding-bottom:10px}
+  /* routine cards */
+  .brc{background:var(--card);border:1px solid var(--card-edge);border-radius:18px;box-shadow:var(--card-shadow);overflow:hidden;transition:border-color .15s ease}
+  .brc:hover{border-color:rgba(var(--cu-rgb),.45)}
+  .brc.done{border-color:rgba(var(--cu-rgb),.35)}
+  .brc-hd{display:flex;align-items:center;gap:13px;width:100%;padding:14px 16px;background:none;border:none;text-align:left;font-family:inherit;color:var(--ink)}
+  button.brc-hd{cursor:pointer}
+  .brc-t{flex:1;min-width:0}
+  .brc-k{display:block;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:3px}
+  .brc-t b{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+  .brc.done .brc-t b{color:var(--ink-mid)}
+  .brc-m{font-size:11.5px;color:var(--ink-mid)}
+  .brc-chev{color:var(--ink-soft);font-size:16px;flex-shrink:0}
+  .brc-body{border-top:1px solid var(--hairline);padding-top:12px}
+  /* phone 22px gutters → card gutters */
+  .brc-body .checklist{margin:0 14px 12px;background:var(--bg-raise)}
+  .brc-body .complete-btns{margin:0 14px 14px}
+  .brc-body .seg{margin:0 14px 12px;width:calc(100% - 28px)}
+  .bempty{border-style:dashed;box-shadow:none;padding:26px;color:var(--ink-soft);font-size:13px;text-align:center}
+  /* rail cards */
+  .bmini{display:block;background:var(--card);border:1px solid var(--card-edge);border-radius:18px;box-shadow:var(--card-shadow);padding:15px 16px;font-family:inherit;color:var(--ink)}
+  button.bmini{cursor:pointer;text-align:left;width:100%;transition:border-color .15s ease}
+  button.bmini:hover{border-color:rgba(var(--cu-rgb),.45)}
+  .bmini h3{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mid);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .bmini h3 .sp{margin-left:auto;font-weight:600;font-size:11px;color:var(--ink-soft);letter-spacing:0;text-transform:none}
+  .bscent-n{font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--ink)}
+  .bmini-t{font-size:14px;font-weight:600;color:var(--ink)}
+  .bmini-sub{font-size:12px;color:var(--ink-mid);margin-top:3px}
+  .bsup{display:flex;align-items:center;gap:10px;padding:8px 0;flex-wrap:wrap}
+  .bsup+.bsup{border-top:1px solid var(--hairline)}
+  .bsup-n{font-size:13px;color:var(--ink);flex:1;min-width:0}
+  .bsup-n.done{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--card-edge)}
+  .bsup-d{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  .blow{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;color:var(--ink)}
+  .blow+.blow{border-top:1px solid var(--hairline)}
+  .blow-dot{width:7px;height:7px;border-radius:50%;background:rgba(var(--cu-rgb),.6);flex-shrink:0}
+  .blow-dot.hot{background:var(--danger)}
+  .blow-n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .blow-d{font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  .bmini textarea{width:100%;background:var(--bg-raise);border:1px solid var(--card-edge);border-radius:12px;color:var(--ink);padding:10px 12px;font:400 13px 'Inter',sans-serif;min-height:84px}
+}
+/* desktop: rail becomes a third column */
+@media(min-width:1250px){
+  .board{grid-template-columns:1fr 1fr 330px}
+  .brail{grid-column:auto;display:flex;flex-direction:column;gap:14px;margin-top:0}
+}

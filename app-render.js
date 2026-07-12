@@ -1,6 +1,7 @@
 /* ══ RENDER ══ */
-/* v99 wide layout: ≥900px renders a rail/sidebar plus master–detail panes
-   (Desktop B + Tablet B). Below 900px nothing changes. */
+/* v102 wide layout: ≥900px renders a rail/sidebar; Home becomes the Day Board
+   (morning/evening columns + rail), other tabs are centred panels.
+   Below 900px nothing changes. */
 const WIDE_MQ=window.matchMedia('(min-width:900px)');
 function isWide(){return WIDE_MQ.matches;}
 (function(){const onW=()=>{UI._keepScroll=null;UI._scrollRestoring=false;render();};
@@ -13,45 +14,39 @@ function render(){
   const app=document.getElementById('app');
   const detail=document.getElementById('detail');
   const sheetTab=(UI.tab==='today'||UI.tab==='runner'||UI.tab==='scent'||UI.tab==='history'||UI.tab==='supplements');
-  const panes=isWide()&&(sheetTab||UI.tab==='home');
-  document.body.classList.toggle('panes-wide',panes);
-  if(panes){
-    /* master = Home (Today list); detail = the sheet view or a placeholder */
-    app.innerHTML=vHome();
-    if(sheetTab){
-      detail.innerHTML=(UI.tab==='today')?vToday():(UI.tab==='runner')?vRunner():(UI.tab==='scent')?vScent():(UI.tab==='history')?vHistory():vSupplements();
-    }else{
-      detail.innerHTML='<div class="detail-empty">Open anything from Today — it runs here.</div>';
-    }
-    detail.hidden=false;
-  }else{
-    if(detail){detail.hidden=true;detail.innerHTML='';}
-    if(UI.tab==='home')app.innerHTML=vHome();
-    else if(UI.tab==='today')app.innerHTML=vToday();
-    else if(UI.tab==='runner')app.innerHTML=vRunner();
-    else if(UI.tab==='routines')app.innerHTML=vRoutines();
-    else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
-    else if(UI.tab==='scent')app.innerHTML=vScent();
-    else if(UI.tab==='history')app.innerHTML=vHistory();
-    else if(UI.tab==='supplements')app.innerHTML=vSupplements();
-    else app.innerHTML=vHome();
-  }
+  /* v102: master–detail panes retired. Wide (≥900px) Home renders the Day Board
+     (morning/evening columns + rail); every other tab renders as a single
+     centred column. Phone rendering untouched. */
+  const board=isWide()&&UI.tab==='home';
+  document.body.classList.remove('panes-wide');
+  document.body.classList.toggle('board-wide',board);
+  if(detail){detail.hidden=true;detail.innerHTML='';}
+  if(board)app.innerHTML=vBoard();
+  else if(UI.tab==='home')app.innerHTML=vHome();
+  else if(UI.tab==='today')app.innerHTML=vToday();
+  else if(UI.tab==='runner')app.innerHTML=vRunner();
+  else if(UI.tab==='routines')app.innerHTML=vRoutines();
+  else if(UI.tab==='setup')app.innerHTML=vSetupRouter();
+  else if(UI.tab==='scent')app.innerHTML=vScent();
+  else if(UI.tab==='history')app.innerHTML=vHistory();
+  else if(UI.tab==='supplements')app.innerHTML=vSupplements();
+  else app.innerHTML=vHome();
   app.classList.remove('tab-fade');
   if(UI._tabFade){void app.offsetWidth;app.classList.add('tab-fade');UI._tabFade=false;}
   // Sheet-style tabs render inside .today-sheet which manages its own bottom
   // clearance; the global #app padding/min-height would otherwise add dead
   // scrollable space below a short sheet (e.g. a collapsed routine).
-  // (v99: in panes mode #app holds Home, not the sheet, so both the app-sheet
-  // class and the phone-only backdrop/swipe machinery are skipped.)
-  app.classList.toggle('app-sheet',sheetTab&&!panes);
+  // (v102: on wide screens sheets render as centred panels — the phone-only
+  // backdrop/swipe machinery and app-sheet class are skipped.)
+  app.classList.toggle('app-sheet',sheetTab&&!isWide());
   // Body-level raised backdrop behind the sheet (kept OUT of the sheet so its
   // page-up transform can't trap it and flash the ghost through on open).
   let sbd=document.getElementById('sheet-backdrop');
-  if(sheetTab&&!panes){
+  if(sheetTab&&!isWide()){
     if(!sbd){ sbd=document.createElement('div'); sbd.id='sheet-backdrop'; sbd.className='sheet-backdrop'; document.body.appendChild(sbd); }
   } else if(sbd){ sbd.remove(); }
   renderTabs();renderModal();renderFacet();
-  if(sheetTab&&!panes)attachSheetSwipe();
+  if(sheetTab&&!isWide())attachSheetSwipe();
   // Wake lock follows the checklist views
   if(UI.tab==='today'||UI.tab==='runner')acquireWakeLock();else releaseWakeLock();
   // Scroll handling: exact-restore (mid-checklist re-render) > evening auto-scroll > per-tab restore > top
@@ -735,6 +730,152 @@ function vHome(){
     <span style="font-size:13px;color:var(--ink-soft);flex-shrink:0">›</span>
   </button>`:''}
 `;
+}
+/* ══ v102 · DAY BOARD — wide (≥900px) Home. Morning/evening columns + rail.
+   Reuses the existing data layer and handlers end-to-end: checklistHTML /
+   checklistState render the steps, tickStep / completeAllDate /
+   uncompleteRoutineDate / todayExpand / setTodayLook / toggleSupp /
+   toggleSuppSlot / setJournal do the work. Expand state shares
+   UI.todayExpanded (incomplete = always open, done = collapsed unless
+   peeked) so tickStep's completion collapse works here unchanged. */
+function vBoard(){
+  const now=new Date(),day=now.getDay();
+  const dateStr=todayStr();
+  const streak=calcStreak();
+  const pb=Math.max(bestStreak(),streak);
+  const done=todayDoneCount(),total=todayTotalCount();
+  const todayComplete=total>0&&done===total;
+  const justC=UI._justCompleted;UI._justCompleted=null;
+  // week circles — same rules as vHome
+  const dayLetters=['M','T','W','T','F','S','S'];
+  const mondayOffset=day===0?-6:1-day;
+  const week=dayLetters.map((ltr,i)=>{
+    const dow=i===6?0:i+1;
+    const d=new Date(now);d.setDate(d.getDate()+mondayOffset+i);
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const isT=ds===dateStr;const isFuture=ds>dateStr;
+    const complete=!isFuture&&dayComplete(dow,ds);
+    return`<div class="bd-wd"><i class="${complete?'done':isT?'today':isFuture?'fut':''}"></i><b class="${isT||complete?'hot':''}">${ltr}</b></div>`;
+  }).join('');
+  const remaining=total-done;
+  const remMins=scheduledForDay(day,dateStr).filter(r=>!isRoutineComplete(r.id,dateStr)).reduce((s,r)=>s+routineEstMins(r),0);
+  // progress ring (same geometry as vHome)
+  const _r=13,_c=17,_sz=34,_circ=2*Math.PI*_r;
+  const ring=(dn,tt)=>{const dash=(tt>0?(dn/tt)*_circ:0).toFixed(2);const full=tt>0&&dn===tt;
+    return`<svg width="${_sz}" height="${_sz}" style="flex-shrink:0" viewBox="0 0 ${_sz} ${_sz}"><circle cx="${_c}" cy="${_c}" r="${_r}" fill="none" stroke="var(--hairline)" stroke-width="2.5"/><circle cx="${_c}" cy="${_c}" r="${_r}" fill="none" stroke="var(--cu)" stroke-width="2.5" stroke-dasharray="${dash} ${(_circ-parseFloat(dash)).toFixed(2)}" stroke-linecap="round" transform="rotate(-90 ${_c} ${_c})"/><text x="${_c}" y="${_c}" text-anchor="middle" dominant-baseline="central" font-size="8" font-weight="700" font-family="Inter,system-ui,sans-serif" fill="${full?'var(--cu)':'var(--ink-mid)'}">${full?'✓':dn+'/'+tt}</text></svg>`;};
+  // routines by slot
+  const skinMR=routineForDay(day,'morning','skin',dateStr);
+  const hairMR=routineForDay(day,'morning','hair',dateStr);
+  const skinER=routineForDay(day,'evening','skin',dateStr);
+  const hairER=routineForDay(day,'evening','hair',dateStr);
+  const suppMR=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='morning'&&r.days.includes(day)&&routineLiveOn(r,dateStr));
+  const suppER=DB.routines.filter(r=>r.cat==='supplements'&&r.type==='evening'&&r.days.includes(day)&&routineLiveOn(r,dateStr));
+  const stepsDone=items=>items.filter(s=>s.state==='done'||s.state==='applied').length;
+  function card(r,kicker,opts){
+    opts=opts||{};
+    const isDone=isRoutineComplete(r.id,dateStr);
+    const isExpanded=!isDone||(UI.todayExpanded&&UI.todayExpanded[r.id]);
+    const items=checklistState(r.id,dateStr);
+    const nTot=items.length+(opts.extraTot||0);
+    const nDone=stepsDone(items)+(opts.extraDone||0);
+    const mins=routineEstMins(r);
+    // header: only done cards toggle (matches vToday — incomplete stays open)
+    const hd=isDone
+      ?`<button class="brc-hd" data-call="todayExpand" data-args="${r.id}|${isExpanded?0:1}">
+        <div class="brc-t"><span class="brc-k">${kicker}</span><b>${esc(r.name)}</b>
+        <span class="brc-m">${nTot} step${nTot!==1?'s':''} · done</span></div>
+        <span class="${justC===r.id?'ack-pop':''}" style="display:flex">${ring(nTot,nTot)}</span>
+        <span class="brc-chev">${isExpanded?'⌃':'⌄'}</span>
+      </button>`
+      :`<div class="brc-hd">
+        <div class="brc-t"><span class="brc-k">${kicker}</span><b>${esc(r.name)}</b>
+        <span class="brc-m">${nTot} step${nTot!==1?'s':''}${mins?` · ~${mins} min`:''}</span></div>
+        ${ring(nDone,nTot)}
+      </div>`;
+    if(!isExpanded)return`<div class="brc done">${hd}</div>`;
+    return`<div class="brc ${isDone?'done':''}">${hd}<div class="brc-body">
+      ${opts.pre||''}
+      ${checklistHTML(r.id,dateStr)}
+      ${opts.post||''}
+      <div class="complete-btns">${!isDone
+        ?`<button class="btn full sm" data-call="completeAllDate" data-args="${r.id}|${dateStr}">Mark all done</button>`
+        :`<button class="btn ghost full sm" data-call="uncompleteRoutineDate" data-args="${r.id}|${dateStr}">✓ Done — undo</button>`}</div>
+    </div></div>`;
+  }
+  // hair card: look selector + base steps + look steps merged (same as vToday)
+  function hairCard(r,kicker){
+    const looks=DB.hairLooks||[];
+    const defLook=suggestLook();
+    const selLook=UI.todayLook||defLook||(looks[0]&&looks[0].id);
+    const lookR=selLook?routineById(selLook):null;
+    const hasLookSteps=lookR&&activeSteps(lookR.steps).length>0;
+    const lookItems=hasLookSteps?checklistState(lookR.id,dateStr):[];
+    const pre=looks.length?`<div class="seg">${looks.map(l=>`<button class="${selLook===l.id?'on':''}" data-call="setTodayLook" data-args="${l.id}">${esc(l.name.split('—')[0].trim())}</button>`).join('')}</div>`:'';
+    const post=hasLookSteps?checklistHTML(lookR.id,dateStr):'';
+    return card(r,kicker,{pre,post,extraTot:lookItems.length,extraDone:stepsDone(lookItems)});
+  }
+  const mCards=[];
+  if(skinMR)mCards.push(card(skinMR,'Skin · Morning'));
+  if(hairMR)mCards.push(hairCard(hairMR,'Hair · Morning'));
+  suppMR.forEach(r=>mCards.push(card(r,'Supplements · Morning')));
+  const eCards=[];
+  if(skinER)eCards.push(card(skinER,'Skin · Evening'));
+  if(hairER)eCards.push(hairCard(hairER,'Hair · Evening'));
+  suppER.forEach(r=>eCards.push(card(r,'Supplements · Evening')));
+  const colStat=list=>{const t=list.length;if(!t)return'';const d=list.filter(r=>isRoutineComplete(r.id,dateStr)).length;return d===t?'✓ complete':`${d} of ${t} done`;};
+  const mList=[skinMR,hairMR].filter(Boolean).concat(suppMR);
+  const eList=[skinER,hairER].filter(Boolean).concat(suppER);
+  const empty=t=>`<div class="brc bempty">Nothing scheduled this ${t}</div>`;
+  // ── right rail: scent · supplements · quick skin · low stock · journal ──
+  const scent=stackOn('scent')?suggestScent():null;
+  const scentTag=scent&&scent.tags&&scent.tags.length?scent.tags[0]:'';
+  const suppList=suppForDay(day);
+  const sT=suppDoseTotals(day,dateStr);
+  const lowSorted=lowStock().slice().sort((a,b)=>daysLeft(a[1],a[0])-daysLeft(b[1],b[0]));
+  const refreshR=DB.routines.find(r=>r.id==='skin-refresh');
+  let rail='';
+  if(scent)rail+=`<button class="bmini" onclick="openScent()">
+    <h3>Today's scent${scentTag?`<span class="sp">${esc(scentTag)}</span>`:''}</h3>
+    <div class="bscent-n">${esc(scent.name)}</div>
+    <div class="bmini-sub">${esc(scent.brand)}</div></button>`;
+  if(suppList.length){
+    rail+=`<div class="bmini"><h3 style="cursor:pointer" onclick="openSupplements()">Supplements<span class="sp">${sT.done}/${sT.total}</span></h3>
+    ${suppList.map(s=>{
+      const slots=suppSlots(s);const multi=slots.length>1;
+      const taken=suppTaken(s.id,dateStr);
+      const check=multi
+        ?`<span class="sup-check ${taken?'on':''}" style="cursor:default">${taken?'✓':''}</span>`
+        :`<button class="sup-check ${taken?'on':''}" data-call="toggleSupp" data-args="${s.id}">${taken?'✓':''}</button>`;
+      const slotRow=multi
+        ?`<div class="sup-slots" style="padding-left:36px;margin:6px 0 0;width:100%">${slots.map(sl=>{const on=suppSlotTaken(s.id,dateStr,sl);
+          return`<button class="sup-slot ${on?'on':''}" data-call="toggleSuppSlot" data-args="${s.id}|${sl}"><span class="sup-slot-tick">${on?'✓':''}</span>${suppSlotLabel(sl)}</button>`;}).join('')}</div>`
+        :'';
+      return`<div class="bsup">${check}<span class="bsup-n ${taken?'done':''}">${esc(s.name)}</span>${s.dose?`<span class="bsup-d">${esc(s.dose)}</span>`:''}${slotRow}</div>`;
+    }).join('')}</div>`;
+  }
+  if(refreshR)rail+=`<button class="bmini" onclick="openRefresh()">
+    <h3>Quick skin</h3>
+    <div class="bmini-t">⚡ ${esc(refreshR.name)}</div>
+    <div class="bmini-sub">${activeSteps(refreshR.steps).length} steps ›</div></button>`;
+  if(lowSorted.length)rail+=`<div class="bmini"><h3 style="cursor:pointer" onclick="openLowStock()">Running low<span class="sp">${lowSorted.length}</span></h3>
+    ${lowSorted.slice(0,5).map(([id,p])=>{const d=daysLeft(p,id);
+      return`<div class="blow"><span class="blow-dot${d<=5?' hot':''}"></span><span class="blow-n">${esc(p.name)}</span><span class="blow-d">${d<=0?'likely empty':'~'+d+' day'+(d!==1?'s':'')}</span></div>`;}).join('')}</div>`;
+  rail+=`<div class="bmini"><h3>Journal</h3>
+    <textarea placeholder="Notes on today — skin, reactions, products…" data-chg="setJournal" data-args="${dateStr}">${esc((DB.journal||{})[dateStr]||'')}</textarea></div>`;
+  return`<div class="bd-hdr">
+    <div class="bd-date"><strong>${dayName(day)}</strong><span>${now.getDate()} ${now.toLocaleString('en-AU',{month:'long'})}${todayComplete?' · all done today ✓':remaining>0?` · ${remaining} routine${remaining!==1?'s':''} left${remMins?` · ~${remMins} min`:''}`:''}</span></div>
+    <div class="bd-stats">
+      <div class="bd-pill bd-week">${week}</div>
+      <button class="bd-pill" onclick="openHistory()"><span class="bd-n">${todayComplete?'✓':streak}</span><span class="bd-l">day streak<br>best ${pb}</span></button>
+      <div class="bd-pill">${ring(done,total)}<span class="bd-l">today's<br>progress</span></div>
+      ${gearBtn()}
+    </div>
+  </div>
+  <div class="board">
+    <section><div class="bcol-hd"><h2>Morning</h2><span class="est">${colStat(mList)}</span></div><div class="bcol">${mCards.join('')||empty('morning')}</div></section>
+    <section><div class="bcol-hd"><h2>Evening</h2><span class="est">${colStat(eList)}</span></div><div class="bcol">${eCards.join('')||empty('evening')}</div></section>
+    <section class="brail"><div class="bcol-hd"><h2>Also today</h2></div>${rail}</section>
+  </div>`;
 }
 function openRefresh(){
   openToday(null,'skin-refresh');
