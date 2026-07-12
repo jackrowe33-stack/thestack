@@ -245,7 +245,7 @@ function friendly(code){return({
   'auth/popup-closed-by-user':'Sign-in window closed before finishing.',
   'auth/popup-blocked':'Your browser blocked the popup — allow popups and retry.',
   'auth/unauthorized-domain':'This domain isn\'t authorized in Firebase yet.',
-  'auth/network-request-failed':'Network error — check your connection.',
+  'auth/network-request-failed':'The request couldn\'t reach the sign-in service. Check your connection — and if you use an ad-blocker, Brave Shields or a VPN, allow identitytoolkit.googleapis.com and try again.',
   'auth/too-many-requests':'Too many attempts. Wait a moment and try again.'
 }[code]||('Something went wrong: '+(code||'unknown')));}
 

@@ -6,7 +6,7 @@ function pickLoopFocus(cat){setLoopFocus(cat);if(UI._view==='focusgate'){UI._vie
 
 /* v99: delegation dispatch table (moved from app-render.js — must be declared after
    all referenced functions exist across files; this is the last-loaded file). */
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot,openFacet,closeFacet,stackPrio,pickLoopFocus,openPlans,obWelcomeNext,obWelcomeBack,obPickTier,obPriorityNext,setPlanTier,finishOnboarding,obOpenArea,obAreaChatBack,obHubFinish,obHowtoNext,obHowtoBack,obShowPlans,redoModule,restartOnboarding,replayAppTour,replayWelcomeTour,openFeedback};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot,openFacet,closeFacet,stackPrio,pickLoopFocus,openPlans,obWelcomeNext,obWelcomeBack,obPickTier,obPriorityNext,setPlanTier,finishOnboarding,obOpenArea,obAreaChatBack,obHubFinish,obHowtoNext,obHowtoBack,obShowPlans,redoModule,restartOnboarding,replayAppTour,replayWelcomeTour,openFeedback,obAreaFallback};
 
 /* ══ PROMPT PAGE ══ */
 function vPromptPage(){
@@ -558,7 +558,19 @@ claudePromptSkin=function(){return _cpSkin()+journalBlock();};
 async function bootApp(){
   if(booted_local)return;          // idempotent: only paint once
   booted_local=true;
-  if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js');}catch(e){}}
+  if('serviceWorker' in navigator){
+    try{
+      navigator.serviceWorker.register('sw.js');
+      // When a deployed update activates (new cache VER + skipWaiting+claim),
+      // reload once so this page swaps onto the new shell immediately instead
+      // of running a mixed old/new version until the user reloads twice.
+      let _swSwapped=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(_swSwapped)return;_swSwapped=true;
+        location.reload();
+      });
+    }catch(e){}
+  }
   /* v99: surface the live SW cache version in the Settings footer (deploy check) */
   if(window.caches&&caches.keys){caches.keys().then(ks=>{
     const k=ks.filter(x=>x.indexOf('stack-shell-')===0).sort().pop();

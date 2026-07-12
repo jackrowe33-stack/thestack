@@ -98,7 +98,7 @@ function obSetPos(sec,step){Object.assign(DB.onboarding,{section:sec,step});save
    hands control back to the hub when they're done — never the global chain. */
 function obModuleSecs(cat){return cat==='hair'?['hair','looks']:[cat];}
 function obModuleMode(){return !!(DB.onboarding&&DB.onboarding.stage==='modules'&&DB.onboarding.modArea);}
-function obBackToHub(){Object.assign(DB.onboarding,{modArea:null,section:null,step:0});save();render();}
+function obBackToHub(){Object.assign(DB.onboarding,{modArea:null,modMode:null,section:null,step:0});save();render();}
 /* advance to next question, or next unfinished section, or finish */
 function obAdvance(){
   const {sec,step,qs}=obPos();
@@ -432,11 +432,24 @@ function obAreaStatus(cat){
 function vObModules(){
   const area=DB.onboarding.modArea;
   if(!area)return vObHub();
-  if(isPremium())return vObAreaChat();
-  // free questionnaire: keep the section cursor inside this area (a reload
-  // can leave a stale pointer; obPos's global fallback would stray otherwise)
+  // modMode 'q' = questionnaire, even on a paid tier — set when the user (or
+  // an unreachable Loop) falls back to plain questions for this area.
+  if(isPremium()&&DB.onboarding.modMode!=='q')return vObAreaChat();
+  // questionnaire: keep the section cursor inside this area (a reload can
+  // leave a stale pointer; obPos's global fallback would stray otherwise)
   if(!obModuleSecs(area).includes(DB.onboarding.section))Object.assign(DB.onboarding,{section:area,step:0});
   return vOnboard();
+}
+/* Loop unreachable (or user preference): switch this area to the plain
+   questionnaire so onboarding never dead-ends on a server/entitlement issue. */
+function obAreaFallback(){
+  const cat=DB.onboarding.modArea;
+  if(!cat)return;
+  stopThinking();UI._chatBusy=false;
+  UI._assistantCat=null;UI._chat=null;
+  obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
+  Object.assign(DB.onboarding,{modMode:'q',section:cat,step:0});
+  save();render();
 }
 function vObHub(){
   const queue=DB.onboarding.modQueue||STACK_CATS.filter(c=>stackPriority(c)!=='off');
@@ -471,7 +484,7 @@ function obHubFinish(){
 }
 function obOpenArea(cat){
   const ob=DB.onboarding;
-  ob.modArea=cat;
+  ob.modArea=cat;ob.modMode=null;
   if(isPremium()){
     save();
     UI._assistantCat=cat;
@@ -484,6 +497,7 @@ function obOpenArea(cat){
   } else {
     // Free: the structured questionnaire, scoped to this area's sections.
     // Re-opening a finished area re-asks from the top (answers are kept).
+    ob.modMode='q';
     obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
     Object.assign(ob,{section:cat,step:0});
     save();render();
@@ -496,6 +510,8 @@ function obOpenArea(cat){
    conversation for the same category. ── */
 function vObAreaChat(){
   const cat=UI._assistantCat||DB.onboarding.modArea||'skin';
+  const chat=UI._chat||[];
+  const lastErr=chat.length&&chat[chat.length-1]._err;
   return`<div class="chat-screen">
     <div class="chat-head">
       <button class="chat-back" data-call="obAreaChatBack">${CHEV_SVG}</button>
@@ -503,6 +519,10 @@ function vObAreaChat(){
       <span style="width:30px"></span>
     </div>
     <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
+    ${lastErr?`<div class="ob-chat-fallback">
+      <button class="btn full sm" data-call="obAreaFallback">Answer quick questions instead</button>
+      <div class="ob-skip" style="padding:8px 0 0" data-call="obAreaChatBack">Back to areas</div>
+    </div>`:''}
     <div class="chat-composer">
       <textarea id="chatInput" rows="1" placeholder="Tell Loop about your ${cat}…"
         oninput="chatGrow(this)"
@@ -516,12 +536,14 @@ function vObAreaChat(){
 function obAreaChatBack(){
   stopThinking();UI._chatBusy=false;
   const cat=UI._assistantCat;
-  if(cat&&(UI._obChats&&UI._obChats[cat]||[]).length){
-    // A conversation happened — count the area (and hair's paired 'looks'
-    // section) as set up so the hub and the legacy gate both agree.
+  const chat=(UI._obChats&&cat&&UI._obChats[cat])||[];
+  // Only a REAL conversation counts the area (and hair's paired 'looks'
+  // section) as set up — error lines (_err) don't, or an unreachable Loop
+  // would silently stamp every area "Done" without asking a single question.
+  if(chat.some(m=>!m._err)){
     obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=true;DB.profile[s].skipped=false;} });
   }
-  DB.onboarding.modArea=null;
+  DB.onboarding.modArea=null;DB.onboarding.modMode=null;
   UI._assistantCat=null;UI._chat=null;
   save();render();
 }
@@ -985,8 +1007,15 @@ async function runOnboardIntro(cat){
   const opener=promptBlock('onboardIntro',{CAT:cat});
   const res=await aiCall(sys,[{role:'user',content:opener}],false);
   UI._chatBusy=false;stopThinking();
-  if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});}
-  else{const c=extractChoices(extractChanges(res.text||'').prose);UI._chat.push({role:'assistant',content:c.prose||('Let\'s get your '+cat+' stack sorted — what are you working with?'),choices:c.choices});}
+  if(res.error){
+    // Mark it so this never counts as a real conversation (obAreaChatBack
+    // would otherwise stamp the area "Done" off the back of an error line),
+    // and re-render the full screen so the questionnaire fallback shows.
+    UI._chat.push({role:'assistant',_err:true,content:'I can\'t reach Loop right now — '+res.error});
+    render();return;
+  }
+  const c=extractChoices(extractChanges(res.text||'').prose);
+  UI._chat.push({role:'assistant',content:c.prose||('Let\'s get your '+cat+' stack sorted — what are you working with?'),choices:c.choices});
   renderChat();
 }
 
@@ -1011,7 +1040,11 @@ async function assistantSend(explicit){
   const wantsReco=cat!=='help'&&(recoRe.test(text)||affirmRe.test(text.trim())||!!midReco);
   const res=await aiCall(sys,msgs,wantsReco);
   UI._chatBusy=false;stopThinking();
-  if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});renderChat();return;}
+  if(res.error){
+    UI._chat.push({role:'assistant',_err:true,content:'(Could not reach the assistant: '+res.error+')'});
+    if(obModuleMode())render();else renderChat();
+    return;
+  }
   // extract changes, then choices, from what remains
   const c1=extractChanges(res.text||'');
   const c2=extractChoices(c1.prose);

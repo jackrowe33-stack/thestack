@@ -405,6 +405,8 @@ a{color:inherit}
 .ob-sell-t{font-size:13.5px;font-weight:600;color:var(--ink)}
 .ob-sell-s{font-size:12.5px;color:var(--ink-mid);line-height:1.45;margin:4px 0 10px}
 .ob-sell-b{background:transparent;border:1.5px solid var(--cu);color:var(--cu);font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:100px;cursor:pointer}
+/* onboarding chat: fallback strip when Loop is unreachable */
+.ob-chat-fallback{flex:0 0 auto;padding:8px 16px 4px;background:var(--bg);text-align:center}
 /* help chat: feedback affordances */
 .chat-fb{width:30px;height:30px;border-radius:50%;border:1px solid var(--card-edge);background:var(--bg-raise);color:var(--ink-mid);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}
 .fb-item{border:1px solid var(--card-edge);border-radius:12px;padding:10px 12px;margin-bottom:10px}
