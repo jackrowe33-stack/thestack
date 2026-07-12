@@ -119,6 +119,7 @@ main{flex:1;padding:26px 30px;max-width:1150px;min-width:0}
     <button data-v="users">Users</button>
     <button data-v="feedback">Feedback</button>
     <button data-v="prompts">AI Prompts</button>
+    <button data-v="legal">Legal</button>
     <button data-v="pricing">Pricing</button>
     <button data-v="acct">Accounting</button>
     <button data-v="flags">Flags &amp; Ops</button>
@@ -126,7 +127,7 @@ main{flex:1;padding:26px 30px;max-width:1150px;min-width:0}
     <div class="foot">
       <div id="whoami"></div>
       <button class="btn ghost sm" style="margin-top:8px" id="signout">Sign out</button>
-      <div style="margin-top:10px" class="soft">ADMIN BUILD v2</div>
+      <div style="margin-top:10px" class="soft">ADMIN BUILD v3</div>
     </div>
   </nav>
   <main id="main"></main>
@@ -141,7 +142,7 @@ import {
   GoogleAuthProvider, signInWithPopup
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, getDocs,
+  getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, deleteField, collection, getDocs,
   collectionGroup, query, orderBy, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
@@ -209,6 +210,187 @@ const DEFAULT_PRICING = {
   }
 };
 const DEFAULT_FLAGS = { aiEnabled:true, maintenanceMsg:'', minBuild:0 };
+
+/* Default legal documents (markdown) — seeded from LegalDisclaimers/ in the
+   app repo. Published to config/legal (public read): the app's Settings →
+   About & legal page and the website's legal pages both render the published
+   copy live. [BRACKETED] placeholders must be filled before launch. */
+const LEGAL_META = [
+  ['terms','Terms of Service'],
+  ['privacy','Privacy Policy'],
+  ['medical','Medical Disclaimer']
+];
+const DEFAULT_LEGAL = {
+terms: `# Terms of Service — The Stack
+
+**Last updated: [DATE]**
+
+## 1. Agreement
+
+These Terms govern your use of The Stack ("the app"), operated by **[YOUR LEGAL NAME / ENTITY]** ("we", "us"). By creating an account or using the app, you agree to these Terms. If you do not agree, do not use the app.
+
+## 2. Who can use the app
+
+You must be at least **[16]** years old to use The Stack. By using it, you confirm you meet this requirement.
+
+## 3. Your account
+
+You are responsible for your account and for keeping your sign-in credentials secure. You agree to provide accurate information and to notify us of any unauthorised use. You may sign in using email/password, Google, or Apple.
+
+## 4. What the app does — and what it is not
+
+The Stack helps you track personal care routines (skincare, haircare, scent), log completions and journal notes, and — optionally — receive suggestions from an AI assistant feature ("Loop").
+
+**The Stack does not provide medical, dermatological, or professional advice.** Any information or suggestion provided by the app or the AI assistant is general information only, is not a substitute for professional advice, and must not be relied on to diagnose, treat, or prevent any condition. See the Medical Disclaimer, which forms part of these Terms. Always consult a qualified professional before making decisions about your health, skin, or use of any product.
+
+## 5. AI assistant
+
+The AI assistant generates responses using an automated model. Its output may be inaccurate, incomplete, or unsuitable for your circumstances. You are responsible for evaluating any suggestion before acting on it. Do not enter information you do not wish to be processed to generate a response (see Privacy Policy). We may impose usage limits on the assistant, including as part of a paid plan.
+
+## 6. Subscriptions and payments
+
+Certain features may require a paid subscription. Pricing, billing cycle, and what's included will be shown before you purchase. Subscriptions purchased through the Apple App Store or Google Play are billed and managed through those stores under their terms; subscriptions purchased on the web are billed through **[payment provider]**. Renewals, cancellations, and refunds are governed by the applicable store's or provider's policies and by your rights under **[Australian Consumer Law]**.
+
+## 7. Your content
+
+You retain ownership of the data and content you enter. You grant us a limited licence to store, process, and display it solely to operate the app for you. You are responsible for the content you enter and confirm you have the right to enter it.
+
+## 8. Acceptable use
+
+You agree not to: misuse or attempt to disrupt the service; access other users' data; reverse-engineer or abuse the AI assistant or the underlying API; use the app for any unlawful purpose; or attempt to circumvent usage limits or access controls.
+
+## 9. Availability
+
+We aim to keep the app available but do not guarantee uninterrupted service. Features may change, and we may suspend or discontinue the app or any feature with reasonable notice where practicable.
+
+## 10. Disclaimers and liability
+
+To the maximum extent permitted by law, the app is provided "as is" without warranties of any kind. Nothing in these Terms excludes rights you have under the **[Australian Consumer Law]** that cannot lawfully be excluded. Subject to that, we are not liable for indirect or consequential loss, or for decisions you make based on the app or the AI assistant.
+
+## 11. Termination
+
+You may stop using the app and delete your account at any time. We may suspend or terminate your access if you breach these Terms.
+
+## 12. Changes
+
+We may update these Terms. Material changes will be notified in-app or by email, and continued use after changes means you accept them.
+
+## 13. Governing law
+
+These Terms are governed by the laws of **[Victoria, Australia]**, and you submit to the courts of that jurisdiction.
+
+## 14. Contact
+
+Questions about these Terms: **[CONTACT EMAIL]**.`,
+privacy: `# Privacy Policy — The Stack
+
+**Last updated: [DATE]**
+
+## Who we are
+
+The Stack ("we", "us", "the app") is a personal care routine tracking application operated by **[YOUR LEGAL NAME / ENTITY]**, based in **[Melbourne, Australia]**. You can contact us at **[CONTACT EMAIL]**.
+
+This policy explains what personal information we collect, how we use it, how we store it, and the rights you have over it. We handle personal information in accordance with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs). If you are in the European Economic Area or the UK, additional rights under the GDPR/UK GDPR may apply (see "International users").
+
+## What we collect
+
+**Account information.** When you create an account we collect your email address and an authentication identifier from your chosen sign-in provider (email/password, Google, or Apple). We do not store your password — authentication is handled by Google Firebase Authentication.
+
+**Routine and profile data you enter.** This is the core of the app and includes the products you use, your skincare/haircare/scent routines, completion history, journal notes, and any profile details you choose to provide during onboarding (for example, skin concerns, preferences, and free-text notes). Some of this may constitute **health-related information** or **sensitive information** under the Privacy Act. We collect it only because you choose to enter it, and only to provide the app's features to you.
+
+**AI assistant interactions.** If you use the AI assistant ("Loop"), the messages you send, relevant routine context, and recent journal entries are transmitted to our processing service to generate a response (see "Third parties" below). Photos you submit for analysis are processed to produce a text description and are **not retained as images** — only the resulting text analysis is stored in your account.
+
+**Technical data.** Basic technical information necessary to operate the service (for example, error logs). We do **not** use advertising trackers, and the app is ad-free.
+
+## How we use your information
+
+We use your information to: provide and operate the app's features; sync your data across your devices; generate AI assistant responses when you use that feature; maintain and improve reliability and security; and communicate with you about your account (for example, password resets).
+
+We do **not** sell your personal information, and we do **not** use it for advertising.
+
+## Where your data is stored
+
+Your account and routine data are stored in Google Firebase (Firestore), in the **[australia-southeast2 / Melbourne]** region. Authentication is handled by Firebase Authentication. Data may be cached locally on your device to allow offline use.
+
+## Third parties we share data with
+
+We share data only with service providers that help us run the app, and only as needed:
+
+- **Google Firebase** (Authentication and Firestore database) — stores your account and routine data.
+- **[Anthropic]** — processes AI assistant messages and context to generate responses, via our server.
+- **[Payment provider — e.g. Stripe / Apple / Google]** — if you purchase a subscription, processes your payment. We do not store your full payment card details.
+
+Each provider handles data under its own terms. We do not authorise them to use your data for their own purposes beyond providing the service to us, to the extent we can control this.
+
+## Health and sensitive information
+
+Some data you enter may be sensitive or health-related. We collect it only with your consent (by you choosing to enter it), use it only to provide the app's features, and never disclose it for marketing. You can delete this information at any time (see "Your rights").
+
+The Stack is **not a medical device** and does not provide medical advice. See our separate Medical Disclaimer.
+
+## Your rights
+
+You can:
+
+- **Access** the personal information we hold about you.
+- **Export** your data — the app provides an in-app export of your stored data at any time.
+- **Correct** information that is inaccurate — most data is directly editable in the app.
+- **Delete** your account and associated data — see "Account deletion" below.
+- **Withdraw consent** by ceasing to use a feature and deleting the associated data.
+
+To exercise any right we can't fulfil in-app, contact **[CONTACT EMAIL]**. We aim to respond within **[30] days**.
+
+## Account deletion
+
+You can delete your account and its data from within the app at **[Settings → Account → Delete account]**, or by emailing **[CONTACT EMAIL]**. Deletion removes your routine data, journal, profile, and AI memory from our active database. Backup snapshots are purged within **[30] days**. Some records may be retained where required by law.
+
+## Data retention
+
+We keep your data for as long as your account is active. If you delete your account, we delete your data as described above. Local device caches are cleared when you sign out or delete the app.
+
+## Security
+
+We use industry-standard measures to protect your data, including encrypted transport (HTTPS), authentication, and database access rules that restrict each user's data to that user. No system is perfectly secure; we cannot guarantee absolute security.
+
+## Children
+
+The Stack is not directed at children under **[16]**, and we do not knowingly collect their personal information. If you believe a child has provided us data, contact us and we will delete it.
+
+## International users
+
+If you access the app from outside Australia, your data will be stored and processed as described above (including in Australia). If you are in the EEA or UK, you have additional rights under the GDPR/UK GDPR, including rights to restriction and portability, and the right to lodge a complaint with your local supervisory authority. Our lawful basis for processing is your consent and the performance of our service to you.
+
+## Changes to this policy
+
+We may update this policy. We will post the updated version with a new "Last updated" date and, for material changes, notify you in-app or by email.
+
+## Complaints
+
+If you have a privacy concern, contact us first at **[CONTACT EMAIL]**. If you are not satisfied, you may contact the Office of the Australian Information Commissioner (OAIC) at oaic.gov.au.`,
+medical: `# Medical Disclaimer — The Stack
+
+**Last updated: [DATE]**
+
+## Full disclaimer
+
+The Stack is a personal care routine tracking app. It is provided for general informational and organisational purposes only.
+
+**The Stack is not a medical device and does not provide medical, dermatological, pharmaceutical, or other professional advice.** The content in the app — including any information, suggestion, product recommendation, or response generated by the AI assistant ("Loop") — is general information only. It is not a substitute for advice from a qualified healthcare professional and must not be relied on to diagnose, treat, cure, or prevent any condition.
+
+Everyone's skin, hair, and health are different. A product, ingredient, or routine that suits one person may cause irritation, an allergic reaction, or harm to another. Before starting, stopping, or changing any product or routine — particularly if you have a skin condition, allergy, sensitivity, are pregnant or breastfeeding, or take medication — **consult a qualified professional** such as a doctor, dermatologist, or pharmacist.
+
+The AI assistant generates responses automatically and may be inaccurate or incomplete. Do not rely on it for any health decision. If you experience an adverse reaction to any product, **stop using it and seek professional advice.** If you are experiencing a medical emergency, contact your local emergency service immediately (in Australia, call 000).
+
+By using The Stack, you acknowledge that you use it at your own discretion and risk, and that you are responsible for evaluating any information before acting on it.
+
+## Short in-app version
+
+**The Stack offers general routine tracking and information, not medical advice.** Suggestions — including from the AI assistant — may be inaccurate. Always consult a qualified professional before changing products or routines, especially if you have a condition, allergy, or take medication.
+
+## One-line version
+
+Not medical advice. Consult a professional before changing your routine.`
+};
 
 /* ══ BOOT ══ */
 const fbApp = initializeApp(firebaseConfig);
@@ -294,7 +476,7 @@ async function fetchUsage(month){
 }
 
 /* ══ NAV ══ */
-const VIEWS = { dash:renderDash, users:renderUsers, feedback:renderFeedback, prompts:renderPrompts, pricing:renderPricing, acct:renderAcct, flags:renderFlags, audit:renderAudit };
+const VIEWS = { dash:renderDash, users:renderUsers, feedback:renderFeedback, prompts:renderPrompts, legal:renderLegal, pricing:renderPricing, acct:renderAcct, flags:renderFlags, audit:renderAudit };
 document.querySelectorAll('nav [data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
 function show(v){
   document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v===v));
@@ -314,19 +496,25 @@ async function loadUsers(force){
     const c = d.data();
     rows.set(uid, {
       uid, plan: c.plan||'free', updatedAt: c.updatedAt||0,
+      planUntil: c.planUntil||0, planAfter: c.planAfter||'',
       country: c.settings?.country||'', products: Object.keys(c.products||{}).length,
-      email: '', lastSeen: 0
+      email: '', lastSeen: 0, deleted: false
     });
   });
-  try{ // directory mirror, written by the Worker (email + lastSeen). Optional.
-    const ds = await getDocs(collection(db,'directory'));
-    ds.forEach(d => {
-      const r = rows.get(d.id) || { uid:d.id, plan:'free', updatedAt:0, country:'', products:0 };
-      const v = d.data(); r.email = v.email||r.email||''; r.lastSeen = v.lastSeen||0;
-      if(v.plan) r.kvPlan = v.plan;
-      rows.set(d.id, r);
-    });
-  }catch(e){ /* directory may not exist yet */ }
+  // Emails + auth-deleted detection straight from Firebase Auth via the
+  // Worker (accounts:lookup). Degrades gracefully if the Worker is down.
+  try{
+    const uids = [...rows.keys()];
+    if(uids.length){
+      const chk = await adminFetch('/admin/checkUsers', { uids });
+      for(const [uid, info] of Object.entries(chk.found||{})){
+        const r = rows.get(uid); if(!r) continue;
+        r.email = info.email||''; r.lastSeen = info.lastLoginAt||0;
+      }
+      (chk.missing||[]).forEach(uid => { const r = rows.get(uid); if(r) r.deleted = true; });
+      WORKER_OK = true;
+    }
+  }catch(e){ if(WORKER_OK===null) WORKER_OK = false; console.warn('checkUsers', e); }
   USERS = [...rows.values()].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return USERS;
 }
@@ -385,18 +573,24 @@ window._dashMonth = m => { dashMonth = m || monthNow(); show('dash'); };
 async function renderUsers(){
   await loadUsers(true);
   const rows = USERS.map(u => `
-    <tr>
-      <td><div>${esc(u.email||'—')}</div><div class="soft mono">${esc(u.uid)}</div></td>
-      <td><span class="pill ${esc(u.plan)}">${esc(u.plan)}</span>${u.kvPlan && u.kvPlan!==u.plan ? ' <span class="soft small" title="Worker KV plan differs">KV: '+esc(u.kvPlan)+'</span>' : ''}</td>
+    <tr${u.deleted?' style="opacity:.55"':''}>
+      <td><div>${esc(u.email||'—')}${u.deleted?' <span class="pill suspended">auth deleted</span>':''}</div><div class="soft mono">${esc(u.uid)}</div></td>
+      <td><span class="pill ${esc(u.plan)}">${esc(u.plan)}</span>
+        ${u.planUntil?`<div class="soft small">→ ${esc(u.planAfter||'free')} on ${new Date(u.planUntil).toLocaleDateString()} <button class="btn ghost sm" style="padding:1px 7px" onclick="_clearSched('${u.uid}', this)">✕</button></div>`:''}</td>
       <td class="num">${u.products}</td>
       <td>${esc(u.country||'—')}</td>
-      <td class="small muted">${u.updatedAt?new Date(u.updatedAt).toLocaleDateString():'—'}</td>
+      <td class="small muted">${u.lastSeen?new Date(u.lastSeen).toLocaleDateString():(u.updatedAt?new Date(u.updatedAt).toLocaleDateString():'—')}</td>
       <td>
         <select style="width:auto" onchange="_setPlan('${u.uid}', this.value, this)">
           ${PLANS.map(p=>'<option '+(p===u.plan?'selected':'')+'>'+p+'</option>').join('')}
         </select>
+        <button class="btn ghost sm" title="Schedule an automatic plan change" onclick="_schedPlan('${u.uid}', this)">⏱</button>
       </td>
-      <td><button class="btn ghost sm" onclick="_resetOnboarding('${u.uid}', this)">Reset onboarding</button></td>
+      <td>
+        ${u.deleted
+          ?`<button class="btn ghost sm" style="color:#c97b6e" onclick="_purgeUser('${u.uid}', this)">Purge data</button>`
+          :`<button class="btn ghost sm" onclick="_resetOnboarding('${u.uid}', this)">Reset onboarding</button>`}
+      </td>
     </tr>`).join('');
   $('main').innerHTML = `
     <div class="viewhead"><h1>Users</h1>
@@ -405,14 +599,62 @@ async function renderUsers(){
         <button class="btn ghost sm" onclick="_show('users')">Refresh</button>
       </div>
     </div>
-    <p class="muted small" style="margin-bottom:12px">Changing a plan writes <span class="mono">plan</span> on the user's core doc (app entitlements) and syncs the Worker KV <span class="mono">plan:{uid}</span> (AI enforcement). <span class="mono">suspended</span> blocks AI and drops app entitlements to free. Emails appear once the Worker directory mirror is deployed.</p>
+    <p class="muted small" style="margin-bottom:12px">Entitlement is the <span class="mono">plan</span> field on the user's core doc — the Worker reads it fresh on every AI call. ⏱ schedules an automatic change (e.g. two weeks of pro, then back to free); enforced by both the app and the Worker, no cron needed. <span class="mono">auth deleted</span> rows are accounts removed from Firebase Auth whose data still exists — purge removes their Firestore data too. Emails come live from Firebase Auth${WORKER_OK===false?' — <strong>Worker unreachable, emails unavailable</strong>':''}.</p>
     <div class="card" style="padding:0;overflow-x:auto">
       <table id="uTable">
-        <tr><th>User</th><th>Plan</th><th class="num">Products</th><th>Country</th><th>Last core write</th><th>Change plan</th><th>Actions</th></tr>
+        <tr><th>User</th><th>Plan</th><th class="num">Products</th><th>Country</th><th>Last sign-in</th><th>Change plan</th><th>Actions</th></tr>
         ${rows || '<tr><td colspan="7" class="muted">No users found.</td></tr>'}
       </table>
     </div>`;
 }
+/* ⏱ schedule: "current plan until DATE, then revert to X" */
+window._schedPlan = async (uid, btn) => {
+  const u = USERS.find(x=>x.uid===uid);
+  const when = prompt('Change '+(u?.email||uid)+'\'s plan automatically after how long?\nEnter days (e.g. 14) or a date (YYYY-MM-DD):', '14');
+  if(!when) return;
+  let ts;
+  if(/^\d{1,4}$/.test(when.trim())) ts = Date.now() + parseInt(when.trim(),10)*86400000;
+  else { ts = Date.parse(when.trim()); if(isNaN(ts)){ toast('Could not read that date', true); return; } }
+  if(ts < Date.now()){ toast('That date is in the past', true); return; }
+  let after = prompt('On that date, change their plan to:', 'free');
+  if(!after) return;
+  after = after.trim().toLowerCase();
+  if(!PLANS.includes(after)){ toast('Unknown plan "'+after+'"', true); return; }
+  btn.disabled = true;
+  try{
+    await setDoc(doc(db,'users',uid,'core','current'), { planUntil: ts, planAfter: after, updatedAt: Date.now() }, { merge:true });
+    await audit('user.plan.schedule', uid, (u?.plan||'?')+' until '+new Date(ts).toISOString().slice(0,10)+' then '+after);
+    if(u){ u.planUntil = ts; u.planAfter = after; }
+    toast('Scheduled — reverts to '+after+' on '+new Date(ts).toLocaleDateString());
+    show('users');
+  }catch(e){ toast('Failed: '+e.message, true); btn.disabled = false; }
+};
+window._clearSched = async (uid, btn) => {
+  btn.disabled = true;
+  try{
+    await setDoc(doc(db,'users',uid,'core','current'), { planUntil: deleteField(), planAfter: deleteField(), updatedAt: Date.now() }, { merge:true });
+    await audit('user.plan.schedule.clear', uid, '');
+    const u = USERS.find(x=>x.uid===uid); if(u){ u.planUntil = 0; u.planAfter = ''; }
+    toast('Schedule cleared — plan stays as-is');
+    show('users');
+  }catch(e){ toast('Failed: '+e.message, true); btn.disabled = false; }
+};
+/* Purge a deleted-auth account's leftover Firestore data */
+window._purgeUser = async (uid, btn) => {
+  if(!confirm('Permanently delete ALL Firestore data for '+uid+'?\n(core, journal, completions — cannot be undone)')) return;
+  btn.disabled = true; btn.textContent = 'Purging…';
+  try{
+    for(const sub of ['journal','completions']){
+      const qs = await getDocs(collection(db,'users',uid,sub));
+      for(const d of qs.docs) await deleteDoc(d.ref);
+    }
+    await deleteDoc(doc(db,'users',uid,'core','current'));
+    await audit('user.purge', uid, 'auth-deleted account data removed');
+    USERS = USERS.filter(x=>x.uid!==uid);
+    toast('Purged.');
+    show('users');
+  }catch(e){ toast('Failed: '+e.message, true); btn.disabled = false; btn.textContent = 'Purge data'; }
+};
 window._filterUsers = v => {
   v = v.trim().toLowerCase();
   document.querySelectorAll('#uTable tr').forEach((tr,i)=>{ if(!i) return;
@@ -599,6 +841,40 @@ window._promptRestore = i => {
   const h = window._PH[i]; if(!h) return;
   document.querySelectorAll('[data-pk]').forEach(t => { if(h[t.dataset.pk]!==undefined) t.value = h[t.dataset.pk]; });
   toast('Loaded — review, then Save & publish');
+};
+
+/* ══ LEGAL ══ */
+async function renderLegal(){
+  const cfg = await loadConfig('legal', DEFAULT_LEGAL);
+  $('main').innerHTML = `
+    <div class="viewhead"><h1>Legal</h1>
+      <div class="row">
+        <button class="btn ghost sm" onclick="_legalDefaults()">Reset to repo drafts</button>
+        <button class="btn" onclick="_saveLegal()">Save &amp; publish</button>
+      </div>
+    </div>
+    <p class="muted small" style="margin-bottom:14px">Markdown, saved to <span class="mono">config/legal</span> (public read). The app's Settings → About &amp; legal page and the website's legal pages render the published copy live — publish here and both update, no deploy. <strong>Fill every [BRACKETED] placeholder and have a lawyer review before launch.</strong></p>
+    ${LEGAL_META.map(([k,label])=>`
+      <details class="pgroup" open>
+        <summary>${esc(label)}</summary>
+        <div class="pg-body">
+          <div class="pblock">
+            <textarea class="pta" data-lk="${k}" spellcheck="false" oninput="_pgrow(this)">${esc(cfg[k] ?? DEFAULT_LEGAL[k] ?? '')}</textarea>
+          </div>
+        </div>
+      </details>`).join('')}
+    <button class="btn" onclick="_saveLegal()">Save &amp; publish</button>`;
+  requestAnimationFrame(()=>document.querySelectorAll('.pta').forEach(t=>window._pgrow(t)));
+}
+window._saveLegal = async () => {
+  const data = {};
+  document.querySelectorAll('[data-lk]').forEach(t => data[t.dataset.lk] = t.value);
+  await saveConfig('legal', data, 'legal.save');
+  toast('Legal documents published — live in app & website');
+};
+window._legalDefaults = () => {
+  if(!confirm('Replace all three documents with the repo draft templates? (Nothing is saved until you publish.)')) return;
+  document.querySelectorAll('[data-lk]').forEach(t => { t.value = DEFAULT_LEGAL[t.dataset.lk] ?? ''; window._pgrow(t); });
 };
 
 /* ══ PRICING ══ */

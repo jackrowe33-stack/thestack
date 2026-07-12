@@ -6,6 +6,16 @@
    This file is the source of truth — edit here, then deploy.
 
    CHANGELOG:
+   v4 (2026-07-12) — users & scheduled plans:
+     - POST /admin/checkUsers {uids:[..]} — looks the uids up in Firebase
+       Auth (Identity Toolkit) and returns their emails + which uids no
+       longer exist (auth record deleted). Powers the console's email
+       column and "deleted" detection. Admin claim required.
+     - Scheduled plan changes: if the core doc carries planUntil (ms) and
+       it has passed, the effective plan becomes planAfter (default free)
+       and the Worker PATCHes the doc to make the downgrade permanent —
+       self-healing on the next AI call, no cron needed. The app enforces
+       the same rule client-side at boot/sync.
    v3 (2026-07-12) — admin console integration:
      - Usage tracking: every successful /ai call records calls + tokens
        per user per day in KV (key u:{YYYY-MM-DD}:{uid}, 40-day TTL).
@@ -83,6 +93,9 @@ export default {
     }
     if (url.pathname === '/admin/setPlan' && request.method === 'POST') {
       return handleAdminSetPlan(request, env);
+    }
+    if (url.pathname === '/admin/checkUsers' && request.method === 'POST') {
+      return handleAdminCheckUsers(request, env);
     }
     return json({ error: 'not found' }, 404);
   },
@@ -309,12 +322,13 @@ async function verifyFirebaseToken(token, projectId) {
 
 /* ---------- Firestore read via service-account OAuth ---------- */
 
-let _tokenCache = { token: null, exp: 0 };
-async function getAccessToken(env) {
+const _tokenCache = {}; // scope -> {token,exp}
+async function getAccessToken(env, scope) {
+  scope = scope || 'https://www.googleapis.com/auth/datastore';
   const now = Math.floor(Date.now() / 1000);
-  if (_tokenCache.token && now < _tokenCache.exp - 60) return _tokenCache.token;
+  const hit = _tokenCache[scope];
+  if (hit && now < hit.exp - 60) return hit.token;
 
-  const scope = 'https://www.googleapis.com/auth/datastore';
   const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
     iss: env.GCP_SA_CLIENT_EMAIL,
@@ -332,7 +346,7 @@ async function getAccessToken(env) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error('oauth failed: ' + JSON.stringify(data));
-  _tokenCache = { token: data.access_token, exp: now + (data.expires_in || 3600) };
+  _tokenCache[scope] = { token: data.access_token, exp: now + (data.expires_in || 3600) };
   return data.access_token;
 }
 
@@ -345,9 +359,55 @@ async function getUserPlan(uid, env) {
   if (res.status === 404) return 'free'; // no core doc yet
   if (!res.ok) throw new Error('firestore read failed: ' + res.status);
   const doc = await res.json();
-  const planField = doc.fields && doc.fields.plan;
-  if (planField && typeof planField.stringValue === 'string') return planField.stringValue;
-  return 'free';
+  const f = doc.fields || {};
+  const str = k => (f[k] && typeof f[k].stringValue === 'string') ? f[k].stringValue : null;
+  const num = k => f[k] ? Number(f[k].integerValue ?? f[k].doubleValue ?? NaN) : NaN;
+  let plan = str('plan') || 'free';
+  // Scheduled change: planUntil (ms epoch) + planAfter. Once passed, the
+  // effective plan is planAfter, and we PATCH the doc so the change sticks
+  // (fieldPaths in updateMask but absent from the body are deleted).
+  const until = num('planUntil');
+  if (until && Date.now() > until) {
+    plan = str('planAfter') || 'free';
+    try {
+      await fetch('https://firestore.googleapis.com/v1/' + path
+        + '?updateMask.fieldPaths=plan&updateMask.fieldPaths=planUntil&updateMask.fieldPaths=planAfter&updateMask.fieldPaths=updatedAt', {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { plan: { stringValue: plan }, updatedAt: { integerValue: String(Date.now()) } } }),
+      });
+    } catch (e) { /* revert retries on the next call */ }
+  }
+  return plan;
+}
+
+/* POST /admin/checkUsers {uids:[...]} → { found:{uid:{email,lastLoginAt}}, missing:[uids] }
+   Looks the uids up in Firebase Auth so the console can show emails and
+   flag accounts whose auth record was deleted but whose data lingers. */
+async function handleAdminCheckUsers(request, env) {
+  const admin = await verifyAdmin(request, env);
+  if (!admin) return json({ error: 'admin only' }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'bad request' }, 400); }
+  const uids = Array.isArray(body && body.uids) ? body.uids.slice(0, 1000) : [];
+  if (!uids.length) return json({ error: 'uids required' }, 400);
+  const token = await getAccessToken(env, 'https://www.googleapis.com/auth/identitytoolkit');
+  const found = {};
+  for (let i = 0; i < uids.length; i += 100) {
+    const batch = uids.slice(i, i + 100);
+    const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}/accounts:lookup`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ localId: batch }),
+    });
+    if (!res.ok) return json({ error: 'auth lookup failed', status: res.status }, 502);
+    const data = await res.json();
+    (data.users || []).forEach(u => {
+      found[u.localId] = { email: u.email || '', lastLoginAt: Number(u.lastLoginAt || 0) };
+    });
+  }
+  const missing = uids.filter(u => !found[u]);
+  return json({ found, missing }, 200);
 }
 
 async function signJwtRS256(header, payload, privateKeyPem) {

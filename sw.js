@@ -1,7 +1,7 @@
 /* The Stack service worker — v99 (multi-file shell).
    DEPLOY RITUAL: bump VER here whenever BUILD is bumped in app-core.js.
    The cache name change is what makes clients drop the old shell. */
-const VER='v109';
+const VER='v110';
 const C='stack-shell-'+VER;
 const ASSETS=['./','./index.html','./app.css','./firebase-init.js',
   './app-core.js','./app-render.js','./app-loop.js','./app-shell.js','./manifest.json'];

@@ -578,6 +578,7 @@ async function bootApp(){
   }).catch(()=>{});}
   // Paint immediately from local cache so there's no blank wait; Firestore hydrates
   // later, once auth confirms a uid (see startCloudSync).
+  enforcePlanExpiry();
   applyTheme();
   render();
   hideBootScreen();
@@ -608,6 +609,7 @@ async function hydrateFromFirestore(){
       rebuilt.journal=remote.journal||{};
       rebuilt.completions=remote.completions||{};
       DB=migrate(rebuilt);
+      enforcePlanExpiry();
       try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
     }else{
       // Fresh cloud account (no core doc yet). stack_v1 in localStorage isn't
@@ -648,6 +650,7 @@ function startLiveSync(){
         const merged=Object.assign({},data);
         merged.journal=DB.journal; merged.completions=DB.completions;
         DB=migrate(merged);
+        enforcePlanExpiry();
       }else if(kind==='journal'){
         DB.journal=data||{};
       }else if(kind==='completions'){

@@ -3,7 +3,7 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-12 · v109';
+const BUILD='2026-07-12 · v110';
 const SEED={
   v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false},supplements:{concerns:[],budget:'',free:'',done:false,skipped:false}},onboarding:{stage:'welcome',welcomeSeen:false,seedCleared:false,howtoSeen:false,section:null,step:0},aiMemory:{},completions:{},
   products:{
@@ -239,7 +239,7 @@ let _fsReady=false;   // true once Firestore has hydrated DB (or determined it's
 let _fsSuspend=false; // true while applying a remote snapshot, to avoid echo-saves
 let _localCompWrite={}; // ds -> ms timestamp of our most recent local completion write, to reject stale remote echoes
 
-const CORE_KEYS=['v','updatedAt','plan','supplements','settings','profile','onboarding','aiMemory','products','routines','hairLooks'];
+const CORE_KEYS=['v','updatedAt','plan','planUntil','planAfter','supplements','settings','profile','onboarding','aiMemory','products','routines','hairLooks'];
 
 /* ══ ENTITLEMENT / FREE-TIER CAPS (F1+F2) ══
    NOTE: these gates are UX only. The AI feature is enforced server-side at
@@ -258,6 +258,16 @@ function setPlanTier(tier){
   if(userPlan()==='comp')return;
   if(!['free','standard','pro'].includes(tier))return;
   DB.plan=tier;save();render();
+}
+/* Scheduled plan change (set from the admin console): planUntil (ms) +
+   planAfter. Once the date passes, the plan reverts. The Worker enforces
+   the same rule server-side on every AI call, so neither side can drift. */
+function enforcePlanExpiry(){
+  if(DB&&DB.planUntil&&Date.now()>DB.planUntil){
+    DB.plan=DB.planAfter||'free';
+    delete DB.planUntil;delete DB.planAfter;
+    save();
+  }
 }
 
 /* ── v100: stack priority (core / casual / off) ──

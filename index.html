@@ -54,6 +54,16 @@
 #authgate .ag-reset{text-align:center;margin-top:12px}
 #authgate .ag-reset button{color:var(--ink-mid,#8a8a96);font:inherit;font-family:'Inter',sans-serif;font-size:12px;background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 #authgate .ag-legal{text-align:center;font-size:11px;color:var(--ink-soft,#52525e);margin-top:26px;line-height:1.5;padding:0 8px}
+#authgate .ag-lgl{background:none;border:none;padding:0;font:inherit;color:var(--ink-mid,#8a8a96);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+#ag-legal-ov{position:fixed;inset:0;z-index:10001;background:rgba(8,8,10,.55);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:18px}
+#ag-legal-ov .ag-lgl-sheet{background:var(--bg-raise,#191c22);border:1px solid var(--card-edge,#2c303a);border-radius:16px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden}
+#ag-legal-ov .ag-lgl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--card-edge,#2c303a);color:var(--ink,#edeae6)}
+#ag-legal-ov .ag-lgl-head button{background:none;border:none;color:var(--ink-mid,#8a8a96);font-size:16px;cursor:pointer;padding:4px}
+#ag-legal-ov .ag-lgl-body{padding:14px 18px 20px;overflow-y:auto;font-size:13px;line-height:1.6;color:var(--ink-mid,#8a8a96)}
+#ag-legal-ov .ag-lgl-body h3{color:var(--ink,#edeae6);font-size:15px;margin:14px 0 6px}
+#ag-legal-ov .ag-lgl-body p{margin:0 0 10px}
+#ag-legal-ov .ag-lgl-body ul,#ag-legal-ov .ag-lgl-body ol{margin:0 0 10px 18px}
+#ag-legal-ov .ag-lgl-body strong{color:var(--ink,#edeae6)}
 #authgate .ag-msg{font-size:12px;padding:10px 12px;border-radius:10px;margin-bottom:14px;line-height:1.45;display:none}
 #authgate .ag-msg.on{display:block;background:rgba(201,123,110,.12);color:var(--danger,#c97b6e);border:1px solid rgba(201,123,110,.25)}
 #authgate .ag-msg.ok{display:block;background:rgba(127,174,127,.12);color:#7fae7f;border:1px solid rgba(127,174,127,.28)}

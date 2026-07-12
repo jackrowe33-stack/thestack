@@ -107,6 +107,20 @@ try{ const c=localStorage.getItem('stack_prompts_cfg'); if(c) window.REMOTE_PROM
     }
   }catch(e){ console.warn('prompt config load',e); }
 })();
+/* ── Legal documents: config/legal (public read, published from the admin
+   console's Legal tab). Rendered by Settings → About & legal and by the
+   auth gate's Terms/Privacy links. Same cache-then-fresh pattern as prompts. */
+try{ const c=localStorage.getItem('stack_legal_cfg'); if(c) window.REMOTE_LEGAL=JSON.parse(c); }catch(e){}
+(async()=>{
+  if(!db) return;
+  try{
+    const s=await getDoc(doc(db,'config','legal'));
+    if(s.exists()){
+      window.REMOTE_LEGAL=s.data();
+      try{ localStorage.setItem('stack_legal_cfg',JSON.stringify(s.data())); }catch(e){}
+    }
+  }catch(e){ console.warn('legal config load',e); }
+})();
 
 const gate = document.getElementById('authgate');
 let mode='signin';
@@ -136,8 +150,16 @@ const A_SVG=`<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 12.54c
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function agChrome(hide){
-  ['app','tabs','fab-global'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=hide?'none':'';});
+  ['app','tabs'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=hide?'none':'';});
   var scrim=document.querySelector('.statusbar-scrim');if(scrim)scrim.style.display=hide?'none':'';
+  // #fab-global (wait-timer chip) visibility is owned solely by updateWaitDisplay():
+  // hide it along with the chrome, but never force it visible here or it shows
+  // an empty "–:––" timer on app open / auth changes with no timer running.
+  var gfab=document.getElementById('fab-global');
+  if(gfab){
+    if(hide)gfab.style.display='none';
+    else if(typeof window.updateWaitDisplay==='function')window.updateWaitDisplay();
+  }
 }
 function showGate(){ gate.classList.add('show'); gate.setAttribute('aria-hidden','false'); agChrome(true); renderGate(); if(window.hideBootScreen)window.hideBootScreen(); }
 function hideGate(){ gate.classList.remove('show'); gate.setAttribute('aria-hidden','true'); agChrome(false); }
@@ -157,7 +179,7 @@ function renderGate(err){
     <button class="ag-oauth" id="ag-google">${G_SVG}<span>Continue with Google</span></button>
     <button class="ag-oauth ag-soon" id="ag-apple">${A_SVG}<span>Continue with Apple</span><span class="ag-soonlbl">soon</span></button>
     <div class="ag-foot">${su?'Already have an account?':"Don't have an account?"} <button id="ag-toggle">${su?'Sign in':'Sign up'}</button></div>
-    <div class="ag-legal">By continuing you agree to the Terms and Privacy Policy. The Stack offers general routine tracking, not medical advice.</div>
+    <div class="ag-legal">By continuing you agree to the <button class="ag-lgl" data-lg="terms">Terms</button> and <button class="ag-lgl" data-lg="privacy">Privacy Policy</button>. The Stack offers general routine tracking, <button class="ag-lgl" data-lg="medical">not medical advice</button>.</div>
   </div>`;
   document.getElementById('ag-toggle').onclick=()=>{mode=su?'signin':'signup';renderGate();};
   document.getElementById('ag-submit').onclick=doEmail;
@@ -165,6 +187,25 @@ function renderGate(err){
   document.getElementById('ag-apple').onclick=()=>msg('Apple sign-in is coming soon. Use Email or Google for now.');
   const fp=document.getElementById('ag-forgot'); if(fp) fp.onclick=doReset;
   document.getElementById('ag-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doEmail();});
+  gate.querySelectorAll('.ag-lgl').forEach(b=>{ b.onclick=()=>showLegalDoc(b.dataset.lg); });
+}
+/* In-gate legal viewer: renders config/legal (published from the admin
+   console) without leaving the sign-in screen. mdToHtml comes from the
+   app's classic scripts, which are loaded regardless of auth state. */
+function showLegalDoc(k){
+  const titles={terms:'Terms of Service',privacy:'Privacy Policy',medical:'Medical Disclaimer'};
+  const md=(window.REMOTE_LEGAL&&window.REMOTE_LEGAL[k])||'';
+  const body=md
+    ? (typeof window.mdToHtml==='function'?window.mdToHtml(md):'<pre style="white-space:pre-wrap">'+esc(md)+'</pre>')
+    : '<p>This document hasn\'t been published yet — it will appear here once available. You can also find it on The Stack website.</p>';
+  let ov=document.getElementById('ag-legal-ov');
+  if(ov)ov.remove();
+  ov=document.createElement('div');
+  ov.id='ag-legal-ov';
+  ov.innerHTML='<div class="ag-lgl-sheet"><div class="ag-lgl-head"><strong>'+(titles[k]||'Legal')+'</strong><button id="ag-lgl-x">✕</button></div><div class="ag-lgl-body">'+body+'</div></div>';
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  gate.appendChild(ov);
+  document.getElementById('ag-lgl-x').onclick=()=>ov.remove();
 }
 function msg(t,ok){const m=document.getElementById('ag-msg');if(!m)return;m.textContent=t;m.className='ag-msg '+(ok?'ok':'on');}
 
@@ -228,8 +269,16 @@ window.doSignOutTap = doSignOutTap;
 async function doReset(){
   const email=document.getElementById('ag-email').value.trim();
   if(!email){msg('Enter your email above first, then tap reset.');return;}
-  try{ await sendPasswordResetEmail(auth,email); msg('Password reset email sent — check your inbox.',true); }
+  const fp=document.getElementById('ag-forgot');
+  if(fp){fp.disabled=true;fp.textContent='Sending…';}
+  try{
+    await sendPasswordResetEmail(auth,email);
+    // Firebase hides whether the email exists (enumeration protection), so
+    // success here doesn't guarantee delivery — word it honestly.
+    msg('If an account exists for '+email+', a reset link is on its way. Check your spam/junk folder — the sender is noreply@'+ (auth&&auth.config&&auth.config.authDomain || 'the-stack-prod.firebaseapp.com') +'.',true);
+  }
   catch(e){ msg(friendly(e.code)); }
+  if(fp){fp.disabled=false;fp.textContent='Forgot your password?';}
 }
 function friendly(code){return({
   'auth/invalid-email':"That email address doesn't look right.",

@@ -1150,6 +1150,7 @@ function vSetupRouter(){
   if(p==='streak')return vStreakPage();
   if(p==='plan')return vPlanPage();
   if(p==='tours')return vToursPage();
+  if(p==='legal')return vLegalPage();
   if(p==='lowstock')return vLowStockPage();
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
@@ -1179,6 +1180,7 @@ function vSetupMenu(){
   <div class="card">
     <button class="menu-item" onclick="setupNav('plan')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◆</div><div class="menu-body"><div class="menu-title">Plan</div><div class="menu-sub" style="text-transform:capitalize">${planTier()} tier${userPlan()==='comp'?' · comp':''}</div></div><span class="menu-arrow">›</span></button>
     <button class="menu-item" onclick="setupNav('tours')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">↺</div><div class="menu-body"><div class="menu-title">Setup & tours</div><div class="menu-sub">Redo any area's setup, replay the tours</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('legal')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">§</div><div class="menu-body"><div class="menu-title">About & legal</div><div class="menu-sub">Terms, privacy & medical disclaimer</div></div><span class="menu-arrow">›</span></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
   <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v} · ${window.__swCache||'sw pending'}</div>`;
@@ -1457,11 +1459,23 @@ function vToursPage(){
     <button class="menu-item" onclick="if(confirm('Restart the whole onboarding? Your products, routines and history are untouched — only your setup answers reset.'))restartOnboarding()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⟳</div><div class="menu-body"><div class="menu-title">Restart full onboarding</div><div class="menu-sub">Welcome → plan → priorities → every area</div></div><span class="menu-arrow">›</span></button>
   </div>`;
 }
+function vLegalPage(){
+  const L=window.REMOTE_LEGAL||{};
+  const secs=[['terms','Terms of Service'],['privacy','Privacy Policy'],['medical','Medical Disclaimer']];
+  return`<button class="back-btn" aria-label="Back" onclick="setupBack()">${CHEV_SVG}</button>
+  <h1 class="page-title">About & legal</h1>
+  <p class="page-sub">The Stack · build ${BUILD}. These documents also live on The Stack website.</p>
+  ${secs.map(([k,label])=>`
+    <div class="sec-label">${label}</div>
+    <div class="card pad legal-doc">${L[k]?mdToHtml(L[k]):'<p class="page-sub" style="padding:0">Not published yet — this will appear once the document is live. See The Stack website in the meantime.</p>'}</div>`).join('')}`;
+}
 function vPlanPage(){
   const cur=userPlan();
+  const sched=(DB.planUntil&&Date.now()<DB.planUntil)?`<p class="page-sub" style="color:var(--cu)">Your ${planTier()} access runs until ${new Date(DB.planUntil).toLocaleDateString('en-AU')}, then switches to ${DB.planAfter||'free'}.</p>`:'';
   return`<button class="back-btn" aria-label="Back" onclick="setupBack()">${CHEV_SVG}</button>
   <h1 class="page-title">Plan</h1>
   <p class="page-sub">${cur==='comp'?'Your account is comped — every feature stays unlocked no matter what’s selected below.':'Every tier is fully unlocked for now, no charge yet — in-app purchase billing arrives at store beta. Switch freely, anytime.'}</p>
+  ${sched}
   <div class="tier-grid" style="padding:0 22px 24px">
     ${TIER_INFO.map(t=>`<div class="tier-card ${planTier()===t.k?'sel':''}" data-call="setPlanTier" data-args="${t.k}">
       <div class="tier-name">${t.name}</div>
