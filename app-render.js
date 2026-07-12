@@ -1149,6 +1149,7 @@ function vSetupRouter(){
   if(p==='data')return vDataPage();
   if(p==='streak')return vStreakPage();
   if(p==='plan')return vPlanPage();
+  if(p==='tours')return vToursPage();
   if(p==='lowstock')return vLowStockPage();
   if(p==='prompt')return vPromptPage();
   return vSetupMenu();
@@ -1177,8 +1178,7 @@ function vSetupMenu(){
   </div>
   <div class="card">
     <button class="menu-item" onclick="setupNav('plan')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">◆</div><div class="menu-body"><div class="menu-title">Plan</div><div class="menu-sub" style="text-transform:capitalize">${planTier()} tier${userPlan()==='comp'?' · comp':''}</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="replayWelcomeTour()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">↺</div><div class="menu-body"><div class="menu-title">Replay welcome tour</div><div class="menu-sub">See the intro screens again</div></div><span class="menu-arrow">›</span></button>
-    <button class="menu-item" onclick="redoSetupPriorities()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⟳</div><div class="menu-body"><div class="menu-title">Redo setup & priorities</div><div class="menu-sub">Re-run stack priorities and per-module setup</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="setupNav('tours')"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">↺</div><div class="menu-body"><div class="menu-title">Setup & tours</div><div class="menu-sub">Redo any area's setup, replay the tours</div></div><span class="menu-arrow">›</span></button>
   </div>
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(this)">
   <div style="text-align:center;padding:18px 22px 8px;font-size:11px;color:var(--ink-soft)">The Stack · build ${BUILD} · data v${DB.v} · ${window.__swCache||'sw pending'}</div>`;
@@ -1438,6 +1438,24 @@ function vStreakPage(){
   <div class="sec-label">Rest days</div>
   <div class="seg">${[0,1,2].map(n=>`<button class="${(DB.settings.graceDaysPerMonth??1)===n?'on':''}" data-call="setGrace" data-args="${n}">${n}</button>`).join('')}</div>
   <p class="page-sub">Missed days forgiven per month before the streak resets.</p>`;
+}
+function vToursPage(){
+  return`<button class="back-btn" aria-label="Back" onclick="setupBack()">${CHEV_SVG}</button>
+  <h1 class="page-title">Setup & tours</h1>
+  <p class="page-sub">Re-run any part of the first-time setup. Your existing data and answers are kept — you're just walking through it again.</p>
+  <div class="sec-label">Set up an area again</div>
+  <div class="card">
+    ${STACK_CATS.map(cat=>`<button class="menu-item" data-call="redoModule" data-args="${cat}"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">${({skin:'✦',hair:'≈',scent:'✿',supplements:'⊕'})[cat]}</div><div class="menu-body"><div class="menu-title" style="text-transform:capitalize">${cat}</div><div class="menu-sub">${isPremium()?'Chat with Loop about this area':'Answer the setup questions again'}</div></div><span class="menu-arrow">›</span></button>`).join('')}
+  </div>
+  <div class="sec-label">Tours</div>
+  <div class="card">
+    <button class="menu-item" onclick="replayWelcomeTour()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">✧</div><div class="menu-body"><div class="menu-title">Welcome tour</div><div class="menu-sub">The full intro — plan, priorities & setup</div></div><span class="menu-arrow">›</span></button>
+    <button class="menu-item" onclick="replayAppTour()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">❖</div><div class="menu-body"><div class="menu-title">How the app works</div><div class="menu-sub">The quick guide to Home, Today, Routines & Loop</div></div><span class="menu-arrow">›</span></button>
+  </div>
+  <div class="sec-label">Start over</div>
+  <div class="card">
+    <button class="menu-item" onclick="if(confirm('Restart the whole onboarding? Your products, routines and history are untouched — only your setup answers reset.'))restartOnboarding()"><div class="menu-icon" style="background:rgba(var(--cu-rgb),.1)">⟳</div><div class="menu-body"><div class="menu-title">Restart full onboarding</div><div class="menu-sub">Welcome → plan → priorities → every area</div></div><span class="menu-arrow">›</span></button>
+  </div>`;
 }
 function vPlanPage(){
   const cur=userPlan();

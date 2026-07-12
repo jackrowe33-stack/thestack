@@ -6,7 +6,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-  doc, getDoc, setDoc, collection, getDocs, onSnapshot
+  doc, getDoc, setDoc, addDoc, collection, getDocs, onSnapshot, query, where
 } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -34,6 +34,7 @@ try{
 window.stackFS = (function(){
   let uid=null;
   function setUid(u){ uid=u; }
+  function getUid(){ return uid; }
   // date extractor: journal keys ARE dates; completion keys end in _YYYY-MM-DD(_slot)
   function dateOfCompKey(k){
     const m=k.match(/(\d{4}-\d{2}-\d{2})/);
@@ -70,7 +71,26 @@ window.stackFS = (function(){
     unsubs.push(onSnapshot(collection(db,'users',uid,'completions'), qs=>{ if(!qs.metadata.hasPendingWrites){ const c={},meta={}; qs.forEach(d=>{const v=d.data(); if(v&&v.entries){Object.assign(c,v.entries); meta[d.id]=v.updatedAt||0;}}); onChange('completions', {entries:c,meta:meta}); } }, e=>console.warn('completion sub',e)));
     return ()=>unsubs.forEach(u=>{try{u();}catch(e){}});
   }
-  return { setUid, loadAll, saveCore, saveJournalDay, saveCompletionDay, subscribe, dateOfCompKey };
+  /* ── Feedback: user → `feedback` collection → admin console (which writes
+     a reply back onto the same doc). Requires Firestore rules allowing
+     authenticated users to create feedback docs and read their own. ── */
+  async function sendFeedback(text,meta){
+    if(!db||!uid) throw new Error('not signed in');
+    const email=(auth&&auth.currentUser&&auth.currentUser.email)||'';
+    await addDoc(collection(db,'feedback'),{
+      uid, email, text:String(text).slice(0,4000),
+      createdAt:Date.now(), status:'new', reply:'', repliedAt:0,
+      build:(meta&&meta.build)||'', plan:(meta&&meta.plan)||''
+    });
+  }
+  async function loadMyFeedback(){
+    if(!db||!uid) return [];
+    const qs=await getDocs(query(collection(db,'feedback'),where('uid','==',uid)));
+    const out=[]; qs.forEach(d=>out.push({id:d.id,...d.data()}));
+    out.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    return out;
+  }
+  return { setUid, getUid, loadAll, saveCore, saveJournalDay, saveCompletionDay, subscribe, dateOfCompKey, sendFeedback, loadMyFeedback };
 })();
 
 /* ── Admin-configurable AI prompt blocks: config/prompts (public read, edited

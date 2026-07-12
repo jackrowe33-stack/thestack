@@ -101,6 +101,7 @@ main{flex:1;padding:26px 30px;max-width:1150px;min-width:0}
     <div class="brand"><svg viewBox="0 0 32 32" fill="none" style="width:18px;height:18px;vertical-align:-3px;margin-right:6px"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="var(--cu)" stroke-width="2" stroke-linejoin="round"/></svg>The Stack <span>Admin</span></div>
     <button data-v="dash" class="on">Dashboard</button>
     <button data-v="users">Users</button>
+    <button data-v="feedback">Feedback</button>
     <button data-v="prompts">AI Prompts</button>
     <button data-v="pricing">Pricing</button>
     <button data-v="acct">Accounting</button>
@@ -266,7 +267,7 @@ async function fetchUsage(month){
 }
 
 /* ══ NAV ══ */
-const VIEWS = { dash:renderDash, users:renderUsers, prompts:renderPrompts, pricing:renderPricing, acct:renderAcct, flags:renderFlags, audit:renderAudit };
+const VIEWS = { dash:renderDash, users:renderUsers, feedback:renderFeedback, prompts:renderPrompts, pricing:renderPricing, acct:renderAcct, flags:renderFlags, audit:renderAudit };
 document.querySelectorAll('nav [data-v]').forEach(b => b.onclick = () => show(b.dataset.v));
 function show(v){
   document.querySelectorAll('nav [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v===v));
@@ -368,6 +369,7 @@ async function renderUsers(){
           ${PLANS.map(p=>'<option '+(p===u.plan?'selected':'')+'>'+p+'</option>').join('')}
         </select>
       </td>
+      <td><button class="btn ghost sm" onclick="_resetOnboarding('${u.uid}', this)">Reset onboarding</button></td>
     </tr>`).join('');
   $('main').innerHTML = `
     <div class="viewhead"><h1>Users</h1>
@@ -379,8 +381,8 @@ async function renderUsers(){
     <p class="muted small" style="margin-bottom:12px">Changing a plan writes <span class="mono">plan</span> on the user's core doc (app entitlements) and syncs the Worker KV <span class="mono">plan:{uid}</span> (AI enforcement). <span class="mono">suspended</span> blocks AI and drops app entitlements to free. Emails appear once the Worker directory mirror is deployed.</p>
     <div class="card" style="padding:0;overflow-x:auto">
       <table id="uTable">
-        <tr><th>User</th><th>Plan</th><th class="num">Products</th><th>Country</th><th>Last core write</th><th>Change plan</th></tr>
-        ${rows || '<tr><td colspan="6" class="muted">No users found.</td></tr>'}
+        <tr><th>User</th><th>Plan</th><th class="num">Products</th><th>Country</th><th>Last core write</th><th>Change plan</th><th>Actions</th></tr>
+        ${rows || '<tr><td colspan="7" class="muted">No users found.</td></tr>'}
       </table>
     </div>`;
 }
@@ -403,6 +405,68 @@ window._setPlan = async (uid, plan, sel) => {
     toast('Plan updated ('+kv+')', kv.includes('NOT'));
   }catch(e){ toast('Failed: '+e.message, true); sel.value = before; }
   sel.disabled = false;
+};
+window._resetOnboarding = async (uid, btn) => {
+  const u = USERS.find(x=>x.uid===uid);
+  if(!confirm('Reset onboarding for '+(u?.email||uid)+'?\nTheir app will relaunch the first-run wizard (welcome → plan → priorities → setup). Their data is untouched.')) return;
+  btn.disabled = true;
+  try{
+    // Merge-write only the stage fields; the client's live core sync picks it
+    // up and its render() gate relaunches the wizard on their next snapshot.
+    await setDoc(doc(db,'users',uid,'core','current'), {
+      onboarding: { stage:'welcome', welcomeStep:0, modArea:null },
+      updatedAt: Date.now()
+    }, { merge:true });
+    await audit('user.onboarding.reset', uid, '');
+    toast('Onboarding reset — their app will pick it up on next sync.');
+  }catch(e){ toast('Failed: '+e.message, true); }
+  btn.disabled = false;
+};
+
+/* ══ FEEDBACK ══ */
+async function renderFeedback(){
+  const qs = await getDocs(collection(db,'feedback'));
+  const items = []; qs.forEach(d => items.push({ id:d.id, ...d.data() }));
+  items.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const card = f => `
+    <div class="card" id="fb-${f.id}">
+      <div class="row" style="justify-content:space-between;align-items:baseline">
+        <div><b>${esc(f.email||'(no email)')}</b> <span class="soft mono small">${esc(f.uid||'')}</span></div>
+        <div class="soft small">${f.createdAt?new Date(f.createdAt).toLocaleString():''} · ${esc(f.plan||'')} · ${esc(f.build||'')}</div>
+      </div>
+      <p style="margin:10px 0;white-space:pre-wrap">${esc(f.text||'')}</p>
+      <div class="row" style="align-items:baseline;gap:8px">
+        <span class="pill ${f.status==='replied'?'pro':'free'}">${esc(f.status||'new')}</span>
+        ${f.repliedAt?'<span class="soft small">replied '+new Date(f.repliedAt).toLocaleDateString()+'</span>':''}
+      </div>
+      <div class="field" style="margin-top:10px"><label>Reply (shown to the user in-app)</label>
+        <textarea id="fbr-${f.id}" rows="3" style="width:100%">${esc(f.reply||'')}</textarea></div>
+      <div class="row">
+        <button class="btn sm" onclick="_fbReply('${f.id}', this)">Save reply</button>
+        ${f.email?`<a class="btn ghost sm" id="fbm-${f.id}" href="#" onclick="return _fbMail('${f.id}','${esc(f.email)}')">Email reply ↗</a>`:'<span class="soft small">no email on file</span>'}
+      </div>
+    </div>`;
+  $('main').innerHTML = `
+    <div class="viewhead"><h1>Feedback</h1>
+      <div class="row"><button class="btn ghost sm" onclick="_show('feedback')">Refresh</button></div>
+    </div>
+    <p class="muted small" style="margin-bottom:12px">Sent from the app's "How do I…?" screen. Saving a reply shows it to the user in-app; "Email reply" opens your mail client pre-filled (automated sending would need a Worker email route).</p>
+    ${items.map(card).join('') || '<div class="card"><p class="muted">No feedback yet.</p></div>'}`;
+}
+window._fbReply = async (id, btn) => {
+  const ta = $('fbr-'+id); const reply = (ta?ta.value:'').trim();
+  btn.disabled = true;
+  try{
+    await setDoc(doc(db,'feedback',id), { reply, repliedAt: Date.now(), status: reply?'replied':'new', repliedBy: ME.email }, { merge:true });
+    await audit('feedback.reply', id, reply.slice(0,120));
+    toast('Reply saved — visible in the user\'s app.');
+  }catch(e){ toast('Failed: '+e.message, true); }
+  btn.disabled = false;
+};
+window._fbMail = (id, email) => {
+  const ta = $('fbr-'+id); const reply = (ta?ta.value:'').trim();
+  location.href = 'mailto:'+email+'?subject='+encodeURIComponent('Re: your feedback on The Stack')+'&body='+encodeURIComponent(reply||'Hi,\n\nThanks for your feedback on The Stack.\n\n');
+  return false;
 };
 
 /* ══ PROMPTS ══ */

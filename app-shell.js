@@ -6,7 +6,7 @@ function pickLoopFocus(cat){setLoopFocus(cat);if(UI._view==='focusgate'){UI._vie
 
 /* v99: delegation dispatch table (moved from app-render.js — must be declared after
    all referenced functions exist across files; this is the last-loaded file). */
-const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot,openFacet,closeFacet,stackPrio,pickLoopFocus,openPlans,obWelcomeNext,obWelcomeBack,obPickTier,obPriorityNext,obFreeAddProduct,obFreeModNext,obFreeModBack,setPlanTier};
+const CALL_FNS={openProduct,tickStep,peekStep,openProductDetail,completeAllDate,uncompleteRoutineDate,swapProduct,openToday,openEdit,deleteLook,deactivate,toggleTag,toggleLookTag,toggleStreakScope,toggleStep,toggleRoutineDay,setTheme,setMode,restockProduct,removeProductStep,newProduct,navTab,moveRStep,moveProductStep,lkMove,lkAdd,deleteRoutine,deleteProduct,createAndQueueReplacement,addProductStep,todayExpand,openLook,openAddStep,setTodayLook,openRoutineView,openRoutineEdit,editFromSheet,setRoutinesCat,setInvCat,setPromptSel,setSchedType,openPlannerFor,pickHairLook,openNewRoutine,backToProduct,setGrace,delRStep,lkDel,clearNext,reactivate,setTodaySeg,histNav,obToggle,obPick,obSat,obAdvance,obBack,obSkipSection,obLeave,assistantPick,assistantBack,chgRemove,chgToggleEdit,toggleSupp,editSupp,openSupplements,chatChoose,toggleSuppSlot,openFacet,closeFacet,stackPrio,pickLoopFocus,openPlans,obWelcomeNext,obWelcomeBack,obPickTier,obPriorityNext,setPlanTier,finishOnboarding,obOpenArea,obAreaChatBack,obHubFinish,obHowtoNext,obHowtoBack,obShowPlans,redoModule,restartOnboarding,replayAppTour,replayWelcomeTour,openFeedback};
 
 /* ══ PROMPT PAGE ══ */
 function vPromptPage(){
@@ -44,6 +44,7 @@ function renderModal(){
   else if(m.type==='changes')inner=changesSheet();
   else if(m.type==='supp-edit')inner=suppEditSheet();
   else if(m.type==='paywall')inner=paywallSheet(m.kind);
+  else if(m.type==='feedback')inner=feedbackSheet();
   else if(m.type==='history')inner=historySheetBody();
   else if(m.type==='scent')inner=scentSheetBody();
   ov.innerHTML=`<div class="sheet"><button class="sheet-close-tap" aria-label="Close" onclick="closeModal()"><div class="sheet-handle"></div></button>${inner}</div>`;
@@ -584,26 +585,38 @@ let _cloudStarted=false;
 async function hydrateFromFirestore(){
   const fs=window.stackFS;
   if(!fs){ _fsReady=true; _snapshotShadow(); return; }
+  const uid=fs.getUid&&fs.getUid();
   try{
     const remote=await fs.loadAll();
     if(remote && remote.core){
       // Existing cloud account: rebuild flat DB from split docs, then migrate.
+      // (Always wins over whatever was cached locally, so this branch is safe
+      // even if the browser last had a different account's data cached.)
       const rebuilt=Object.assign({},remote.core);
       rebuilt.journal=remote.journal||{};
       rebuilt.completions=remote.completions||{};
       DB=migrate(rebuilt);
       try{ localStorage.setItem('stack_v1',JSON.stringify(DB)); }catch(e){}
     }else{
-      // Fresh cloud account (no core doc yet). Keep whatever DB we booted with
-      // (SEED for a brand-new user). Stage D migration will handle existing
-      // localStorage users; for now, seed the cloud from current DB.
+      // Fresh cloud account (no core doc yet). stack_v1 in localStorage isn't
+      // scoped per-account, so on a shared/reused browser it can still be
+      // holding a DIFFERENT account's data (e.g. switching from a comp/test
+      // account to a brand-new signup) — keeping it here would both show the
+      // wrong stuff (skip the first-run wizard entirely) AND flush that other
+      // account's data into this new one's cloud doc. Only keep the DB we
+      // booted with if stack_uid confirms it was actually cached for THIS
+      // uid; otherwise reset to a genuinely fresh SEED before anything syncs.
+      let lastUid=null; try{ lastUid=localStorage.getItem('stack_uid'); }catch(e){}
+      if(uid&&lastUid!==uid) DB=structuredClone(SEED);
       _fsReady=true; _snapshotShadow();
       _flushFirestore();  // write initial SEED/local state up to the cloud
       render();
       startLiveSync();
+      try{ if(uid)localStorage.setItem('stack_uid',uid); }catch(e){}
       return;
     }
   }catch(e){ console.warn('hydrate failed, staying on local cache',e); }
+  try{ if(uid)localStorage.setItem('stack_uid',uid); }catch(e){}
   _fsReady=true;
   _snapshotShadow();
   render();

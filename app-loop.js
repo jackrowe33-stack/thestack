@@ -43,7 +43,8 @@ function obQuestions(sec){
     // satisfaction: enrich path only asks it if products exist
     if(known) qs.push({sec,id:'satisfaction',q:`How happy are you with your current ${sec} products?`,hint:'Tap a rating for each. This tells me what to leave alone and what to rethink.',type:'satisfaction',save:'satisfaction'});
     else qs.push({sec,id:'currentText',q:`What ${sec} products do you use now, if any?`,hint:'List them however you like, or leave blank.',type:'text',save:'free'});
-    qs.push({sec,id:'photo',q:'Add photos of any problem spots?',hint:'Sent to Claude once for analysis, then discarded. Nothing is stored or synced. Optional.',type:'photo',save:'photoNotes'});
+    // photo analysis is an AI feature — free tier gets pure questions, no AI calls
+    if(isPremium())qs.push({sec,id:'photo',q:'Add photos of any problem spots?',hint:'Sent to Claude once for analysis, then discarded. Nothing is stored or synced. Optional.',type:'photo',save:'photoNotes'});
     return qs;
   }
   if(sec==='scent') return [
@@ -92,12 +93,24 @@ function obPos(){
    machine's fields (stage/welcomeSeen/modQueue/...), which a wholesale
    reassignment here would silently wipe on every single question advance */
 function obSetPos(sec,step){Object.assign(DB.onboarding,{section:sec,step});save();render();}
+/* Module mode: the first-run hub opened one area's questionnaire. The engine
+   walks only that area's sections (hair brings its paired 'looks' along) and
+   hands control back to the hub when they're done — never the global chain. */
+function obModuleSecs(cat){return cat==='hair'?['hair','looks']:[cat];}
+function obModuleMode(){return !!(DB.onboarding&&DB.onboarding.stage==='modules'&&DB.onboarding.modArea);}
+function obBackToHub(){Object.assign(DB.onboarding,{modArea:null,section:null,step:0});save();render();}
 /* advance to next question, or next unfinished section, or finish */
 function obAdvance(){
   const {sec,step,qs}=obPos();
   if(step<qs.length-1){obSetPos(sec,step+1);return;}
   // finished this section
   DB.profile[sec].done=true;DB.profile[sec].skipped=false;
+  if(obModuleMode()){
+    const secs=obModuleSecs(DB.onboarding.modArea);
+    const nxt=secs.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
+    if(nxt){Object.assign(DB.onboarding,{section:nxt,step:0});save();render();return;}
+    obBackToHub();return;
+  }
   const next=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
   if(!next&&DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'){finishOnboarding();return;}
   Object.assign(DB.onboarding,{section:next||null,step:0});save();render();
@@ -105,13 +118,21 @@ function obAdvance(){
 function obBack(){
   const {sec,step}=obPos();
   if(step>0){obSetPos(sec,step-1);return;}
+  const secsAll=obModuleMode()?obModuleSecs(DB.onboarding.modArea):OB_SECTIONS;
   // go to previous section's last question
-  const idx=OB_SECTIONS.indexOf(sec);
-  for(let i=idx-1;i>=0;i--){const s=OB_SECTIONS[i];if(!DB.profile[s].skipped){const qs=obQuestions(s);DB.profile[s].done=false;obSetPos(s,qs.length-1);return;}}
+  const idx=secsAll.indexOf(sec);
+  for(let i=idx-1;i>=0;i--){const s=secsAll[i];if(!DB.profile[s].skipped){const qs=obQuestions(s);DB.profile[s].done=false;obSetPos(s,qs.length-1);return;}}
+  if(obModuleMode())obBackToHub();
 }
 function obSkipSection(){
   const {sec}=obPos();
   DB.profile[sec].skipped=true;DB.profile[sec].done=false;
+  if(obModuleMode()){
+    const secs=obModuleSecs(DB.onboarding.modArea);
+    const nxt=secs.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
+    if(nxt){Object.assign(DB.onboarding,{section:nxt,step:0});save();render();return;}
+    obBackToHub();return;
+  }
   const next=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
   if(!next&&DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'){finishOnboarding();return;}
   Object.assign(DB.onboarding,{section:next||null,step:0});save();render();
@@ -213,10 +234,12 @@ function vOnboard(){
   const {sec,step,qs}=obPos();
   if(!sec) return vAssistantHome();
   const q=qs[step];
-  // overall progress across non-skipped sections
-  const total=OB_SECTIONS.filter(s=>!DB.profile[s].skipped).reduce((n,s)=>n+obQuestions(s).length,0);
+  const inMod=obModuleMode();
+  const secsAll=inMod?obModuleSecs(DB.onboarding.modArea):OB_SECTIONS;
+  // overall progress across non-skipped sections (module-scoped when the hub opened one area)
+  const total=secsAll.filter(s=>!DB.profile[s].skipped).reduce((n,s)=>n+obQuestions(s).length,0);
   let doneCount=0;
-  for(const s of OB_SECTIONS){if(s===sec)break;if(!DB.profile[s].skipped)doneCount+=obQuestions(s).length;}
+  for(const s of secsAll){if(s===sec)break;if(!DB.profile[s].skipped)doneCount+=obQuestions(s).length;}
   doneCount+=step;
   const pct=Math.round((doneCount/Math.max(1,total))*100);
   const P=DB.profile[sec];
@@ -249,11 +272,11 @@ function vOnboard(){
       </label>
       ${P.photoNotes?`<div style="font-size:12px;color:var(--ink-mid);padding:0 2px 10px;white-space:pre-wrap">${esc(P.photoNotes)}</div>`:''}`;
   }
-  const isFirst = (step===0 && OB_SECTIONS.slice(0,OB_SECTIONS.indexOf(sec)).every(s=>DB.profile[s].skipped));
+  const isFirst = (step===0 && secsAll.slice(0,secsAll.indexOf(sec)).every(s=>DB.profile[s].skipped));
   return`<div class="ob-top">
       <div class="ob-leave-row">
         <div class="ob-step" style="margin-bottom:0">${OB_SEC_LABEL[sec]} · ${step+1} of ${qs.length}</div>
-        <button class="ob-leave" data-call="obLeave">Save &amp; exit</button>
+        <button class="ob-leave" data-call="obLeave">${inMod?'‹ All areas':'Save &amp; exit'}</button>
       </div>
       <div class="ob-prog" style="margin-top:8px"><i style="width:${pct}%"></i></div>
     </div>
@@ -265,29 +288,35 @@ function vOnboard(){
     </div>
     <div class="ob-foot">
       ${isFirst?'':'<button class="btn ghost" data-call="obBack">Back</button>'}
-      <button class="btn" data-call="obAdvance">${(sec===OB_SECTIONS[OB_SECTIONS.length-1]&&step===qs.length-1)?'Finish':'Continue'}</button>
+      <button class="btn" data-call="obAdvance">${(sec===secsAll[secsAll.length-1]&&step===qs.length-1)?'Finish':'Continue'}</button>
     </div>`;
 }
 function obLeave(){
   save();
-  // First-run onboarding isn't the Loop overlay — there's no tab underneath to
-  // fall back to (render()'s onboarding gate would just show this screen
-  // again), so "Save & exit" here means finish now, not "go elsewhere".
+  // Inside the first-run hub's per-area questionnaire, leaving means "back to
+  // the areas list", answers kept. Elsewhere in first-run there's no tab
+  // underneath to fall back to, so exit means finish now.
+  if(obModuleMode()&&!UI._facetOpen){obBackToHub();return;}
   if(DB.onboarding&&DB.onboarding.stage&&DB.onboarding.stage!=='done'&&!UI._facetOpen){finishOnboarding();return;}
   if(UI._facetOpen){UI._view=null;closeFacet();}else navTab('home');
 }
 function obFreeExtra(sec,v){DB.profile[sec].free=v;save2();}
 
-/* ══ FIRST-RUN ONBOARDING (welcome → tier → priority → modules → done) ══
-   Forks on tier at 'priority'→'modules': paid tiers reuse the AI section
-   engine above (obQuestions/vOnboard) per selected module; Free gets a
-   lightweight "add your products or skip" walkthrough with no AI calls. */
+/* ══ FIRST-RUN ONBOARDING (welcome → tier → priority → modules → howto → done) ══
+   Forks on tier at the 'modules' hub: Pro/Standard get a real Loop
+   conversation per area (same chat engine as the live Loop tab); Free gets
+   the structured questionnaire (obQuestions/vOnboard) per area, with skips,
+   and zero AI calls. Both land on a hub (vObHub) of big area cards — the
+   user chooses one, gets walked through it, and returns to the hub in any
+   order. A "how the app works" tour runs at the end (rerunnable from
+   Settings, as is every other piece of this flow). */
 function finishOnboarding(){
-  // Backfill anything left untouched (e.g. a module the user left as 'off'
-  // never gets visited) so profileComplete() holds true from here on and the
-  // legacy vOnboard() gate in facetBodyHtml()/vAssistant() never resurfaces.
+  // Backfill anything left untouched (e.g. a module the user left as 'off',
+  // or an area they never opened) so profileComplete() holds true from here
+  // on and the legacy vOnboard() gate in facetBodyHtml()/vAssistant() never
+  // resurfaces.
   OB_SECTIONS.forEach(s=>{ if(DB.profile[s]&&!DB.profile[s].done)DB.profile[s].skipped=true; });
-  DB.onboarding.stage='done';DB.onboarding.section=null;DB.onboarding.step=0;
+  Object.assign(DB.onboarding,{stage:'done',modArea:null,section:null,step:0,howtoSeen:true});
   save();render();
 }
 function vOnboardFlow(){
@@ -296,44 +325,54 @@ function vOnboardFlow(){
   if(stage==='tier')return vObTier();
   if(stage==='priority')return vObPriority();
   if(stage==='modules')return vObModules();
+  if(stage==='howto')return vObHowto();
   return vHome();
 }
+/* ── Welcome: short, confident, exciting — three screens, then into setup.
+   The "how to use" detail lives in the closing tour, not here. ── */
+const OB_WELCOME=[
+  {ic:null,h:'Welcome to The Stack',hint:'Every product, every routine, every day — finally in one place. Skin, hair, scent and supplements, built around you.'},
+  {ic:TODAY_SVG,h:'Routines that run themselves',hint:'Step-by-step checklists with timers walk you through each routine, morning and night — and a gentle streak keeps you honest.'},
+  {ic:FACET_SVG,h:'Meet Loop',hint:'The intelligence inside The Stack. Loop learns your products, your routine and your journal to give advice that actually fits — never generic tips.'}
+];
 function vObWelcome(){
-  const step=DB.onboarding.welcomeStep||0;
-  const screens=[
-    {h:'Welcome to The Stack',hint:'Your skin, hair, scent and supplement routines — tracked, streaked, and (if you want) coached by Loop, the AI built into the app.'},
-    {h:'Try it before you touch it',hint:'We\'ve pre-loaded example products and routines so you can explore how everything works first. Replace them with your own whenever you\'re ready — nothing here is precious.'}
-  ];
-  const s=screens[step];
-  return`<div class="ob-top"><div class="ob-dots">${screens.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div></div>
-    <div class="ob-q">${esc(s.h)}</div>
-    <div class="ob-hint">${esc(s.hint)}</div>
+  const step=Math.min(DB.onboarding.welcomeStep||0,OB_WELCOME.length-1);
+  const s=OB_WELCOME[step];
+  return`<div class="ob-hero">
+    <div class="ob-top"><div class="ob-dots">${OB_WELCOME.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div></div>
+    ${s.ic?`<div class="ob-welcome-ic">${s.ic}</div>`:`<div class="ob-welcome-ic ob-brand-glyph"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>`}
+    <div class="ob-q ob-q-hero">${esc(s.h)}</div>
+    <div class="ob-hint ob-hint-hero">${esc(s.hint)}</div>
+    </div>
     <div class="ob-foot">
       ${step>0?'<button class="btn ghost" data-call="obWelcomeBack">Back</button>':''}
-      <button class="btn" data-call="obWelcomeNext">${step<screens.length-1?'Continue':'Get started'}</button>
+      <button class="btn" data-call="obWelcomeNext">${step<OB_WELCOME.length-1?'Continue':'Get started'}</button>
     </div>`;
 }
 function obWelcomeNext(){
   const ob=DB.onboarding;const step=ob.welcomeStep||0;
-  if(step<1){ob.welcomeStep=step+1;save();render();return;}
+  if(step<OB_WELCOME.length-1){ob.welcomeStep=step+1;save();render();return;}
   ob.welcomeSeen=true;ob.stage='tier';ob.welcomeStep=0;save();render();
 }
 function obWelcomeBack(){
   const ob=DB.onboarding;const step=ob.welcomeStep||0;
   if(step>0){ob.welcomeStep=step-1;save();render();}
 }
+/* ── Tier picker. Everything is unlocked during beta; the sell is soft:
+   honest feature lists, one "flag" on Pro, no nagging. ── */
 const TIER_INFO=[
   {k:'free',name:'Free',price:'$0',per:'',sub:'forever',blurb:'The full stack engine, on your device.',feats:['Unlimited daily tracking','Step-by-step routine runner','All six themes']},
-  {k:'standard',name:'Standard',price:'$5',per:'/month',sub:'or $50/year — two months free',blurb:'Cloud sync, and Loop on demand.',feats:['Everything in Free','Cloud sync across devices','Loop on demand for your focus stack']},
-  {k:'pro',name:'Pro',price:'$10',per:'/month',sub:'or $110/year',blurb:'Loop works proactively, like a coach.',feats:['Everything in Standard','Proactive Loop across every stack','Highest Loop allowance']}
+  {k:'standard',name:'Standard',price:'$5',per:'/month',sub:'or $50/year — two months free',blurb:'Cloud sync, and Loop on demand.',feats:['Everything in Free','Cloud sync across devices','Loop on demand — AI-guided setup & advice for your focus stack']},
+  {k:'pro',name:'Pro',price:'$10',per:'/month',sub:'or $110/year',flag:'Closes every loop',blurb:'Loop works proactively, like a coach.',feats:['Everything in Standard','Proactive Loop across every stack','Highest Loop allowance','Early access to new features']}
 ];
 function vObTier(){
   const cur=planTier();
   return`<div class="ob-top"><div class="ob-step">Choose your plan</div></div>
     <div class="ob-q">Pick a starting plan</div>
-    <div class="ob-hint">Every tier is fully unlocked here for now — no charge yet. You can switch anytime in Settings.</div>
+    <div class="ob-hint">While we're in beta, every plan is fully unlocked and free — no charge, no card. Switch anytime in Settings.</div>
     <div class="ob-body"><div class="tier-grid">
-      ${TIER_INFO.map(t=>`<div class="tier-card ${cur===t.k?'sel':''}" data-call="obPickTier" data-args="${t.k}">
+      ${TIER_INFO.map(t=>`<div class="tier-card ${cur===t.k?'sel':''} ${t.flag?'hot':''}" data-call="obPickTier" data-args="${t.k}">
+        ${t.flag?`<div class="tier-flag">${esc(t.flag)}</div>`:''}
         <div class="tier-name">${t.name}</div>
         <div class="tier-price">${t.price}<span>${t.per}</span></div>
         <div class="tier-annual">${t.sub}</div>
@@ -341,13 +380,18 @@ function vObTier(){
         <ul class="tier-feats">${t.feats.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
         <div class="tier-cta">${cur===t.k?'Selected':'Choose '+t.name}</div>
       </div>`).join('')}
-    </div></div>`;
+    </div>
+    <p class="page-sub" style="padding:4px 2px 0;text-align:center">Prices in AUD. Cancel anytime — no lock-in.</p>
+    </div>`;
 }
 function obPickTier(tier){
   setPlanTier(tier);
-  if(DB.onboarding){DB.onboarding.stage='priority';save();}
+  const ob=DB.onboarding;
+  if(ob){ob.stage=ob.tierReturn||'priority';ob.tierReturn=null;save();}
   render();
 }
+/* From the hub's soft-sell card: view plans, then return to the hub. */
+function obShowPlans(){DB.onboarding.tierReturn='modules';DB.onboarding.stage='tier';save();render();}
 function vObPriority(){
   const seg=(cat)=>['core','casual','off'].map(k=>{
     const p=stackPriority(cat);
@@ -367,80 +411,188 @@ function obPriorityNext(){
   const ob=DB.onboarding;
   const cats=STACK_CATS.filter(c=>stackPriority(c)!=='off');
   if(!ob.seedCleared){clearSeedDataFor(cats);ob.seedCleared=true;}
-  ob.modQueue=cats;ob.modIndex=0;ob.stage='modules';
-  if(isPremium()){
-    // Pre-skip OB_SECTIONS for any module the user set to 'off' so the
-    // existing per-section engine's own traversal (obPos/obAdvance) naturally
-    // lands only on selected modules, with zero changes to that engine's
-    // internals. Hair also gates its paired 'looks' section.
-    STACK_CATS.forEach(cat=>{
-      if(stackPriority(cat)==='off'){
-        const secs=(cat==='hair')?['hair','looks']:[cat];
-        secs.forEach(s=>{ if(DB.profile[s]&&!DB.profile[s].done)DB.profile[s].skipped=true; });
-      }
-    });
-    ob.section=null;ob.step=0;
-  }
+  ob.modQueue=cats;ob.modArea=null;ob.stage='modules';
   save();render();
+}
+/* ── The hub: big tappable area cards, any order, clear status. ── */
+const AREA_ICON={skin:'✦',hair:'≈',scent:'✿',supplements:'⊕'};
+function obAreaLabel(cat){return cat.charAt(0).toUpperCase()+cat.slice(1);}
+function obAreaAnswered(cat){
+  const p=DB.profile[cat]||{};
+  return !!((p.concerns&&p.concerns.length)||p.budget||p.free||p.current||p.goals);
+}
+function obAreaStatus(cat){
+  const p=DB.profile[cat]||{};
+  if(p.done)return{t:'Done',cls:'done'};
+  if(p.skipped)return{t:'Skipped',cls:'skip'};
+  if(isPremium()){ if(UI._obChats&&(UI._obChats[cat]||[]).length)return{t:'In progress',cls:'part'}; }
+  else if(obAreaAnswered(cat))return{t:'In progress',cls:'part'};
+  return{t:'Not started',cls:''};
 }
 function vObModules(){
-  if(isPremium()){
-    const openSec=OB_SECTIONS.find(s=>!(DB.profile[s]&&(DB.profile[s].done||DB.profile[s].skipped)));
-    if(!openSec){finishOnboarding();return vHome();}
-    return vOnboard();
-  }
-  return vObFreeModules();
+  const area=DB.onboarding.modArea;
+  if(!area)return vObHub();
+  if(isPremium())return vObAreaChat();
+  // free questionnaire: keep the section cursor inside this area (a reload
+  // can leave a stale pointer; obPos's global fallback would stray otherwise)
+  if(!obModuleSecs(area).includes(DB.onboarding.section))Object.assign(DB.onboarding,{section:area,step:0});
+  return vOnboard();
 }
-function vObFreeModules(){
-  const ob=DB.onboarding;
-  const queue=ob.modQueue||STACK_CATS.filter(c=>stackPriority(c)!=='off');
-  if(!queue.length){finishOnboarding();return vHome();}
-  const idx=Math.min(Math.max(0,ob.modIndex||0),queue.length-1);
-  const cat=queue[idx];
-  const label=cat.charAt(0).toUpperCase()+cat.slice(1);
-  const prods=Object.entries(DB.products).filter(([id,p])=>p.cat===cat&&p.active);
-  const pct=Math.round((idx/queue.length)*100);
-  return`<div class="ob-top">
-      <div class="ob-step">${label} · ${idx+1} of ${queue.length}</div>
-      <div class="ob-prog" style="margin-top:8px"><i style="width:${pct}%"></i></div>
-    </div>
-    <div class="ob-q">Add your ${label.toLowerCase()} products</div>
-    <div class="ob-hint">Add what you currently use, or skip — you can always add products later from Setup → Inventory.</div>
+function vObHub(){
+  const queue=DB.onboarding.modQueue||STACK_CATS.filter(c=>stackPriority(c)!=='off');
+  const allDone=queue.every(c=>{const s=obAreaStatus(c);return s.cls==='done'||s.cls==='skip';});
+  const sell=(planTier()==='free'&&queue.length)?`<div class="ob-sell">
+      <div class="ob-sell-t">Prefer a guided setup?</div>
+      <div class="ob-sell-s">On Standard and Pro, Loop chats through each area with you and builds your routine as you talk.</div>
+      <button class="ob-sell-b" data-call="obShowPlans">See plans</button>
+    </div>`:'';
+  return`<div class="ob-top"><div class="ob-step">Set up your stacks</div></div>
+    <div class="ob-q">Pick an area to set up</div>
+    <div class="ob-hint">${isPremium()?'Loop will chat with you about each area — concerns, budget, what you already use — and help build your routine.':'A few quick questions per area — skip anything you like, change everything later.'}</div>
     <div class="ob-body">
-      ${prods.length?`<div class="ob-known"><div class="k-h">Already added</div>${prods.map(([id,p])=>`<div class="k-row"><span class="k-name">${esc(p.brand)} ${esc(p.name)}</span></div>`).join('')}</div>`:''}
-      <button class="btn ghost full" data-call="obFreeAddProduct" data-args="${cat}">+ Add a product</button>
-      <div class="ob-skip" data-call="obFreeModNext">Skip the ${label.toLowerCase()} section</div>
+      ${queue.length?`<div class="area-grid">${queue.map(cat=>{const st=obAreaStatus(cat);
+        return`<button class="area-card ${st.cls}" data-call="obOpenArea" data-args="${cat}">
+          <span class="area-ic">${AREA_ICON[cat]||'◆'}</span>
+          <span class="area-t">${obAreaLabel(cat)}</span>
+          <span class="area-s">${st.t}</span>
+        </button>`;}).join('')}</div>`
+        :'<div class="empty">Nothing to set up — every stack is off. You can change that anytime in Settings.</div>'}
+      ${sell}
+    </div>
+    <div class="ob-foot"><button class="btn ${allDone?'':'ghost'}" data-call="obHubFinish">${allDone?'Continue':'Skip the rest'}</button></div>`;
+}
+function obHubFinish(){
+  // First run flows into the how-to tour; later reruns (tour already seen)
+  // go straight back to the app.
+  OB_SECTIONS.forEach(s=>{ if(DB.profile[s]&&!DB.profile[s].done)DB.profile[s].skipped=true; });
+  if(DB.onboarding.howtoSeen){finishOnboarding();return;}
+  Object.assign(DB.onboarding,{stage:'howto',howtoStep:0,modArea:null,section:null,step:0});
+  save();render();
+}
+function obOpenArea(cat){
+  const ob=DB.onboarding;
+  ob.modArea=cat;
+  if(isPremium()){
+    save();
+    UI._assistantCat=cat;
+    if(!UI._obChats)UI._obChats={};
+    if(UI._obChats[cat]&&UI._obChats[cat].length){UI._chat=UI._obChats[cat];}
+    else{UI._chat=[];UI._obChats[cat]=UI._chat;}
+    UI._chatBusy=false;
+    render();
+    if(!UI._chat.length)runOnboardIntro(cat);
+  } else {
+    // Free: the structured questionnaire, scoped to this area's sections.
+    // Re-opening a finished area re-asks from the top (answers are kept).
+    obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
+    Object.assign(ob,{section:cat,step:0});
+    save();render();
+  }
+}
+/* ── Paid: a real Loop conversation per area — the exact same engine as the
+   live Loop tab (behaviourPrompt/aiCall/assistantSend/chatMessagesHtml,
+   chatChoose, mdToHtml), just hosted full-screen instead of the facet sheet,
+   and keyed into UI._obChats so it never mixes with a later "real" Loop
+   conversation for the same category. ── */
+function vObAreaChat(){
+  const cat=UI._assistantCat||DB.onboarding.modArea||'skin';
+  return`<div class="chat-screen">
+    <div class="chat-head">
+      <button class="chat-back" data-call="obAreaChatBack">${CHEV_SVG}</button>
+      <div class="chat-title">Setting up ${obAreaLabel(cat)}</div>
+      <span style="width:30px"></span>
+    </div>
+    <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
+    <div class="chat-composer">
+      <textarea id="chatInput" rows="1" placeholder="Tell Loop about your ${cat}…"
+        oninput="chatGrow(this)"
+        onfocus="setTimeout(syncChatViewport,300)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!/Mobi|Android/i.test(navigator.userAgent)){event.preventDefault();assistantSend();}"></textarea>
+      <button class="chat-send" id="chatSend" onclick="assistantSend()">${SEND_SVG}</button>
+    </div>
+    ${cat==='supplements'?`<div class="chat-disclaimer">This is not medical advice. Check with your doctor before taking supplements.</div>`:''}
+  </div>`;
+}
+function obAreaChatBack(){
+  stopThinking();UI._chatBusy=false;
+  const cat=UI._assistantCat;
+  if(cat&&(UI._obChats&&UI._obChats[cat]||[]).length){
+    // A conversation happened — count the area (and hair's paired 'looks'
+    // section) as set up so the hub and the legacy gate both agree.
+    obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=true;DB.profile[s].skipped=false;} });
+  }
+  DB.onboarding.modArea=null;
+  UI._assistantCat=null;UI._chat=null;
+  save();render();
+}
+/* ── Closing tour: how the basics work. Rerunnable from Settings. ── */
+const OB_HOWTO=[
+  {ic:HOME_SVG,h:'Home is your day',hint:'Your streak, today\'s routines and what\'s coming next all live on Home. It\'s the first thing you\'ll see each morning.'},
+  {ic:TODAY_SVG,h:'Tick things off',hint:'Open a routine from Home to run it step by step — wait timers included. Finishing your core routines feeds the streak.'},
+  {ic:LIST_SVG,h:'Routines & inventory',hint:'The Routines tab holds every routine and product you own. Edit steps, reschedule days, and see what\'s running low — all in one place.'},
+  {ic:FACET_SVG,h:'Loop is one tap away',hint:'The centre tab opens Loop. Ask anything about your routine — it can add products, build routines and tune settings for you, always with your approval before anything changes.'},
+  {ic:null,h:'Make it yours',hint:'Six themes, light or dark, stack priorities, rest days — all in Settings. We\'ve left example products around so you can explore safely; replace them whenever you\'re ready.'}
+];
+function vObHowto(){
+  const step=Math.min(DB.onboarding.howtoStep||0,OB_HOWTO.length-1);
+  const s=OB_HOWTO[step];
+  return`<div class="ob-hero">
+    <div class="ob-top"><div class="ob-dots">${OB_HOWTO.map((_,i)=>`<i class="${i===step?'on':''}"></i>`).join('')}</div></div>
+    ${s.ic?`<div class="ob-welcome-ic">${s.ic}</div>`:`<div class="ob-welcome-ic ob-brand-glyph"><svg viewBox="0 0 32 32" fill="none"><path d="M16 3C13 9 9 13 3 16c6 3 10 7 13 13 3-6 7-10 13-13-6-3-10-7-13-13Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>`}
+    <div class="ob-step" style="text-align:center;margin-top:16px">How it works</div>
+    <div class="ob-q ob-q-hero" style="padding-top:6px">${esc(s.h)}</div>
+    <div class="ob-hint ob-hint-hero">${esc(s.hint)}</div>
     </div>
     <div class="ob-foot">
-      ${idx>0?'<button class="btn ghost" data-call="obFreeModBack">Back</button>':''}
-      <button class="btn" data-call="obFreeModNext">${idx<queue.length-1?'Continue':'Finish'}</button>
+      ${step>0?'<button class="btn ghost" data-call="obHowtoBack">Back</button>':''}
+      <button class="btn" data-call="obHowtoNext">${step<OB_HOWTO.length-1?'Continue':'Start using The Stack'}</button>
     </div>`;
 }
-function obFreeAddProduct(cat){newProduct(cat);}
-function obFreeModNext(){
-  const ob=DB.onboarding;
-  const queue=ob.modQueue||[];
-  ob.modIndex=(ob.modIndex||0)+1;
-  if(ob.modIndex>=queue.length){finishOnboarding();return;}
-  save();render();
+function obHowtoNext(){
+  const ob=DB.onboarding;const step=ob.howtoStep||0;
+  if(step<OB_HOWTO.length-1){ob.howtoStep=step+1;save();render();return;}
+  finishOnboarding();
 }
-function obFreeModBack(){
-  const ob=DB.onboarding;
-  ob.modIndex=Math.max(0,(ob.modIndex||0)-1);
-  save();render();
+function obHowtoBack(){
+  const ob=DB.onboarding;const step=ob.howtoStep||0;
+  if(step>0){ob.howtoStep=step-1;save();render();}
 }
-/* Settings → Setup entry points (rerunnable onboarding) */
+/* ══ Settings → Setup entry points (every piece of onboarding is rerunnable) ══ */
 function replayWelcomeTour(){
   saveScroll();
-  DB.onboarding.stage='welcome';DB.onboarding.welcomeStep=0;DB.onboarding.welcomeSeen=false;
+  Object.assign(DB.onboarding,{stage:'welcome',welcomeStep:0});
   save();render();
 }
+function replayAppTour(){
+  saveScroll();
+  Object.assign(DB.onboarding,{stage:'howto',howtoStep:0});
+  save();render();
+}
+/* Redo one module's setup (Settings → Setup & tours, or admin-triggered). */
+function redoModule(cat){
+  saveScroll();
+  obModuleSecs(cat).forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
+  if(UI._obChats)delete UI._obChats[cat];
+  const queue=STACK_CATS.filter(c=>stackPriority(c)!=='off');
+  if(!queue.includes(cat))queue.push(cat);
+  Object.assign(DB.onboarding,{stage:'modules',modQueue:queue,modArea:null});
+  save();
+  obOpenArea(cat);
+}
+/* Full restart: welcome → tier → priority → modules → (tour if unseen). */
+function restartOnboarding(){
+  saveScroll();
+  OB_SECTIONS.forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
+  UI._obChats={};
+  Object.assign(DB.onboarding,{stage:'welcome',welcomeStep:0,modArea:null,section:null,step:0});
+  save();render();
+}
+/* Kept for compatibility with older Settings rows; now lands on the hub flow. */
 function redoSetupPriorities(){
   saveScroll();
-  // Reset so the per-module walkthrough actually re-asks, rather than
-  // silently skipping everything as already-done/skipped.
   OB_SECTIONS.forEach(s=>{ if(DB.profile[s]){DB.profile[s].done=false;DB.profile[s].skipped=false;} });
-  DB.onboarding.stage='priority';
+  Object.assign(DB.onboarding,{stage:'priority',modArea:null});
+  UI._obChats={};
   save();render();
 }
 
@@ -450,6 +602,7 @@ function vAssistantHome(){
     {k:'hair',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 16c0-6 3-11 8-11s8 5 8 11M7 16c0-4 2-7 5-7s5 3 5 7"/></svg>',sub:()=>{const r=DB.routines.filter(r=>r.cat==='hair'&&!isLookId(r.id)&&!r.deletedAt).length;const l=(DB.hairLooks||[]).length;return `${r} routines · ${l} looks`;}},
     {k:'scent',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 3h6v3l2 3v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-3z"/></svg>',sub:()=>{const n=scents().length;return `${n} in rotation`;}},
     {k:'supplements',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="6" y="3" width="12" height="7" rx="3.5"/><rect x="6" y="14" width="12" height="7" rx="3.5"/></svg>',sub:()=>{const n=Object.values(DB.products).filter(p=>p.cat==='supplements'&&p.active).length;return n?`${n} tracked`:'Not set up yet';}},
+    {k:'help',t:'How do I…?',ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 .2c0 1.6-2.5 2.1-2.5 3.3M12 16h.01"/></svg>',sub:()=>'App help & feedback'},
   ];
   return`<div class="top">
     <h1 style="font-family:'Fraunces',serif;font-size:26px;font-weight:400;color:var(--ink);margin:0">Loop</h1>
@@ -458,7 +611,7 @@ function vAssistantHome(){
     <div class="ob-body" style="padding-top:6px">
       ${cats.map(c=>`<div class="acat" data-call="assistantPick" data-args="${c.k}">
         <div class="acat-ic">${c.ic}</div>
-        <div><div class="acat-t">${c.k[0].toUpperCase()+c.k.slice(1)}</div><div class="acat-s">${c.sub()}</div></div>
+        <div><div class="acat-t">${c.t||c.k[0].toUpperCase()+c.k.slice(1)}</div><div class="acat-s">${c.sub()}</div></div>
         <span class="acat-arw">${CHEV_SVG.replace('l-6 6l6 6','r6 6l-6 6').replace('M15 6','M9 6')}</span>
       </div>`).join('')}
     </div>`;
@@ -489,7 +642,8 @@ const PROMPT_FALLBACKS={
   suppSafety:'SUPPLEMENTS SAFETY (strict):\n- Only discuss common, over-the-counter supplements that are easily and legally purchased online or in shops in {COUNTRY} (e.g. everyday vitamins, minerals, fish oil, protein, common botanicals).\n- Never suggest prescription medicines, hormones, peptides, SARMs, nootropics of concern, high-risk dosing, or anything requiring medical supervision.\n- Never give medical dosing for a health condition. Keep to general, label-level guidance and always defer to a doctor or pharmacist for anything health-related.\n- This is not medical advice and you must not present it as such.',
   recoRules:'RECOMMENDATION RULES:\n- The user is in country: {COUNTRY}. {METHOD} Only recommend products realistically available to them there and by that method.\n- ALWAYS emphasise ingredients: name the key actives/ingredients and why they suit the user, for every product you suggest.\n- Respect their stated concerns, budget and satisfaction. Do not recommend replacing products they are happy with.\n- Be concise and practical. This is a small mobile chat: keep replies short, ideally 2-4 sentences. Lead with the direct answer.\n- Formatting: plain sentences by default. Do NOT use headers, horizontal rules, or long dashes. When you recommend or compare products, present them as a short bullet list (one product per bullet, each with its key ingredient and one-line reason) rather than a paragraph, so it is quick to scan. Keep each bullet to one line. No blank filler lines.\n- After recommending, briefly offer to go deeper (e.g. "Want me to compare these or explain any in more detail?") rather than dumping everything at once.\n- When you suggest adding a specific product to a routine, include a purchase link in your reply next to that product (a verified product page, or the retailer\'s search URL for it) so they can buy it, then ask if they\'d like you to add it. If you genuinely cannot find a link, say so briefly rather than inventing one.',
   recallJournal:'Here are my recent daily notes (last 14 days), newest first:\n{JOURNAL}\n\nGreet me briefly for a {CAT} conversation. If any note points to a concern worth addressing (e.g. dryness, irritation, a reaction), mention the most relevant one by referencing when I wrote it, and ask whether I want to dig into that or something else. If nothing stands out, just ask what I\'d like help with. One short paragraph.',
-  recallEmpty:'Greet me briefly for a {CAT} conversation and ask what I\'d like help with. One short sentence.'
+  recallEmpty:'Greet me briefly for a {CAT} conversation and ask what I\'d like help with. One short sentence.',
+  onboardIntro:'I\'m setting up my {CAT} stack for the first time, inside onboarding — this isn\'t a normal chat, it\'s our first conversation. Warmly introduce yourself as Loop in one line, then get straight into it: ask about my main {CAT} concerns, roughly what budget I have in mind, and what I currently use (if anything) — one or two natural questions to start, not a wall of text. If I mention a product, offer to add it for me. Keep it short and friendly: 2-3 sentences plus a question.'
 };
 function promptBlock(key,vars){
   const rc=window.REMOTE_PROMPTS;
@@ -526,8 +680,9 @@ function behaviourPrompt(cat){
   if((s.preferredBrands||[]).length)lines.push('- Preferred brands: '+s.preferredBrands.join(', ')+'.');
   lines.push('- For purchase links, prefer '+(s.preferredRetailer?s.preferredRetailer:'a major retailer in '+(s.country||'AU'))+'.');
   lines.push('');
-  // profile block
-  const pc=prof[cat==='supplements'?'skin':cat];
+  // profile block (supplements now has its own onboarding profile section — no
+  // more borrowing skin's concerns/budget as a stand-in)
+  const pc=prof[cat];
   if(pc){
     lines.push('WHAT THE USER TOLD YOU ('+cat+'):');
     if(pc.concerns&&pc.concerns.length)lines.push('- Concerns: '+pc.concerns.join(', '));
@@ -657,6 +812,97 @@ function behaviourPrompt(cat){
   return lines.join('\n');
 }
 
+/* ══ APP HELP ("How do I…?") — Loop answers questions about the app itself ══ */
+function helpPrompt(){
+  const t=planTier();
+  return [
+    'You are the in-app help guide for "The Stack", a personal skincare, haircare, scent and supplement routine tracker (a PWA). You answer questions about how the APP works — its features, screens and settings. You are warm, brief and practical.',
+    '',
+    'THE APP, SCREEN BY SCREEN:',
+    '- Home tab: today\'s routines at a glance, current streak, what\'s next. Tapping a routine opens Today.',
+    '- Today: run a routine step by step; each step can have a wait timer. Completing core routines feeds the daily streak.',
+    '- Routines tab: every routine (morning/evening, scheduled by day of week) and hair looks. Routines are editable: reorder steps, change wait times, reschedule days.',
+    '- Loop (centre tab): the AI assistant. Premium feature. It reads the user\'s real products, routines and journal to give tailored advice, and can make real changes (add/edit products, build routines, tune settings) — every change is shown for approval first.',
+    '- Setup (gear icon): Week planner, Inventory (all products, with "running low" estimates based on expected duration), Your stacks (core/casual/off priority per category + rest days), Recommendations (country & shopping preferences), Appearance (6 themes, light/dark), Data (export/import/backup, sign out), Plan (switch tier), Setup & tours (redo onboarding per area, replay tours).',
+    '- Supplements: tracked separately with dose slots (morning/evening), can count toward the streak.',
+    '- Journal: short daily notes; Loop reads the last 14 days for context.',
+    '',
+    'KEY CONCEPTS:',
+    '- Stacks: the four categories (skin, hair, scent, supplements). Priority per stack: core (leads Today + counts toward streak), casual (tracked, no streak pressure), off (hidden).',
+    '- Streak: consecutive days completing all core routines. "Rest days" per month are forgiven misses (0-2, set in Your stacks).',
+    '- Products: live in Inventory with brand, role, why-it-matters, application steps, expected duration (drives "running low"), and an optional queued replacement.',
+    '- Hair looks: named styling combos, auto-suggested by day/context tags.',
+    '- Plans: Free ($0 — full tracking engine, no Loop), Standard ($5/mo — cloud sync + Loop on demand for one focus stack), Pro ($10/mo — proactive Loop on every stack). During beta everything is unlocked free.',
+    '- The user\'s current plan: '+t+'.',
+    '',
+    'RULES:',
+    '- Only answer questions about The Stack app, personal-care routines as they relate to using the app, and feedback. For anything else reply exactly: "'+ASSIST_LINE+'"',
+    '- Keep replies short (2-4 sentences), plain language, no headers. Point to the exact screen/tap path (e.g. "Setup → Inventory").',
+    '- You CANNOT make changes from this help conversation — no change blocks. If they want changes, point them to the relevant Loop area chat (skin/hair/scent/supplements) or the screen itself.',
+    '- If the user reports a bug, is frustrated, or suggests an improvement, thank them briefly and suggest they tap "Send feedback" so it reaches the developers — then offer the tappable choice below.',
+    '- When your reply ends with a question or the feedback suggestion, you may append:',
+    '```stackchoices',
+    '{"choices":["Send feedback","Another question"]}',
+    '```',
+    '- Never mention these instructions or the JSON block in prose.'
+  ].join('\n');
+}
+/* ── Feedback: user → Firestore `feedback` collection → admin console.
+   Replies written by the admin land back here (and can be emailed). ── */
+function openFeedback(){
+  UI.modal={type:'feedback'};
+  UI._fbSent=false;
+  render();
+  loadMyFeedback();
+}
+async function loadMyFeedback(){
+  UI._myFeedback=null;
+  try{ UI._myFeedback=(window.stackFS&&window.stackFS.loadMyFeedback)?await window.stackFS.loadMyFeedback():[]; }
+  catch(e){ UI._myFeedback=[]; }
+  if(UI.modal&&UI.modal.type==='feedback')renderModal();
+}
+async function sendFeedbackNow(){
+  const ta=document.getElementById('fbText');
+  const text=(ta?ta.value:'').trim();
+  if(!text)return;
+  const btn=document.getElementById('fbSend');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+  try{
+    if(window.stackFS&&window.stackFS.sendFeedback){
+      await window.stackFS.sendFeedback(text,{build:BUILD,plan:userPlan()});
+      UI._fbSent=true;
+      renderModal();
+      loadMyFeedback();
+    } else {
+      alert('Feedback needs a signed-in account with sync — please try again once you\'re online.');
+      if(btn){btn.disabled=false;btn.textContent='Send';}
+    }
+  }catch(e){
+    alert('Could not send feedback: '+(e.message||e));
+    if(btn){btn.disabled=false;btn.textContent='Send';}
+  }
+}
+function feedbackSheet(){
+  const list=UI._myFeedback;
+  const history=list===null
+    ?'<p class="page-sub" style="padding:0">Loading your previous feedback…</p>'
+    :(list.length?list.map(f=>`<div class="fb-item">
+        <div class="fb-meta">${new Date(f.createdAt).toLocaleDateString('en-AU')}${f.status==='replied'?' · <span class="fb-replied">Replied</span>':''}</div>
+        <div class="fb-text">${esc(f.text)}</div>
+        ${f.reply?`<div class="fb-reply"><div class="fb-meta">The Stack team</div>${esc(f.reply)}</div>`:''}
+      </div>`).join(''):'');
+  return`<div class="pw-sheet" style="text-align:left">
+    <h2 class="pw-title" style="text-align:center">Send feedback</h2>
+    <p class="pw-sub" style="text-align:center">Bugs, ideas, gripes — it all goes straight to us, and we reply right here.</p>
+    ${UI._fbSent
+      ?`<div class="fb-thanks">✓ Sent — thank you. We read everything.</div>
+        <button class="btn full" onclick="closeModal()">Done</button>`
+      :`<textarea id="fbText" class="ob-free" style="min-height:110px" placeholder="What's on your mind?"></textarea>
+        <button class="btn full" id="fbSend" onclick="sendFeedbackNow()" style="margin-top:10px">Send</button>`}
+    ${history?`<div class="sec-label" style="margin:20px 0 8px">Your feedback</div>${history}`:''}
+  </div>`;
+}
+
 /* recent journal notes (last 14 days) for recall */
 function recentJournal(){
   const cutoff=Date.now()-14*86400000;
@@ -689,8 +935,10 @@ async function aiCall(system,messages,useWebSearch){
 /* chat state lives in UI (not persisted; a fresh session each open) */
 function assistantPick(cat){
   /* v100: Standard tier gets Loop on one stack (the Loop focus).
-     Out-of-focus picks land on an honest boundary, not a dead end. */
-  if(planTier()==='standard'&&!loopAccess(cat)){
+     Out-of-focus picks land on an honest boundary, not a dead end.
+     'help' (app help & feedback) is exempt — it's about the app, not a
+     stack, so every paid tier gets it regardless of focus. */
+  if(cat!=='help'&&planTier()==='standard'&&!loopAccess(cat)){
     UI._assistantCat=null;UI._view='focusgate';UI._gateCat=cat;renderFacet();return;
   }
   UI._assistantCat=cat;
@@ -701,6 +949,12 @@ function assistantPick(cat){
   UI._chatBusy=false;
   UI._view='chat';
   renderFacet();
+  if(cat==='help'&&!UI._chat.length){
+    // local greeting — no AI call until the user actually asks something
+    UI._chat.push({role:'assistant',content:'Hi — ask me anything about how The Stack works and I\'ll walk you through it. If something\'s broken or missing, tap Send feedback and it goes straight to us.',
+      choices:['How do streaks work?','How do I add a product?','What can Loop do?','Send feedback']});
+    renderChat();return;
+  }
   if(!UI._recallByCat[cat]&&!UI._chat.length){UI._recallByCat[cat]=true;runRecall(cat);}
 }
 
@@ -723,6 +977,19 @@ async function runRecall(cat){
   renderChat();
 }
 
+/* onboarding's per-area chat opener — same engine as runRecall, deliberately
+   setup-flavoured rather than "what would you like help with" */
+async function runOnboardIntro(cat){
+  UI._chatBusy=true;startThinking();renderChat();
+  const sys=behaviourPrompt(cat);
+  const opener=promptBlock('onboardIntro',{CAT:cat});
+  const res=await aiCall(sys,[{role:'user',content:opener}],false);
+  UI._chatBusy=false;stopThinking();
+  if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});}
+  else{const c=extractChoices(extractChanges(res.text||'').prose);UI._chat.push({role:'assistant',content:c.prose||('Let\'s get your '+cat+' stack sorted — what are you working with?'),choices:c.choices});}
+  renderChat();
+}
+
 async function assistantSend(explicit){
   const inp=document.getElementById('chatInput');
   const text=(typeof explicit==='string'?explicit:(inp?inp.value:'')||'').trim();
@@ -733,7 +1000,7 @@ async function assistantSend(explicit){
   UI._chat.push({role:'user',content:text});
   UI._chatBusy=true;startThinking();renderChat();
   const cat=UI._assistantCat;
-  const sys=behaviourPrompt(cat);
+  const sys=cat==='help'?helpPrompt():behaviourPrompt(cat);
   // send full conversation history
   const msgs=UI._chat.map(m=>({role:m.role,content:m.content}));
   // enable web search when a recommendation (and its purchase link) is likely relevant
@@ -741,7 +1008,7 @@ async function assistantSend(explicit){
   const affirmRe=/^(yes|yep|yeah|sure|ok|okay|go ahead|do it|add it|please do|sounds good|the first|the second|that one|this one)\b/i;
   const recentAI=[...UI._chat].reverse().find(m=>m.role==='assistant');
   const midReco=recentAI&&/\b(add|routine|recommend|option|link|buy|instead|alternative)\b/i.test(recentAI.content||'');
-  const wantsReco=recoRe.test(text)||affirmRe.test(text.trim())||!!midReco;
+  const wantsReco=cat!=='help'&&(recoRe.test(text)||affirmRe.test(text.trim())||!!midReco);
   const res=await aiCall(sys,msgs,wantsReco);
   UI._chatBusy=false;stopThinking();
   if(res.error){UI._chat.push({role:'assistant',content:'(Could not reach the assistant: '+res.error+')'});renderChat();return;}
@@ -792,6 +1059,7 @@ function chatMessagesHtml(){
 /* tapping a choice chip sends it as the user's reply */
 function chatChoose(val){
   if(UI._chatBusy)return;
+  if(val==='Send feedback'){openFeedback();return;}
   assistantSend(val);
 }
 /* dry, faintly sarcastic 'working on it' lines */
@@ -988,15 +1256,16 @@ function mdToHtml(src){
 }
 function vAssistantChat(){
   const cat=UI._assistantCat||'skin';
+  const help=cat==='help';
   return`<div class="chat-screen">
     <div class="chat-head">
       <button class="chat-back" data-call="assistantBack">${CHEV_SVG}</button>
-      <div class="chat-title">${cat[0].toUpperCase()+cat.slice(1)} · Loop</div>
-      <span style="width:30px"></span>
+      <div class="chat-title">${help?'How do I…?':cat[0].toUpperCase()+cat.slice(1)+' · Loop'}</div>
+      ${help?`<button class="chat-fb" data-call="openFeedback" title="Send feedback">✉</button>`:'<span style="width:30px"></span>'}
     </div>
     <div class="chat-wrap" id="chatWrap">${chatMessagesHtml()}</div>
     <div class="chat-composer">
-      <textarea id="chatInput" rows="1" placeholder="Ask about your ${cat}…"
+      <textarea id="chatInput" rows="1" placeholder="${help?'Ask how The Stack works…':'Ask about your '+cat+'…'}"
         oninput="chatGrow(this)"
         onfocus="setTimeout(syncChatViewport,300)"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!/Mobi|Android/i.test(navigator.userAgent)){event.preventDefault();assistantSend();}"></textarea>

@@ -3,9 +3,9 @@ function P(cat,name,brand,role,why,opts={}){return Object.assign({cat,name,brand
 function R(id,cat,type,name,days,steps,createdAt,deletedAt){return{id,cat,type,name,days,steps,createdAt:createdAt||'2000-01-01',deletedAt:deletedAt||null};}
 /* true for any routine backing a hair look (seed or user/AI-created) — checks real membership, not id prefix */
 function isLookId(id){return Array.isArray(DB.hairLooks)&&DB.hairLooks.some(l=>l.id===id);}
-const BUILD='2026-07-12 · v104';
+const BUILD='2026-07-12 · v106';
 const SEED={
-  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false},supplements:{concerns:[],budget:'',free:'',done:false,skipped:false}},onboarding:{stage:'welcome',welcomeSeen:false,seedCleared:false,section:null,step:0},aiMemory:{},completions:{},
+  v:16,updatedAt:0,plan:'free',journal:{},supplements:[],settings:{theme:'copper',mode:'system',graceDaysPerMonth:1,streakScope:{skin:true,hair:false,scent:false,supplements:false},country:'AU',shopMethod:'both',preferredRetailer:'',preferredBrands:[]},profile:{skin:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},hair:{concerns:[],budget:'',satisfaction:{},photoNotes:'',free:'',done:false,skipped:false},scent:{current:'',whyLike:'',imageToProject:[],free:'',done:false,skipped:false},looks:{goals:'',free:'',done:false,skipped:false},supplements:{concerns:[],budget:'',free:'',done:false,skipped:false}},onboarding:{stage:'welcome',welcomeSeen:false,seedCleared:false,howtoSeen:false,section:null,step:0},aiMemory:{},completions:{},
   products:{
     water:P('skin','Lukewarm Water','Nature Itself','First cleanse — technically','Free, zero ingredients, available everywhere. Dermatologists hate this one weird trick.',{durationDays:1,flags:['permanent']}),
     soap:P('skin','Bar of Soap','Grandads Bathroom','Second cleanse — aggressive','Squeaky clean is a vibe. The squeaking is your skin barrier crying. Classic.',{durationDays:30}),
@@ -201,6 +201,14 @@ function migrate(d){
     if(!d.profile)d.profile={};
     if(!d.profile.supplements)d.profile.supplements={concerns:[],budget:'',free:'',done:false,skipped:false};
     d.v=18;
+  }
+  if(d.v<19){
+    // v106: the closing "how the app works" tour. Anyone already past
+    // onboarding has been using the app — don't force the tour on them;
+    // it's replayable from Settings → Setup & tours.
+    if(!d.onboarding)d.onboarding={section:null,step:0,stage:'done',welcomeSeen:true,seedCleared:true};
+    if(d.onboarding.howtoSeen===undefined)d.onboarding.howtoSeen=(d.onboarding.stage==='done');
+    d.v=19;
   }
   // Look tags are additive and don't need a version bump — same treatment as pin/syncUrl below.
   // lookByContext is retired in favour of tag-based auto-select (suggestLook); drop it if present.
