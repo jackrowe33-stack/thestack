@@ -202,6 +202,7 @@ function openFacet(){
   const ov=ensureFacetLayer();
   const wasOpen=UI._facetOpen;
   UI._facetOpen=true;
+  document.body.classList.add('facet-docked');
   renderFacet();
   ov.style.display='';
   ov.classList.remove('closing');
@@ -215,6 +216,7 @@ function openFacet(){
 function closeFacet(){
   const ov=document.getElementById('facet-ov');
   UI._facetOpen=false;
+  document.body.classList.remove('facet-docked');
   stopThinking();
   if(!ov){renderTabs();return;}
   ov.classList.remove('enter');
@@ -670,3 +672,10 @@ try{
   if(localStorage.getItem('stack_session')==='1'){ bootApp(); }
 }catch(e){}
 setTimeout(function(){if(!window.__authReady){ _fsReady=true; _snapshotShadow(); bootApp(); }},4000);
+
+/* ══ v101: desktop keyboard — Esc closes the top-most layer ══ */
+window.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(UI.modal)closeModal();
+  else if(UI._facetOpen)closeFacet();
+});
